@@ -20,7 +20,7 @@ class OnboardingController extends Controller
      */
     public function start()
     {
-        return inertia('Onboarding/Start');
+        return inertia('auth/onboarding/Start');
     }
 
     /**
@@ -30,7 +30,7 @@ class OnboardingController extends Controller
     {
         $user = Auth::user();
 
-        return inertia('Onboarding/Step1', [
+        return inertia('auth/onboarding/Step1', [
             'email' => $user->email,
             'user' => [
                 'first_name' => $user->first_name,
@@ -79,7 +79,7 @@ class OnboardingController extends Controller
     {
         $user = Auth::user();
 
-        return inertia('Onboarding/Step2', [
+        return inertia('auth/onboarding/Step2', [
             'email' => $user->email,
             'hasPassword' => ! is_null($user->password),
         ]);
@@ -132,7 +132,7 @@ class OnboardingController extends Controller
             ->with('directorate.region')
             ->get();
 
-        return inertia('Onboarding/Step3', [
+        return inertia('auth/onboarding/Step3', [
             'departments' => $departments,
             'user' => [
                 'work_email' => $user->work_email,

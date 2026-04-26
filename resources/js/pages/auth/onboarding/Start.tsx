@@ -1,12 +1,12 @@
 import { Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 import { step1 } from '@/routes/onboarding';
-import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
 
 export default function OnboardingStart() {
     return (
-        <AuthSimpleLayout
+        <AuthSplitLayout
             title="Welcome to the Platform"
             description="Complete your profile to get started"
         >
@@ -26,7 +26,7 @@ export default function OnboardingStart() {
                     </Link>
                 </CardContent>
             </Card>
-        </AuthSimpleLayout>
+        </AuthSplitLayout>
     );
 }
 
