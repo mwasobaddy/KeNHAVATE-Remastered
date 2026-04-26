@@ -38,6 +38,8 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  isHovering: boolean
+  setIsHovering: (hovering: boolean) => void
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -66,6 +68,7 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+  const [isHovering, setIsHovering] = React.useState(false)
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -120,8 +123,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      isHovering,
+      setIsHovering,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isHovering, setIsHovering]
   )
 
   return (
@@ -159,7 +164,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, isHovering, setIsHovering } = useSidebar()
 
   if (collapsible === "none") {
     return (
@@ -209,6 +214,8 @@ function Sidebar({
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
+      onMouseEnter={() => collapsible === "icon" && state === "collapsed" && setIsHovering(true)}
+      onMouseLeave={() => collapsible === "icon" && state === "collapsed" && setIsHovering(false)}
     >
       {/* This is what handles the sidebar gap on desktop */}
       <div
@@ -218,7 +225,9 @@ function Sidebar({
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
             ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
+          // Expand on hover when collapsed
+          isHovering && collapsible === "icon" && state === "collapsed" && "w-(--sidebar-width)"
         )}
       />
       <div
@@ -231,6 +240,8 @@ function Sidebar({
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+          // Expand on hover when collapsed
+          isHovering && collapsible === "icon" && state === "collapsed" && "w-(--sidebar-width)!",
           className
         )}
         {...props}
@@ -362,12 +373,15 @@ function SidebarSeparator({
 }
 
 function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
+  const { isHovering } = useSidebar()
+
   return (
     <div
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
         "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        isHovering && "overflow-auto",
         className
       )}
       {...props}
@@ -392,6 +406,7 @@ function SidebarGroupLabel({
   ...props
 }: React.ComponentProps<"div"> & { asChild?: boolean }) {
   const Comp = asChild ? Slot : "div"
+  const { isHovering, state } = useSidebar()
 
   return (
     <Comp
@@ -400,6 +415,8 @@ function SidebarGroupLabel({
       className={cn(
         "text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:select-none group-data-[collapsible=icon]:pointer-events-none",
+        // Show label when hovering on collapsed sidebar
+        isHovering && state === "collapsed" && "opacity-100! select-auto pointer-events-auto!",
         className
       )}
       {...props}
@@ -502,7 +519,7 @@ function SidebarMenuButton({
   tooltip?: string | React.ComponentProps<typeof TooltipContent>
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const Comp = asChild ? Slot : "button"
-  const { isMobile, state } = useSidebar()
+  const { isMobile, state, isHovering } = useSidebar()
 
   const button = (
     <Comp
@@ -510,7 +527,12 @@ function SidebarMenuButton({
       data-sidebar="menu-button"
       data-size={size}
       data-active={isActive}
-      className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+      className={cn(
+        sidebarMenuButtonVariants({ variant, size }),
+        // Show full size when hovering on collapsed sidebar
+        isHovering && state === "collapsed" && "size-auto! p-2!",
+        className
+      )}
       {...props}
     />
   )
