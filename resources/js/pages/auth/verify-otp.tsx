@@ -20,6 +20,8 @@ export default function VerifyOtp({ email, status }: Props) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    const { post: resendPost } = useForm({});
+
     // Countdown timer for resend
     useEffect(() => {
         if (!canResend && resendCooldown > 0) {
@@ -90,8 +92,6 @@ export default function VerifyOtp({ email, status }: Props) {
             submitOtp();
         }
     };
-
-    const { post: resendPost } = useForm({});
 
     return (
         <AuthSplitLayout
