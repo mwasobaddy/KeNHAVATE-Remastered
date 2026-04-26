@@ -2,9 +2,9 @@ import { Form, Head } from '@inertiajs/react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 import { logout } from '@/routes';
 import { resend as workEmailResend } from '@/routes/work-email/verify';
-import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 
 export default function VerifyWorkEmail({ workEmail, status }: { workEmail: string; status?: string }) {
     return (

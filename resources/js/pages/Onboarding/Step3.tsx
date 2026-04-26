@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { step2 } from '@/routes/onboarding';
 import { update } from '@/routes/onboarding/step3';
-import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
+import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
 
 interface Department {
     id: number;
@@ -31,7 +31,7 @@ interface Step3Props {
 
 export default function OnboardingStep3({ departments, user }: Step3Props) {
     return (
-        <AuthSplitLayout
+        <AuthSimpleLayout
             title="Step 3 of 3 - Staff Details"
             description="Please provide your employment information"
         >
@@ -108,7 +108,7 @@ export default function OnboardingStep3({ departments, user }: Step3Props) {
                     </Form>
                 </CardContent>
             </Card>
-        </AuthSplitLayout>
+        </AuthSimpleLayout>
     );
 }
 

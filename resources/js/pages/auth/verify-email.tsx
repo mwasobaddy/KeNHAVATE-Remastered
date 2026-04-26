@@ -3,9 +3,9 @@ import { Form, Head } from '@inertiajs/react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
-import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     return (

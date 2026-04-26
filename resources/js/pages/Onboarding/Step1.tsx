@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { start } from '@/routes/onboarding';
 import { update } from '@/routes/onboarding/step1';
-import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
+import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
 
 export default function OnboardingStep1() {
     const { email, user } = usePage<{ email: string; user: { first_name: string | null; other_names: string | null; mobile_number: string | null; gender: string | null; avatar: string | null } }>().props;
@@ -17,8 +17,8 @@ export default function OnboardingStep1() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     return (
-        <AuthSplitLayout
-            title="Step 1 of {totalSteps} - Personal Information"
+        <AuthSimpleLayout
+            title={`Step 1 of ${totalSteps} - Personal Information`}
             description="Please provide your personal details"
         >
             <Card className="w-full max-w-md">
@@ -147,7 +147,7 @@ export default function OnboardingStep1() {
                     </Form>
                 </CardContent>
             </Card>
-        </AuthSplitLayout>
+        </AuthSimpleLayout>
     );
 }
 

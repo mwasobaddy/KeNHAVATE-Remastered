@@ -144,6 +144,6 @@ export default function Login({ status }: Props) {
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Sign in with Google or your email',
+    // title: 'Log in to your account',
+    // description: 'Sign in with Google or your email',
 };

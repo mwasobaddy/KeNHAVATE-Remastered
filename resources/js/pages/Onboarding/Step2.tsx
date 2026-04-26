@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { step1 } from '@/routes/onboarding';
 import { update } from '@/routes/onboarding/step2';
-import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
+import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
 
 export default function OnboardingStep2() {
     const { email, hasPassword } = usePage<{ email: string; hasPassword: boolean }>().props;
@@ -23,8 +23,8 @@ export default function OnboardingStep2() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     return (
-        <AuthSplitLayout
-            title="Step 2 of {totalSteps} - Security Setup"
+        <AuthSimpleLayout
+            title={`Step 2 of ${totalSteps} - Security Setup`}
             description="Set up your account security"
         >
             <Card className="w-full max-w-md">
@@ -149,7 +149,7 @@ export default function OnboardingStep2() {
                     </Form>
                 </CardContent>
             </Card>
-        </AuthSplitLayout>
+        </AuthSimpleLayout>
     );
 }
 
