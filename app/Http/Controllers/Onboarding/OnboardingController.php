@@ -165,14 +165,5 @@ class OnboardingController extends Controller
         return redirect()->route('work-email.verify.show');
     }
 
-    /**
-     * Skip onboarding for regular users.
-     */
-    public function skip(): RedirectResponse
-    {
-        $user = Auth::user();
-        $user->update(['onboarding_completed' => true]);
 
-        return redirect()->route('dashboard');
-    }
 }
