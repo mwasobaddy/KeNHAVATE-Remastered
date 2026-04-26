@@ -31,13 +31,16 @@ export default function VerifyOtp({ email, status }: Props) {
 
             return () => clearTimeout(timer);
         } else if (resendCooldown === 0 && !canResend) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCanResend(true);
         }
     }, [resendCooldown, canResend]);
 
     // Reset countdown when a new OTP is sent
     const handleResend = () => {
-        if (!canResend || isResending) return;
+        if (!canResend || isResending) {
+            return;
+        }
 
         setIsResending(true);
         resendPost(otpResend.post().url, {
@@ -60,7 +63,9 @@ export default function VerifyOtp({ email, status }: Props) {
     };
 
     const submitOtp = () => {
-        if (!otpValue || otpValue.length !== 6) return;
+        if (!otpValue || otpValue.length !== 6) {
+            return;
+        }
 
         setIsProcessing(true);
         setErrorMessage(null);
@@ -73,9 +78,11 @@ export default function VerifyOtp({ email, status }: Props) {
             },
             onError: (errors) => {
                 setOtpValue('');
+
                 if (errors.otp) {
                     setErrorMessage(errors.otp);
                 }
+
                 setIsProcessing(false);
             },
             onFinish: () => {
@@ -95,8 +102,8 @@ export default function VerifyOtp({ email, status }: Props) {
 
     return (
         <AuthSplitLayout
-            title="Check Your Email"
-            description="Enter the verification code sent to your email"
+            // title="Check Your Email"
+            // description="Enter the verification code sent to your email"
         >
             <Head title="Verify Code" />
 
@@ -174,10 +181,10 @@ export default function VerifyOtp({ email, status }: Props) {
                                 <button
                                     type="button"
                                     onClick={handleResend}
-                                    disabled={resendProcessing || isResending}
+                                    disabled={isProcessing || isResending}
                                     className="text-[#231F20] hover:underline disabled:opacity-50 disabled:no-underline"
                                 >
-                                    {resendProcessing || isResending
+                                    {isProcessing || isResending
                                         ? 'Sending...'
                                         : 'Resend code'}
                                 </button>
@@ -198,6 +205,6 @@ export default function VerifyOtp({ email, status }: Props) {
 }
 
 VerifyOtp.layout = {
-    title: 'Verify your email',
-    description: 'Enter the verification code sent to your email',
+    // title: 'Verify your email',
+    // description: 'Enter the verification code sent to your email',
 };
