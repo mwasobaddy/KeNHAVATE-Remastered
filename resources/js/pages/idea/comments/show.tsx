@@ -23,7 +23,11 @@ interface Comment {
 
 interface CommentsShowProps {
     idea: Idea;
-    comments: Comment[];
+    comments: {
+        data: Comment[];
+        current_page: number;
+        last_page: number;
+    };
 }
 
 export default function CommentsShow({ idea, comments }: CommentsShowProps) {
@@ -45,10 +49,10 @@ export default function CommentsShow({ idea, comments }: CommentsShowProps) {
                         </div>
 
                         <div className="mt-6 space-y-4">
-                            {comments.length === 0 ? (
+                            {comments.data.length === 0 ? (
                                 <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
                             ) : (
-                                comments.map((comment) => (
+                                comments.data.map((comment) => (
                                     <div key={comment.id} className="rounded-lg border p-4">
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
