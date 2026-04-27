@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -38,11 +38,19 @@ class User extends Authenticatable
      */
     public function getEmailForPasswordReset(): string
     {
-        // For @kenha.co.ke emails, use work_email for password reset
+        // For @kenha.co.ke emails that have gone through onboarding, use the personal email (email field)
+        // For @kenha.co.ke emails that haven't gone through onboarding, use work_email
+        // For all other emails, use the email field
         if ($this->work_email && Str::endsWith($this->work_email, '@kenha.co.ke')) {
+            // If onboarding is completed, use the personal email for password reset
+            if ($this->onboarding_completed) {
+                return $this->email;
+            }
+
+            // If onboarding is not completed, use work email for password reset
             return $this->work_email;
         }
-        
+
         return $this->email;
     }
 
@@ -67,7 +75,16 @@ class User extends Authenticatable
      */
     public function getEmailForVerification(): string
     {
-        return $this->work_email ?? $this->email;
+        // For @kenha.co.ke users, after onboarding, verify personal email
+        if ($this->work_email && Str::endsWith($this->work_email, '@kenha.co.ke')) {
+            if ($this->onboarding_completed) {
+                return $this->email;
+            }
+
+            return $this->work_email;
+        }
+
+        return $this->email;
     }
 
     /**

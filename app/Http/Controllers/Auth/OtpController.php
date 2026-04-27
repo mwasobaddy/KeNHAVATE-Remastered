@@ -37,9 +37,9 @@ class OtpController extends Controller
         }
 
         // Check if user is a Google OAuth user — skip OTP, log them in directly
-        $user = User::where(function($query) use ($email) {
+        $user = User::where(function ($query) use ($email) {
             $query->where('email', $email)
-                  ->orWhere('work_email', $email);
+                ->orWhere('work_email', $email);
         })->first();
         if ($user && $user->usesGoogleOAuth()) {
             Auth::login($user, true);
@@ -65,13 +65,13 @@ class OtpController extends Controller
 
         // Determine if this is a Kenha email that should go to work_email
         $isKenhaEmail = Str::endsWith($email, '@kenha.co.ke');
-         
+
         // Find or create the user
-        // For Kenha emails, search by either email or work_email, then set both fields
-        // For regular emails, search and set only email field
+        // For Kenha emails, we need to populate BOTH email and work_email to satisfy NOT NULL constraint on email
+        // For regular emails, only populate email
         if ($isKenhaEmail) {
             $user = User::firstOrCreate(
-                // Search for existing user by either email or work_email
+                // Search for existing user by either email or work_email (both should be the same for kenha emails)
                 [
                     'email' => $email,
                     'work_email' => $email,
@@ -148,9 +148,9 @@ class OtpController extends Controller
         $otpCode = $request->input('otp');
 
         // Find the user - check both email and work_email fields
-        $user = User::where(function($query) use ($email) {
+        $user = User::where(function ($query) use ($email) {
             $query->where('email', $email)
-                  ->orWhere('work_email', $email);
+                ->orWhere('work_email', $email);
         })->first();
 
         if (! $user) {
@@ -213,10 +213,10 @@ class OtpController extends Controller
             ]);
         }
 
-         $user = User::where(function($query) use ($email) {
-             $query->where('email', $email)
-                   ->orWhere('work_email', $email);
-         })->first();
+        $user = User::where(function ($query) use ($email) {
+            $query->where('email', $email)
+                ->orWhere('work_email', $email);
+        })->first();
 
         if (! $user) {
             return redirect()->route('login')->withErrors([
