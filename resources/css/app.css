@@ -157,4 +157,32 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    /* Sidebar: Show text on hover when collapsed to icon mode */
+    [data-slot="sidebar"][data-collapsible="icon"][data-hovering="true"] [data-slot="sidebar-menu-button"] span,
+    [data-slot="sidebar"][data-collapsible="icon"][data-hovering="true"] [data-slot="user-info"] > div {
+        display: inline !important;
+        opacity: 1 !important;
+    }
+
+    /* Sidebar: Hide text when collapsed to icon mode */
+    [data-slot="sidebar"][data-collapsible="icon"]:not([data-hovering="true"]) [data-slot="sidebar-menu-button"] span,
+    [data-slot="sidebar"][data-collapsible="icon"]:not([data-hovering="true"]) [data-slot="user-info"] > div {
+        display: none !important;
+    }
+
+    /* Sidebar: Allow button to expand on hover when collapsed */
+    [data-slot="sidebar"][data-collapsible="icon"][data-hovering="true"] [data-slot="sidebar-menu-button"] {
+        width: auto !important;
+        height: 2rem !important;
+        padding: 0.5rem !important;
+        overflow: visible !important;
+    }
+
+    /* SidebarGroupLabel: Show on hover when collapsed */
+    [data-slot="sidebar"][data-collapsible="icon"][data-hovering="true"] [data-slot="sidebar-group-label"] {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        margin-top: 0 !important;
+    }
 }

@@ -18,7 +18,7 @@ export function UserInfo({
     const avatarUrl = user.avatar ? `/storage/${user.avatar}` : undefined;
 
     return (
-        <>
+        <div data-slot="user-info" className="flex items-center gap-2">
             <Avatar className="h-8 w-8 overflow-hidden rounded-full">
                 <AvatarImage src={avatarUrl} alt={fullName} />
                 <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
@@ -33,6 +33,6 @@ export function UserInfo({
                     </span>
                 )}
             </div>
-        </>
+        </div>
     );
 }
