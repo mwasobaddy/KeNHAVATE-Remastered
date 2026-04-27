@@ -35,6 +35,7 @@ export default function OnboardingStep1() {
                         {({ processing, errors }) => (
                             <>
                                 <div className="flex flex-col items-center gap-4">
+                                    <Label className="text-[#231F20]">Profile Photo *</Label>
                                     <div className="relative">
                                         {previewUrl ? (
                                             <img
