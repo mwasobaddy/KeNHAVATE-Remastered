@@ -178,9 +178,19 @@ class OnboardingController extends Controller
         // Complete onboarding
         $user->update(['onboarding_completed' => true]);
 
-        // Send work email verification notification
-        $user->notify(new VerifyWorkEmail);
+        // Send appropriate verification notification based on user type
+        $isKenhaEmail = ! empty($user->work_email) && str_ends_with($user->work_email, '@kenha.co.ke');
+        if ($isKenhaEmail) {
+            // For Kenha users who just entered personal email, verify that email
+            $user->sendEmailVerificationNotification();
 
-        return redirect()->route('work-email.verify.show');
+            // Redirect to email verification notice page
+            return redirect()->route('verification.notice');
+        } else {
+            // For non-Kenha users, verify their work email
+            $user->notify(new VerifyWorkEmail);
+
+            return redirect()->route('work-email.verify.show');
+        }
     }
 }
