@@ -47,12 +47,14 @@ class OnboardingController extends Controller
      */
     public function updateStep1(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'other_names' => ['required', 'string', 'max:255'],
             'mobile_number' => ['required', 'string', 'max:20'],
             'gender' => ['required', 'string', 'in:male,female'],
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            'avatar' => [$user->avatar ? 'nullable' : 'required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
         ]);
 
         $user = Auth::user();
