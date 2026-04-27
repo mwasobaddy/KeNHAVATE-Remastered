@@ -1,10 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
-import idea from '@/routes/idea';
-import comments from '@/routes/idea/comments';
 import { Heart, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import idea from '@/routes/idea';
+import comments from '@/routes/idea/comments';
 
 type ThematicArea = {
     name: string;
@@ -72,7 +71,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
             likeable_type: 'idea',
             likeable_id: ideaItem.id,
         })
-        .then(response => {
+        .then(() => {
             // Update the idea in the list
             router.reload({ only: ['ideas'] });
         })
