@@ -1,12 +1,25 @@
 <?php
 
 use App\Http\Controllers\Auth\OtpController;
+use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Auth\TermsController;
 use App\Http\Controllers\Auth\WorkEmailVerificationController;
 use App\Http\Controllers\Onboarding\OnboardingController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+
+// Google OAuth routes
+Route::get('auth/google/redirect', [SocialiteController::class, 'redirectToGoogle'])
+    ->name('google.redirect');
+
+Route::get('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback'])
+    ->name('google.callback');
+
+// Signed URL for work email verification (no auth middleware — accessed from email link)
+Route::get('work-email/verify/{id}', [WorkEmailVerificationController::class, 'verify'])
+    ->name('work-email.verify')
+    ->middleware('signed');
 
 // OTP routes
 Route::get('otp/verify', [OtpController::class, 'showVerifyForm'])
@@ -51,3 +64,4 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+require __DIR__.'/idea.php';
