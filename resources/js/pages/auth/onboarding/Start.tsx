@@ -6,10 +6,7 @@ import { step1 } from '@/routes/onboarding';
 
 export default function OnboardingStart() {
     return (
-        <AuthSplitLayout
-            title="Welcome to the Platform"
-            description="Complete your profile to get started"
-        >
+        <AuthSplitLayout>
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Welcome to the Platform</CardTitle>

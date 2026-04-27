@@ -70,6 +70,6 @@ class WorkEmailVerificationController extends Controller
 
         $user->notify(new VerifyWorkEmail);
 
-        return back()->with('status', 'A new verification link has been sent to your work email.');
+        return back()->with('status', 'verification-link-sent');
     }
 }

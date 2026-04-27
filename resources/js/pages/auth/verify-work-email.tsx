@@ -1,4 +1,4 @@
-import { Form, Head, useForm } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,7 @@ export default function VerifyWorkEmail({
     workEmail: string;
     status?: string;
 }) {
-    const form = useForm();
-    const [cooldown, setCooldown] = useState(0);
+    const [coolown, setCooldown] = useState(0);
 
     useEffect(() => {
         if (status === 'verification-link-sent') {
@@ -24,15 +23,11 @@ export default function VerifyWorkEmail({
     }, [status]);
 
     useEffect(() => {
-        if (cooldown > 0) {
-            const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+        if (coolown > 0) {
+            const timer = setTimeout(() => setCooldown(coolown - 1), 1000);
             return () => clearTimeout(timer);
         }
-    }, [cooldown]);
-
-    const handleResend = () => {
-        form.submit();
-    };
+    }, [coolown]);
 
     return (
         <AuthSplitLayout
@@ -52,29 +47,38 @@ export default function VerifyWorkEmail({
                 Please check your inbox and click the link.
             </p>
 
-            <Form {...form} className="space-y-6 text-center">
-                {({ processing }) => (
-                    <>
-                        <Button
-                            disabled={processing || cooldown > 0}
-                            variant="secondary"
-                            className="bg-[#231F20] text-white hover:bg-[#231F20]/90"
-                            onClick={handleResend}
-                        >
-                            {processing && <Spinner />}
-                            {cooldown > 0
-                                ? `Resend in ${cooldown}s`
-                                : 'Resend verification email'}
-                        </Button>
+            <Form {...workEmailResend.form()} className="space-y-6 text-center">
+                {({ processing }) => {
+                    // Start cooldown when form starts processing (resend clicked)
+                    useEffect(() => {
+                        if (processing && coolown === 0) {
+                            setCooldown(60);
+                        }
+                    }, [processing]);
 
-                        <TextLink
-                            href={logout()}
-                            className="mx-auto block text-sm text-red-600 hover:text-red-800"
-                        >
-                            Log out
-                        </TextLink>
-                    </>
-                )}
+                    return (
+                        <>
+                            <Button
+                                disabled={processing || coolown > 0}
+                                variant="secondary"
+                                className="bg-[#231F20] text-white hover:bg-[#231F20]/90"
+                                type="submit"
+                            >
+                                {processing && <Spinner />}
+                                {coolown > 0
+                                    ? `Resend in ${coolown}s`
+                                    : 'Resend verification email'}
+                            </Button>
+
+                            <TextLink
+                                href={logout()}
+                                className="mx-auto block text-sm text-red-600 hover:text-red-800"
+                            >
+                                Log out
+                            </TextLink>
+                        </>
+                    );
+                }}
             </Form>
         </AuthSplitLayout>
     );

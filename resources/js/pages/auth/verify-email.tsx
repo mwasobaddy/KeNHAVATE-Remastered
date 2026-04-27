@@ -1,5 +1,4 @@
-// Components
-import { Form, Head, useForm } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,6 @@ export default function VerifyEmail({
     email: string;
     status?: string;
 }) {
-    const form = useForm();
     const [cooldown, setCooldown] = useState(0);
 
     useEffect(() => {
@@ -30,10 +28,6 @@ export default function VerifyEmail({
             return () => clearTimeout(timer);
         }
     }, [cooldown]);
-
-    const handleResend = () => {
-        form.submit();
-    };
 
     return (
         <AuthSplitLayout
@@ -53,29 +47,38 @@ export default function VerifyEmail({
                 check your inbox and click the link.
             </p>
 
-            <Form {...form} className="space-y-6 text-center">
-                {({ processing }) => (
-                    <>
-                        <Button
-                            disabled={processing || cooldown > 0}
-                            variant="secondary"
-                            className="bg-[#231F20] text-white hover:bg-[#231F20]/90"
-                            onClick={handleResend}
-                        >
-                            {processing && <Spinner />}
-                            {cooldown > 0
-                                ? `Resend in ${cooldown}s`
-                                : 'Resend verification email'}
-                        </Button>
+            <Form {...send.form()} className="space-y-6 text-center">
+                {({ processing }) => {
+                    // Start cooldown when form starts processing (resend clicked)
+                    useEffect(() => {
+                        if (processing && cooldown === 0) {
+                            setCooldown(60);
+                        }
+                    }, [processing]);
 
-                        <TextLink
-                            href={logout()}
-                            className="mx-auto block text-sm text-red-600 hover:text-red-800"
-                        >
-                            Log out
-                        </TextLink>
-                    </>
-                )}
+                    return (
+                        <>
+                            <Button
+                                disabled={processing || cooldown > 0}
+                                variant="secondary"
+                                className="bg-[#231F20] text-white hover:bg-[#231F20]/90"
+                                type="submit"
+                            >
+                                {processing && <Spinner />}
+                                {cooldown > 0
+                                    ? `Resend in ${cooldown}s`
+                                    : 'Resend verification email'}
+                            </Button>
+
+                            <TextLink
+                                href={logout()}
+                                className="mx-auto block text-sm text-red-600 hover:text-red-800"
+                            >
+                                Log out
+                            </TextLink>
+                        </>
+                    );
+                }}
             </Form>
         </AuthSplitLayout>
     );
