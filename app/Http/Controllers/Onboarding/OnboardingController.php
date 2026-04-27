@@ -69,15 +69,25 @@ class OnboardingController extends Controller
 
         $user->update($data);
 
+        $request->session()->put('onboarding.step1_completed', true);
+
         return redirect()->route('onboarding.step2');
     }
 
     /**
      * Show step 2: Security Setup.
      */
-    public function step2()
+    public function step2(Request $request)
     {
         $user = Auth::user();
+
+        // Ensure step 1 is completed
+        if (! $request->session()->has('onboarding.step1_completed')) {
+            // Check if step 1 fields are filled (in case session expired)
+            if (empty($user->first_name) || empty($user->other_names) || empty($user->mobile_number) || empty($user->gender)) {
+                return redirect()->route('onboarding.step1');
+            }
+        }
 
         return inertia('auth/onboarding/Step2', [
             'email' => $user->getLoginEmail(),
@@ -111,6 +121,8 @@ class OnboardingController extends Controller
             'is_staff' => $request->boolean('needs_staff_details'),
         ]);
 
+        $request->session()->put('onboarding.step2_completed', true);
+
         // If user wants staff details, go to step 3
         if ($request->boolean('needs_staff_details')) {
             return redirect()->route('onboarding.step3');
@@ -119,15 +131,26 @@ class OnboardingController extends Controller
         // Complete onboarding
         $user->update(['onboarding_completed' => true]);
 
+        $request->session()->forget(['onboarding.step1_completed', 'onboarding.step2_completed']);
+
         return redirect()->route('dashboard');
     }
 
     /**
      * Show step 3: Staff Details.
      */
-    public function step3()
+    public function step3(Request $request)
     {
         $user = Auth::user();
+
+        // Ensure step 2 is completed
+        if (! $request->session()->has('onboarding.step2_completed')) {
+            // Check if user is staff (should have been set in step 2)
+            if (! $user->is_staff) {
+                return redirect()->route('onboarding.step2');
+            }
+        }
+
         $departments = Department::where('is_active', true)
             ->with('directorate.region')
             ->get();
@@ -177,6 +200,8 @@ class OnboardingController extends Controller
 
         // Complete onboarding
         $user->update(['onboarding_completed' => true]);
+
+        $request->session()->forget(['onboarding.step1_completed', 'onboarding.step2_completed']);
 
         // Send appropriate verification notification based on user type
         if ($isKenhaEmail) {
