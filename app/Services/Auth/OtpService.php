@@ -80,6 +80,20 @@ class OtpService
     }
 
     /**
+     * Check if user uses Google OAuth.
+     */
+    public function checkGoogleOAuth(string $email): ?User
+    {
+        $user = $this->findUserByEmail($email);
+
+        if ($user && $user->usesGoogleOAuth()) {
+            return $user;
+        }
+
+        return null;
+    }
+
+    /**
      * Find user by email (checks both email and work_email).
      */
     public function findUserByEmail(string $email): ?User
