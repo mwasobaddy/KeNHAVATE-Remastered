@@ -14,20 +14,22 @@ export default function VerifyWorkEmail({
     workEmail: string;
     status?: string;
 }) {
-    const [coolown, setCooldown] = useState(0);
+    const [cooldown, setCooldown] = useState(0);
 
     useEffect(() => {
         if (status === 'verification-link-sent') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCooldown(60);
         }
     }, [status]);
 
     useEffect(() => {
-        if (coolown > 0) {
-            const timer = setTimeout(() => setCooldown(coolown - 1), 1000);
+        if (cooldown > 0) {
+            const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+
             return () => clearTimeout(timer);
         }
-    }, [coolown]);
+    }, [cooldown]);
 
     return (
         <AuthSplitLayout
@@ -48,37 +50,28 @@ export default function VerifyWorkEmail({
             </p>
 
             <Form {...workEmailResend.form()} className="space-y-6 text-center">
-                {({ processing }) => {
-                    // Start cooldown when form starts processing (resend clicked)
-                    useEffect(() => {
-                        if (processing && coolown === 0) {
-                            setCooldown(60);
-                        }
-                    }, [processing]);
+                {({ processing }) => (
+                    <>
+                        <Button
+                            disabled={processing || cooldown > 0}
+                            variant="secondary"
+                            className="bg-[#231F20] text-white hover:bg-[#231F20]/90"
+                            type="submit"
+                        >
+                            {processing && <Spinner />}
+                            {cooldown > 0
+                                ? `Resend in ${cooldown}s`
+                                : 'Resend verification email'}
+                        </Button>
 
-                    return (
-                        <>
-                            <Button
-                                disabled={processing || coolown > 0}
-                                variant="secondary"
-                                className="bg-[#231F20] text-white hover:bg-[#231F20]/90"
-                                type="submit"
-                            >
-                                {processing && <Spinner />}
-                                {coolown > 0
-                                    ? `Resend in ${coolown}s`
-                                    : 'Resend verification email'}
-                            </Button>
-
-                            <TextLink
-                                href={logout()}
-                                className="mx-auto block text-sm text-red-600 hover:text-red-800"
-                            >
-                                Log out
-                            </TextLink>
-                        </>
-                    );
-                }}
+                        <TextLink
+                            href={logout()}
+                            className="mx-auto block text-sm text-red-600 hover:text-red-800"
+                        >
+                            Log out
+                        </TextLink>
+                    </>
+                )}
             </Form>
         </AuthSplitLayout>
     );
