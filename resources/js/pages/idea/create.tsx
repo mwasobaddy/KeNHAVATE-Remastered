@@ -180,6 +180,8 @@ type TeamMember = {
         });
 
         post(idea.store().url, {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
             data: formData,
             forceFormData: true,
         });

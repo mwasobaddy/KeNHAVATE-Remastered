@@ -189,7 +189,12 @@ return false;
         });
 
         // Use post with _method for proper FormData handling
-        put(ideaRoute.update(idea.slug).url, formData, { forceFormData: true });
+        put(ideaRoute.update(idea.slug).url, {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            data: formData,
+            forceFormData: true,
+        });
     };
 
     return (
