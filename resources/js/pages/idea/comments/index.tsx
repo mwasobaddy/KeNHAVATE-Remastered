@@ -25,7 +25,7 @@ IdeaCommentsIndex.layout = {
         },
         {
             title: 'Comments',
-            href: idea.comments.index({ idea: 0 }),
+            href: idea.comments.index({ idea: "0" }),
         },
     ],
 };
