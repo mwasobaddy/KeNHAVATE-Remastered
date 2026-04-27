@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckTermsAccepted;
 use App\Http\Middleware\EnsureEmailsVerified;
 use App\Http\Middleware\EnsureOnboardingCompleted;
 use App\Http\Middleware\HandleAppearance;
@@ -17,13 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
-
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             EnsureOnboardingCompleted::class,
             EnsureEmailsVerified::class,
+            CheckTermsAccepted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

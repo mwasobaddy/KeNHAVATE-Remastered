@@ -1,26 +1,12 @@
 <?php
 
 use App\Http\Controllers\Auth\OtpController;
-use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\Auth\TermsController;
 use App\Http\Controllers\Auth\WorkEmailVerificationController;
 use App\Http\Controllers\Onboarding\OnboardingController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
-
-// Google OAuth routes
-Route::get('auth/google/redirect', [SocialiteController::class, 'redirectToGoogle'])
-    ->name('google.redirect');
-
-Route::get('auth/google/callback', [SocialiteController::class, 'handleGoogleCallback'])
-    ->name('google.callback');
-
-
-// Signed URL for work email verification (no auth middleware — accessed from email link)
-Route::get('work-email/verify/{id}', [WorkEmailVerificationController::class, 'verify'])
-    ->name('work-email.verify')
-    ->middleware('signed');
-
 
 // OTP routes
 Route::get('otp/verify', [OtpController::class, 'showVerifyForm'])
@@ -32,8 +18,11 @@ Route::post('otp/verify', [OtpController::class, 'verify'])
 Route::post('otp/resend', [OtpController::class, 'resend'])
     ->name('otp.resend');
 
-
 Route::middleware(['auth'])->group(function () {
+    // Terms and conditions
+    Route::get('terms', [TermsController::class, 'show'])->name('terms.show');
+    Route::post('terms/accept', [TermsController::class, 'accept'])->name('terms.accept');
+
     // Onboarding routes
     Route::get('onboarding/start', [OnboardingController::class, 'start'])
         ->name('onboarding.start');
@@ -49,14 +38,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('onboarding.step3');
     Route::post('onboarding/step3', [OnboardingController::class, 'updateStep3'])
         ->name('onboarding.step3.update');
-    
 
     // Work email verification routes (auth required but NOT the verified middleware)
     Route::get('work-email/verify', [WorkEmailVerificationController::class, 'show'])
         ->name('work-email.verify.show');
     Route::post('work-email/verify/resend', [WorkEmailVerificationController::class, 'resend'])
         ->name('work-email.verify.resend');
-
 
     Route::middleware(['verified'])->group(function () {
         Route::inertia('dashboard', 'dashboard')->name('dashboard');

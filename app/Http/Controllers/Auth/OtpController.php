@@ -35,6 +35,9 @@ class OtpController extends Controller
         if ($user) {
             Auth::login($user, true);
 
+            // Set read_terms to false to force terms acceptance
+            $user->update(['read_terms' => false]);
+
             return redirect()->intended(route('dashboard'));
         }
 
@@ -80,6 +83,9 @@ class OtpController extends Controller
         }
 
         Auth::login($user, $request->boolean('remember'));
+
+        // Set read_terms to false to force terms acceptance
+        $user->update(['read_terms' => false]);
 
         // Clear session
         $request->session()->forget('otp_email');

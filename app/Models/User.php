@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['first_name', 'other_names', 'mobile_number', 'gender', 'email', 'work_email', 'password', 'google_id', 'department_id', 'employment_type', 'provider', 'provider_id', 'avatar', 'onboarding_completed', 'work_email_verified_at'])]
+#[Fillable(['first_name', 'other_names', 'mobile_number', 'gender', 'email', 'work_email', 'password', 'department_id', 'employment_type', 'provider', 'provider_id', 'avatar', 'onboarding_completed', 'work_email_verified_at', 'read_terms'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -112,7 +112,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function usesGoogleOAuth(): bool
     {
-        return $this->provider === 'google' && ! is_null($this->google_id);
+        return $this->provider === 'google';
     }
 
     /**

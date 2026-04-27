@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamp('work_email_verified_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable();
-            $table->string('google_id')->nullable();
+            $table->boolean('read_terms')->default(false);
             $table->foreignId('department_id')->nullable()->constrained()->setNullOnDelete();
             $table->string('employment_type')->nullable();
             $table->string('provider')->nullable();
