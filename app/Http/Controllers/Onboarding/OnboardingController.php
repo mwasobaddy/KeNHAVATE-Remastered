@@ -31,7 +31,7 @@ class OnboardingController extends Controller
         $user = Auth::user();
 
         return inertia('auth/onboarding/Step1', [
-            'email' => $user->email,
+            'email' => $user->getLoginEmail(),
             'user' => [
                 'first_name' => $user->first_name,
                 'other_names' => $user->other_names,
@@ -80,7 +80,7 @@ class OnboardingController extends Controller
         $user = Auth::user();
 
         return inertia('auth/onboarding/Step2', [
-            'email' => $user->email,
+            'email' => $user->getLoginEmail(),
             'hasPassword' => ! is_null($user->password),
         ]);
     }
@@ -132,10 +132,15 @@ class OnboardingController extends Controller
             ->with('directorate.region')
             ->get();
 
+        // For @kenha.co.ke users, we already have their work email (used to login)
+        // So we ask for their personal email instead
+        $isKenhaEmail = ! empty($user->work_email) && str_ends_with($user->work_email, '@kenha.co.ke');
+
         return inertia('auth/onboarding/Step3', [
             'departments' => $departments,
             'user' => [
                 'work_email' => $user->work_email,
+                'email' => $isKenhaEmail ? '' : $user->email, // For Kenha users, ask for personal email
                 'department_id' => $user->department_id,
                 'employment_type' => $user->employment_type,
             ],
@@ -147,14 +152,28 @@ class OnboardingController extends Controller
      */
     public function updateStep3(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'work_email' => ['required', 'string', 'email', 'max:255', 'unique:users,work_email'],
-            'department_id' => ['required', 'exists:departments,id'],
-            'employment_type' => ['required', 'string', 'in:attachment,internship,contract,permanent'],
-        ]);
-
         $user = Auth::user();
-        $user->update(array_merge($validated, ['is_staff' => true]));
+        $isKenhaEmail = ! empty($user->work_email) && str_ends_with($user->work_email, '@kenha.co.ke');
+
+        if ($isKenhaEmail) {
+            // For Kenha users, they provided personal email in step 3
+            $validated = $request->validate([
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'department_id' => ['required', 'exists:departments,id'],
+                'employment_type' => ['required', 'string', 'in:attachment,internship,contract,permanent'],
+            ]);
+
+            $user->update(array_merge($validated, ['is_staff' => true]));
+        } else {
+            // For non-Kenha users, they provided work email in step 3
+            $validated = $request->validate([
+                'work_email' => ['required', 'string', 'email', 'max:255', 'unique:users,work_email'],
+                'department_id' => ['required', 'exists:departments,id'],
+                'employment_type' => ['required', 'string', 'in:attachment,internship,contract,permanent'],
+            ]);
+
+            $user->update(array_merge($validated, ['is_staff' => true]));
+        }
 
         // Complete onboarding
         $user->update(['onboarding_completed' => true]);
@@ -164,6 +183,4 @@ class OnboardingController extends Controller
 
         return redirect()->route('work-email.verify.show');
     }
-
-
 }

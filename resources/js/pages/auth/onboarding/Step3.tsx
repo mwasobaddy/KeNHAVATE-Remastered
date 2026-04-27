@@ -24,12 +24,17 @@ interface Step3Props {
     departments: Department[];
     user: {
         work_email: string | null;
+        email: string | null;
         department_id: number | null;
         employment_type: string | null;
     };
 }
 
 export default function OnboardingStep3({ departments, user }: Step3Props) {
+    // For @kenha.co.ke users, we already have their work email (used to login)
+    // So we ask for their personal email instead
+    const isKenhaEmail = !!(user.work_email && user.work_email.endsWith('@kenha.co.ke'));
+    
     return (
         <AuthSplitLayout
             title="Step 3 of 3 - Staff Details"
@@ -47,18 +52,35 @@ export default function OnboardingStep3({ departments, user }: Step3Props) {
                     >
                         {({ processing, errors }) => (
                             <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="work_email" className="text-[#231F20]">Work Email *</Label>
-                                    <Input 
-                                        id="work_email" 
-                                        name="work_email" 
-                                        type="email" 
-                                        placeholder="john.doe@kenha.co.ke"
-                                        defaultValue={user.work_email ?? ''}
-                                        className="border-[#9B9EA4]/30 focus:border-[#231F20]"
-                                    />
-                                    <InputError message={errors.work_email} />
-                                </div>
+                                {isKenhaEmail ? (
+                                    // For Kenha users, ask for personal email since work email is already known
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email" className="text-[#231F20]">Personal Email *</Label>
+                                        <Input 
+                                            id="email" 
+                                            name="email" 
+                                            type="email" 
+                                            placeholder="personal@email.com"
+                                            defaultValue={user.email ?? ''}
+                                            className="border-[#9B9EA4]/30 focus:border-[#231F20]"
+                                        />
+                                        <InputError message={errors.email} />
+                                    </div>
+                                ) : (
+                                    // For non-Kenha users, ask for work email
+                                    <div className="space-y-2">
+                                        <Label htmlFor="work_email" className="text-[#231F20]">Work Email *</Label>
+                                        <Input 
+                                            id="work_email" 
+                                            name="work_email" 
+                                            type="email" 
+                                            placeholder="john.doe@kenha.co.ke"
+                                            defaultValue={user.work_email ?? ''}
+                                            className="border-[#9B9EA4]/30 focus:border-[#231F20]"
+                                        />
+                                        <InputError message={errors.work_email} />
+                                    </div>
+                                )}
 
                                 <div className="space-y-2">
                                     <Label htmlFor="department_id" className="text-[#231F20]">Department *</Label>
