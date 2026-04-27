@@ -214,8 +214,9 @@ function Sidebar({
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
-      onMouseEnter={() => collapsible === "icon" && state === "collapsed" && setIsHovering(true)}
-      onMouseLeave={() => collapsible === "icon" && state === "collapsed" && setIsHovering(false)}
+       onMouseEnter={() => collapsible === "icon" && state === "collapsed" && setIsHovering(true)}
+       onMouseLeave={() => collapsible === "icon" && state === "collapsed" && setIsHovering(false)}
+       data-hovering={isHovering ? "true" : undefined}
     >
       {/* This is what handles the sidebar gap on desktop */}
       <div
@@ -527,12 +528,12 @@ function SidebarMenuButton({
       data-sidebar="menu-button"
       data-size={size}
       data-active={isActive}
-      className={cn(
-        sidebarMenuButtonVariants({ variant, size }),
-        // Show full size when hovering on collapsed sidebar
-        isHovering && state === "collapsed" && "size-auto! p-2! [&>span]:inline [&>span]:opacity-100 [&>span]:w-auto [&>span]:max-w-full",
-        className
-      )}
+        className={cn(
+            sidebarMenuButtonVariants({ variant, size }),
+            // Show text when hovering on collapsed sidebar using group-hover
+            "group-data-[collapsed=icon]:[.group:hover_&_span]:inline! [&_span]:opacity-0 group-hover:[&_span]:opacity-100! group-hover:[&_span]:w-auto group-hover:[&_span]:max-w-full",
+            className
+        )}
       {...props}
     />
   )
