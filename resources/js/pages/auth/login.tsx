@@ -14,8 +14,6 @@ type Props = {
 };
 
 export default function Login({ status }: Props) {
-    const [isEmailLogin, setIsEmailLogin] = useState(true);
-
     const { data, setData, post, processing, errors } = useForm({
         email: '',
     });
@@ -36,6 +34,55 @@ export default function Login({ status }: Props) {
             <Head title="Log in" />
 
             <div className="flex flex-col gap-6">
+                {/* Email Login */}
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex flex-col gap-6"
+                >
+                    <div className="grid gap-6">
+                        <div className="grid gap-2">
+                            <Label htmlFor="email" className="text-[#231F20]">
+                                Email address
+                            </Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                required
+                                autoFocus
+                                tabIndex={1}
+                                autoComplete="email"
+                                name="email"
+                                value={data.email}
+                                onChange={(e) => setData('email', e.target.value)}
+                                placeholder="email@example.com"
+                                className="border-[#9B9EA4]/30 focus:border-[#231F20]"
+                            />
+                            <InputError message={errors.email} />
+                        </div>
+
+                        <Button
+                            type="submit"
+                            className="mt-4 w-full bg-[#231F20] hover:bg-[#231F20]/90"
+                            tabIndex={2}
+                            disabled={processing}
+                        >
+                            {processing && <Spinner />}
+                            Send Verification Code
+                        </Button>
+                    </div>
+                </form>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-[#F8EBD5] px-2 text-[#9B9EA4]">
+                            Or
+                        </span>
+                    </div>
+                </div>
+
                 {/* Google Login Button */}
                 <div>
                     <a
@@ -67,71 +114,6 @@ export default function Login({ status }: Props) {
                         Continue with Google
                     </a>
                 </div>
-
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-[#F8EBD5] px-2 text-[#9B9EA4]">
-                            Or
-                        </span>
-                    </div>
-                </div>
-
-                <div className="text-center">
-                    <button
-                        type="button"
-                        onClick={() => setIsEmailLogin(!isEmailLogin)}
-                        className="text-sm text-[#9B9EA4] hover:text-[#231F20]"
-                    >
-                        {isEmailLogin
-                            ? 'Use a different email'
-                            : 'Use a different email'}
-                    </button>
-                </div>
-
-                <form
-                    onSubmit={handleSubmit}
-                    className="flex flex-col gap-6"
-                >
-                    <div className="grid gap-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="email" className="text-[#231F20]">
-                                {isEmailLogin ? 'Email address' : 'Personal or Staff Email'}
-                            </Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                required
-                                autoFocus
-                                tabIndex={1}
-                                autoComplete="email"
-                                name="email"
-                                value={data.email}
-                                onChange={(e) => setData('email', e.target.value)}
-                                placeholder={isEmailLogin ? 'email@example.com' : 'personal@email.com or staff@email.com'}
-                                className="border-[#9B9EA4]/30 focus:border-[#231F20]"
-                            />
-                            {!isEmailLogin && (
-                                <p className="text-xs text-[#9B9EA4]">
-                                    Enter either your personal or staff email to log in
-                                </p>
-                            )}
-                            <InputError message={errors.email} />
-                        </div>
-
-                        <Button
-                            type="submit"
-                            className="mt-4 w-full bg-[#231F20] hover:bg-[#231F20]/90"
-                            tabIndex={2}
-                            disabled={processing}
-                        >
-                            {processing && <Spinner />}
-                            Send Verification Code
-                        </Button>
-                    </div>
-                </form>
             </div>
 
             {status && (
