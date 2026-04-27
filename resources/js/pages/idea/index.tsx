@@ -1,4 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
+import axios from 'axios';
+import idea from '@/routes/idea';
+import comments from '@/routes/idea/comments';
 import { Heart, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import idea from '@/routes/idea';
@@ -65,27 +68,24 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
     const toggleLike = (ideaItem: IdeaItem) => {
         setLikingStates(prev => ({ ...prev, [ideaItem.id]: true }));
 
-        router.post('/likes', {
+        axios.post('/likes', {
             likeable_type: 'idea',
             likeable_id: ideaItem.id,
-        }, {
-            preserveState: true,
-            onSuccess: () => {
-                setLikingStates(prev => {
-                    const newState = { ...prev };
-                    delete newState[ideaItem.id];
+        })
+        .then(response => {
+            // Update the idea in the list
+            router.reload({ only: ['ideas'] });
+        })
+        .catch(() => {
+            // Handle error silently
+        })
+        .finally(() => {
+            setLikingStates(prev => {
+                const newState = { ...prev };
+                delete newState[ideaItem.id];
 
-                    return newState;
-                });
-            },
-            onError: () => {
-                setLikingStates(prev => {
-                    const newState = { ...prev };
-                    delete newState[ideaItem.id];
-
-                    return newState;
-                });
-            },
+                return newState;
+            });
         });
     };
 
@@ -174,7 +174,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                                         {/* Comment Button */}
                                                         <button
                                                             type="button"
-                                                            onClick={() => router.visit(`/ideas/${ideaItem.slug}/comments`)}
+                                                            onClick={() => router.visit(comments.index({ idea: ideaItem.slug }).url)}
                                                             className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
                                                         >
                                                             <MessageCircle className="h-5 w-5" />

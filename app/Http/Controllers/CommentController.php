@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCommentRequest;
 use App\Models\Comment;
 use App\Models\Idea;
-use Illuminate\Http\JsonResponse;
 
 class CommentController extends Controller
 {
@@ -29,7 +28,7 @@ class CommentController extends Controller
     /**
      * Store a new comment or reply.
      */
-    public function store(StoreCommentRequest $request): JsonResponse
+    public function store(StoreCommentRequest $request)
     {
         $validated = $request->validated();
         $validated['user_id'] = $request->user()->id;
@@ -39,9 +38,6 @@ class CommentController extends Controller
         // Load the comment with user and likes
         $comment->load('user', 'likes', 'idea');
 
-        return response()->json([
-            'comment' => $comment,
-            'comments_count' => $comment->idea->comments()->count(),
-        ]);
+        return back()->with('success', 'Comment posted successfully!');
     }
 }
