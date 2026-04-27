@@ -183,8 +183,8 @@ class OnboardingController extends Controller
             // For Kenha users who just entered personal email, verify that email
             $user->sendEmailVerificationNotification();
 
-            // Redirect to email verification notice page
-            return redirect()->route('verification.notice');
+            // Redirect to email verification notice page with status message
+            return redirect()->route('verification.notice')->with('status', 'verification-link-sent');
         } else {
             // For non-Kenha users, verify their work email
             $user->notify(new VerifyWorkEmail);
