@@ -530,7 +530,7 @@ function SidebarMenuButton({
       className={cn(
         sidebarMenuButtonVariants({ variant, size }),
         // Show full size when hovering on collapsed sidebar
-        isHovering && state === "collapsed" && "size-auto! p-2!",
+        isHovering && state === "collapsed" && "size-auto! p-2! [&>span]:inline [&>span]:opacity-100 [&>span]:w-auto [&>span]:max-w-full",
         className
       )}
       {...props}
