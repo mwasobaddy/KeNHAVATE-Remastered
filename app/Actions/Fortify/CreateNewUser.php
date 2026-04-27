@@ -32,8 +32,9 @@ class CreateNewUser implements CreatesNewUsers
             'onboarding_completed' => false,
         ]);
 
-        // Assign 'user' role to all registered users
-        $user->assignRole('user');
+        // Assign role based on email domain
+        $role = (str_ends_with($input['email'], '@kenha.co.ke')) ? 'staff' : 'user';
+        $user->assignRole($role);
 
         return $user;
     }

@@ -64,8 +64,9 @@ class SocialiteController extends Controller
                         'onboarding_completed' => false, // Do not skip onboarding for Google users
                     ]);
                 }
-                // Assign 'user' role to all Google-authenticated users
-                $user->assignRole('user');
+                // Assign role based on email domain
+                $role = (str_ends_with($user->email, '@kenha.co.ke')) ? 'staff' : 'user';
+                $user->assignRole($role);
             }
 
             Auth::login($user, true);

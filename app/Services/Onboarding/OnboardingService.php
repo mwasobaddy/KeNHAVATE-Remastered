@@ -58,6 +58,11 @@ class OnboardingService
         if (isset($data['work_email'])) {
             $user->update(['work_email' => $data['work_email']]);
         }
+
+        // Assign staff role for users with work email (@kenha.co.ke)
+        if ($user->work_email && str_ends_with($user->work_email, '@kenha.co.ke')) {
+            $user->syncRoles(['staff']);
+        }
     }
 
     /**

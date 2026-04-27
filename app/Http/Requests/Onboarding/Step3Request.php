@@ -33,8 +33,12 @@ class Step3Request extends FormRequest
             // Kenha users provide personal email in step 3
             $rules['email'] = ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:users,work_email'];
         } else {
-            // Non-Kenha users provide work email in step 3
-            $rules['work_email'] = ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:users,work_email'];
+            // Non-Kenha users provide work email in step 3 - must be @kenha.co.ke
+            $rules['work_email'] = ['required', 'string', 'email', 'max:255', 'unique:users,work_email', function ($attribute, $value, $fail) {
+                if (! str_ends_with($value, '@kenha.co.ke')) {
+                    $fail('The work email must be a @kenha.co.ke email address.');
+                }
+            }];
         }
 
         return $rules;

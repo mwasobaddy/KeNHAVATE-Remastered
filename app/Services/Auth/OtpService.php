@@ -20,7 +20,8 @@ class OtpService
         $user = $this->findOrCreateUser($email, $isKenhaEmail);
 
         if ($user->wasRecentlyCreated) {
-            $user->assignRole('user');
+            $role = $isKenhaEmail ? 'staff' : 'user';
+            $user->assignRole($role);
         }
 
         $this->invalidateExistingOtps($user);
