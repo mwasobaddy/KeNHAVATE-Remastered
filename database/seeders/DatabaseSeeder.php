@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             DirectorateSeeder::class,
             DepartmentSeeder::class,
             RolePermissionSeeder::class,
+            ThematicAreaSeeder::class,
         ]);
     }
 }
