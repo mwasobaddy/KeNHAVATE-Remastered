@@ -71,15 +71,15 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
             likeable_type: 'idea',
             likeable_id: ideaItem.id,
         })
-        .then(() => {
-            // Update the idea in the list
-            router.reload({ only: ['ideas'] });
-        })
+    .then(() => {
+        router.reload({ only: ['ideas'] });
+    })
         .catch(() => {
             // Handle error silently
         })
         .finally(() => {
             setLikingStates(prev => {
+                
                 const newState = { ...prev };
                 delete newState[ideaItem.id];
 
