@@ -101,4 +101,12 @@ class Idea extends Model
     {
         return $this->hasMany(TeamMember::class);
     }
+
+    /**
+     * Get the likes for this idea.
+     */
+    public function likes()
+    {
+        return $this->morphMany(Like::class, 'likeable');
+    }
 }

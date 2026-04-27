@@ -83,13 +83,18 @@ export default function IdeaEdit({ idea, thematicAreas, currentUser }: { idea: a
     // Helper to get field error for a specific team member
     const getMemberError = (index: number, field: string): string | undefined => {
         const errorKey = `team_members.${index}.${field}`;
+
         return (errors as Record<string, string>)[errorKey];
     };
 
     // Check if current user is in the team
     const isCurrentUserInTeam = (): boolean => {
-        if (!currentUser) return false;
+        if (!currentUser) {
+return false;
+}
+
         const userEmail = (currentUser.email || currentUser.work_email || '').toLowerCase();
+
         return data.team_members.some(
             (member) => member.email.toLowerCase() === userEmail
         );
@@ -102,13 +107,33 @@ export default function IdeaEdit({ idea, thematicAreas, currentUser }: { idea: a
             return;
         }
 
+        const userEmail = (currentUser?.email || '').toLowerCase();
+        const userWorkEmail = (currentUser?.work_email || '').toLowerCase();
+        const userFullName = (currentUser?.name || '').toLowerCase();
+        const memberEmail = newMember.email.toLowerCase();
+        const memberName = newMember.name.trim();
+
+        // Check if email belongs to current user
+        if (memberEmail === userEmail || memberEmail === userWorkEmail) {
+            // Verify name matches user's full name
+            if (memberName.toLowerCase() !== userFullName) {
+                setDuplicateError(`Name must match your full name: ${currentUser?.name}`);
+
+                return;
+            }
+
+            // Force edit permission for the user themselves
+            setNewMember({ ...newMember, permission: 'edit' });
+        }
+
         // Check for duplicate email
         const isDuplicate = data.team_members.some(
-            (member) => member.email.toLowerCase() === newMember.email.toLowerCase()
+            (member) => member.email.toLowerCase() === memberEmail
         );
 
         if (isDuplicate) {
             setDuplicateError('This email has already been added to the team.');
+
             return;
         }
 
@@ -117,6 +142,14 @@ export default function IdeaEdit({ idea, thematicAreas, currentUser }: { idea: a
     };
 
     const removeTeamMember = (index: number) => {
+        const member = data.team_members[index];
+        const userEmail = (currentUser?.email || currentUser?.work_email || '').toLowerCase();
+
+        // Prevent removing the current user
+        if (member && member.email.toLowerCase() === userEmail) {
+            return;
+        }
+
         setData('team_members', data.team_members.filter((_, i) => i !== index));
     };
 
@@ -127,6 +160,7 @@ export default function IdeaEdit({ idea, thematicAreas, currentUser }: { idea: a
         // Check if current user is in the team
         if (data.team_effort && !isCurrentUserInTeam()) {
             setSubmitError('You must add yourself as a team member before submitting.');
+
             return;
         }
 
@@ -141,6 +175,7 @@ export default function IdeaEdit({ idea, thematicAreas, currentUser }: { idea: a
                     if (member.id) {
                         formData.append(`team_members[${index}][id]`, member.id.toString());
                     }
+
                     formData.append(`team_members[${index}][name]`, member.name || '');
                     formData.append(`team_members[${index}][email]`, member.email || '');
                     formData.append(`team_members[${index}][role]`, member.role || '');
@@ -340,7 +375,20 @@ export default function IdeaEdit({ idea, thematicAreas, currentUser }: { idea: a
                                     onCheckedChange={(checked) => {
                                         const isChecked = checked === true;
                                         setData('team_effort', isChecked);
-                                        if (!isChecked) {
+
+                                        if (isChecked && currentUser) {
+                                            const userEmail = currentUser.email || currentUser.work_email || '';
+
+                                            if (userEmail && !data.team_members.some(m => m.email.toLowerCase() === userEmail.toLowerCase())) {
+                                                const authorMember: TeamMember = {
+                                                    name: currentUser.name,
+                                                    email: userEmail,
+                                                    role: 'Author',
+                                                    permission: 'edit',
+                                                };
+                                                setData('team_members', [...data.team_members, authorMember]);
+                                            }
+                                        } else if (!isChecked) {
                                             setData('team_members', []);
                                         }
                                     }}
@@ -438,38 +486,44 @@ export default function IdeaEdit({ idea, thematicAreas, currentUser }: { idea: a
                                     {data.team_members.length > 0 && (
                                         <div className="space-y-2">
                                             <h4 className="font-medium">Added Members:</h4>
-                                            {data.team_members.map((member, index) => (
-                                                <div key={index} className="rounded-md bg-muted p-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1">
-                                                            <p className="font-medium">{member.name}</p>
-                                                            <p className="text-sm text-muted-foreground">{member.email}</p>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {member.role && `${member.role} • `}
-                                                                {member.permission === 'edit' ? 'Can Edit' : 'Can View'}
-                                                            </p>
-                                                            {/* Inline errors for this member */}
-                                                            {getMemberError(index, 'name') && (
-                                                                <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'name')}</p>
-                                                            )}
-                                                            {getMemberError(index, 'email') && (
-                                                                <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'email')}</p>
-                                                            )}
-                                                            {getMemberError(index, 'permission') && (
-                                                                <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'permission')}</p>
+                                            {data.team_members.map((member, index) => {
+                                                const isCurrentUser = member.email.toLowerCase() === (currentUser?.email || currentUser?.work_email || '').toLowerCase();
+
+                                                return (
+                                                    <div key={index} className="rounded-md bg-muted p-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex-1">
+                                                                <p className="font-medium">{member.name} {isCurrentUser && <span className="text-xs text-muted-foreground">(You)</span>}</p>
+                                                                <p className="text-sm text-muted-foreground">{member.email}</p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {member.role && `${member.role} • `}
+                                                                    {member.permission === 'edit' ? 'Can Edit' : 'Can View'}
+                                                                </p>
+                                                                {/* Inline errors for this member */}
+                                                                {getMemberError(index, 'name') && (
+                                                                    <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'name')}</p>
+                                                                )}
+                                                                {getMemberError(index, 'email') && (
+                                                                    <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'email')}</p>
+                                                                )}
+                                                                {getMemberError(index, 'permission') && (
+                                                                    <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'permission')}</p>
+                                                                )}
+                                                            </div>
+                                                            {!isCurrentUser && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => removeTeamMember(index)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
                                                             )}
                                                         </div>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeTeamMember(index)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
                                                     </div>
-                                                </div>
-                                            ))}
+                                            )
+})}
                                         </div>
                                     )}
 

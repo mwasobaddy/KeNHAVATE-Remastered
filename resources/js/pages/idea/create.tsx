@@ -48,6 +48,7 @@ export default function IdeaCreate({ thematicAreas, currentUser }: { thematicAre
     const [duplicateError, setDuplicateError] = useState('');
 
     const [showPublicWarning, setShowPublicWarning] = useState(false);
+    const [submitError, setSubmitError] = useState('');
 
     const handleCollaborationChange = (checked: boolean) => {
         setData('collaboration_enabled', checked);
@@ -71,16 +72,34 @@ type TeamMember = {
 };
 
     const addTeamMember = () => {
-
         setDuplicateError('');
 
         if (!newMember.name || !newMember.email) {
             return;
         }
 
+        const userEmail = (currentUser?.email || '').toLowerCase();
+        const userWorkEmail = (currentUser?.work_email || '').toLowerCase();
+        const userFullName = (currentUser?.name || '').toLowerCase();
+        const memberEmail = newMember.email.toLowerCase();
+        const memberName = newMember.name.trim();
+
+        // Check if email belongs to current user
+        if (memberEmail === userEmail || memberEmail === userWorkEmail) {
+            // Verify name matches user's full name
+            if (memberName.toLowerCase() !== userFullName) {
+                setDuplicateError(`Name must match your full name: ${currentUser?.name}`);
+
+                return;
+            }
+
+            // Force edit permission for the user themselves
+            setNewMember({ ...newMember, permission: 'edit' });
+        }
+
         // Check for duplicate email
         const isDuplicate = ((data.team_members as TeamMember[]) || []).some(
-            (member) => member.email.toLowerCase() === newMember.email.toLowerCase()
+            (member) => member.email.toLowerCase() === memberEmail
         );
 
         if (isDuplicate) {
@@ -97,11 +116,47 @@ type TeamMember = {
     };
 
     const removeTeamMember = (index: number) => {
+        const member = (data.team_members as TeamMember[])[index];
+        const userEmail = (currentUser?.email || currentUser?.work_email || '').toLowerCase();
+
+        // Prevent removing the current user
+        if (member && member.email.toLowerCase() === userEmail) {
+            return;
+        }
+
         setData('team_members', ((data.team_members as TeamMember[]) || []).filter((_, i) => i !== index) as TeamMember[] as any);
     };
 
     const submit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setSubmitError('');
+
+        // Validate that team_effort requires at least one member
+        if (data.team_effort && data.team_members.length === 0) {
+            setSubmitError('You must add at least one team member when "team effort" is checked.');
+
+            return;
+        }
+
+        // Validate that current user has added themselves
+        if (data.team_effort && data.team_members.length > 0) {
+            const userEmail = (currentUser?.email || '').toLowerCase();
+            const userWorkEmail = (currentUser?.work_email || '').toLowerCase();
+
+            const hasAddedSelf = ((data.team_members as TeamMember[]) || []).some(
+                (member) => {
+                    const memberEmail = member.email.toLowerCase();
+
+                    return memberEmail === userEmail || memberEmail === userWorkEmail;
+                }
+            );
+
+            if (!hasAddedSelf) {
+                setSubmitError(`You must add yourself as a team member with your email (${currentUser?.email || currentUser?.work_email})`);
+
+                return;
+            }
+        }
 
         const formData = new FormData();
 
@@ -286,12 +341,31 @@ type TeamMember = {
                                 </div>
                             )}
 
-                            {/* Team Effort */}
+                             {/* Team Effort */}
                             <div className="flex items-center space-x-3">
                                 <Checkbox
                                     id="team_effort"
                                     checked={data.team_effort}
-                                    onCheckedChange={(checked) => setData('team_effort', checked === true)}
+                                    onCheckedChange={(checked) => {
+                                        const isChecked = checked === true;
+                                        setData('team_effort', isChecked);
+
+                                        if (isChecked && currentUser) {
+                                            const userEmail = currentUser.email || currentUser.work_email || '';
+
+                                            if (userEmail && !(data.team_members as TeamMember[] || []).some(m => m.email.toLowerCase() === userEmail.toLowerCase())) {
+                                                const authorMember = {
+                                                    name: currentUser.name,
+                                                    email: userEmail,
+                                                    role: 'Author',
+                                                    permission: 'edit',
+                                                };
+                                                setData('team_members', [...((data.team_members as TeamMember[]) || []), authorMember] as TeamMember[] as any);
+                                            }
+                                        } else if (!isChecked) {
+                                            setData('team_members', []);
+                                        }
+                                    }}
                                 />
                                 <Label htmlFor="team_effort" className="after:ml-0.5 after:text-red-500 after:content-['*']">
                                     This is a team effort - other members were involved
@@ -384,26 +458,41 @@ type TeamMember = {
                                     {data.team_members.length > 0 && (
                                         <div className="space-y-2">
                                             <h4 className="font-medium">Added Members:</h4>
-                                            {(data.team_members as Array<{ name: string; email: string; role?: string; permission: string }> ).map((member, index) => (
-                                                <div key={index} className="flex items-center justify-between rounded-md bg-muted p-3">
-                                                    <div>
-                                                        <p className="font-medium">{member.name}</p>
-                                                        <p className="text-sm text-muted-foreground">{member.email}</p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {member.role && `${member.role} • `}
-                                                            {member.permission === 'edit' ? 'Can Edit' : 'Can View'}
-                                                        </p>
+                                            {(data.team_members as Array<{ name: string; email: string; role?: string; permission: string }> ).map((member, index) => {
+                                                const isCurrentUser = member.email.toLowerCase() === (currentUser?.email || currentUser?.work_email || '').toLowerCase();
+
+                                                return (
+                                                    <div key={index} className="rounded-md bg-muted p-3">
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1">
+                                                                <p className="font-medium">{member.name} {isCurrentUser && <span className="text-xs text-muted-foreground">(You)</span>}</p>
+                                                                <p className="text-sm text-muted-foreground">{member.email}</p>
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {member.role && `${member.role} • `}
+                                                                    {member.permission === 'edit' ? 'Can Edit' : 'Can View'}
+                                                                </p>
+                                                                {/* Per-member errors */}
+                                                                {Array.isArray(errors.team_members) && errors.team_members[index]?.name && (
+                                                                    <p className="mt-1 text-sm text-red-600">{errors.team_members[index].name}</p>
+                                                                )}
+                                                                {Array.isArray(errors.team_members) && errors.team_members[index]?.permission && (
+                                                                    <p className="mt-1 text-sm text-red-600">{errors.team_members[index].permission}</p>
+                                                                )}
+                                                            </div>
+                                                            {!isCurrentUser && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => removeTeamMember(index)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => removeTeamMember(index)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
 
@@ -426,6 +515,13 @@ type TeamMember = {
                                     />
                                 <InputError message={errors.attachment} />
                             </div>
+
+                            {/* Submit Error */}
+                            {submitError && (
+                                <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
+                                    {submitError}
+                                </div>
+                            )}
 
                             {/* Submit Button */}
                             <div className="flex gap-4">

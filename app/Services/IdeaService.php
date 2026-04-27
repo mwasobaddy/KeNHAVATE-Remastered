@@ -52,7 +52,6 @@ class IdeaService
     public function getPublicIndex(array $filters = []): LengthAwarePaginator
     {
         $query = Idea::with(['thematicArea', 'user'])
-            ->where('status', '!=', 'draft')
             ->where('collaboration_enabled', true);
 
         if (! empty($filters['status'])) {

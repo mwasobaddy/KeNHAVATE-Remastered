@@ -6,9 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateIdeaRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
@@ -48,19 +45,33 @@ class UpdateIdeaRequest extends FormRequest
         $validator->after(function ($validator) {
             $user = $this->user();
             $teamMembers = $this->input('team_members', []);
+            $teamEffort = $this->input('team_effort');
+
+            $isTeamEffort = in_array($teamEffort, [true, 1, '1', 'true', 'on'], true);
+
+            if ($isTeamEffort && empty($teamMembers)) {
+                $validator->errors()->add(
+                    'team_members',
+                    'You must add at least one team member when "team effort" is checked.'
+                );
+
+                return;
+            }
+
+            $userEmail = strtolower($user->email ?? '');
+            $userWorkEmail = strtolower($user->work_email ?? '');
+            $userFullName = strtolower($user->getFullName());
+
+            $hasAddedSelf = false;
 
             foreach ($teamMembers as $index => $member) {
                 $email = strtolower($member['email'] ?? '');
                 $name = trim($member['name'] ?? '');
                 $permission = $member['permission'] ?? 'view';
 
-                // Check if the email belongs to the authenticated user
-                $userEmail = strtolower($user->email ?? '');
-                $userWorkEmail = strtolower($user->work_email ?? '');
-                $userFullName = strtolower($user->getFullName());
-
                 if ($email === $userEmail || $email === $userWorkEmail) {
-                    // Verify the name matches
+                    $hasAddedSelf = true;
+
                     if (strtolower($name) !== $userFullName) {
                         $validator->errors()->add(
                             "team_members.{$index}.name",
@@ -68,7 +79,6 @@ class UpdateIdeaRequest extends FormRequest
                         );
                     }
 
-                    // Prevent "view" permission for the author
                     if ($permission === 'view') {
                         $validator->errors()->add(
                             "team_members.{$index}.permission",
@@ -76,6 +86,13 @@ class UpdateIdeaRequest extends FormRequest
                         );
                     }
                 }
+            }
+
+            if ($isTeamEffort && ! empty($teamMembers) && ! $hasAddedSelf) {
+                $validator->errors()->add(
+                    'team_members',
+                    'You must add yourself as a team member with your email ('.$user->email.' or '.$user->work_email.').'
+                );
             }
         });
     }
