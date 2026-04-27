@@ -151,11 +151,11 @@ class OnboardingController extends Controller
 
         $request->session()->forget(['onboarding.step1_completed', 'onboarding.step2_completed']);
 
-        // Send appropriate verification notification based on user type
-        $isKenhaEmail = $this->onboardingService->isKenhaEmailUser($user);
-        $redirectRoute = $this->onboardingService->sendVerificationNotification($user, $isKenhaEmail);
+        // Determine which email was just provided and send appropriate verification
+        $verificationType = isset($validated['email']) ? 'email' : 'work_email';
+        $redirectRoute = $this->onboardingService->sendVerificationNotification($user, $verificationType);
 
-        if ($isKenhaEmail) {
+        if ($verificationType === 'email') {
             return redirect()->route($redirectRoute)->with('status', 'verification-link-sent');
         }
 

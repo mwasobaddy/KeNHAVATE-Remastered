@@ -128,16 +128,20 @@ class OnboardingService
     }
 
     /**
-     * Send appropriate verification notification based on user type.
+     * Send appropriate verification notification based on which email was just provided.
+     *
+     * @param  string  $verificationType  'work_email' or 'email'
      */
-    public function sendVerificationNotification(User $user, bool $isKenhaEmail): string
+    public function sendVerificationNotification(User $user, string $verificationType): string
     {
-        if ($isKenhaEmail) {
+        if ($verificationType === 'email') {
+            // User just provided their personal email - verify that
             $user->sendEmailVerificationNotification();
 
             return 'verification.notice';
         }
 
+        // User just provided their work email - verify work email
         $user->notify(new VerifyWorkEmail);
 
         return 'work-email.verify.show';
