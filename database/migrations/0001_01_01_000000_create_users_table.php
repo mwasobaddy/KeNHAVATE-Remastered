@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('work_email')->unique()->nullable();
             $table->timestamp('work_email_verified_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->string('google_id')->nullable();
             $table->foreignId('department_id')->nullable()->constrained()->setNullOnDelete();
             $table->string('employment_type')->nullable();
