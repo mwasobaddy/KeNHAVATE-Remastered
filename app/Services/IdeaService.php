@@ -16,6 +16,12 @@ class IdeaService
     public function getPaginatedForUser(int $userId, array $filters = []): LengthAwarePaginator
     {
         $query = Idea::with(['thematicArea', 'user'])
+            ->withCount(['likes', 'comments' => function ($q) {
+                $q->whereNull('parent_id');
+            }])
+            ->withExists(['likes as user_has_liked' => function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            }])
             ->where('user_id', $userId);
 
         if (! empty($filters['status'])) {
@@ -34,6 +40,12 @@ class IdeaService
         $query = Idea::with(['thematicArea', 'user', 'teamMembers' => function ($q) use ($userId) {
             $q->where('user_id', $userId);
         }])
+            ->withCount(['likes', 'comments' => function ($q) {
+                $q->whereNull('parent_id');
+            }])
+            ->withExists(['likes as user_has_liked' => function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            }])
             ->whereHas('teamMembers', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
             });
