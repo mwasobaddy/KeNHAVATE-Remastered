@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Onboarding;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Models\Region;
 use App\Models\User;
 use App\Notifications\VerifyWorkEmail;
 use Illuminate\Http\RedirectResponse;
@@ -156,19 +157,38 @@ class OnboardingController extends Controller
             }
         }
 
-        $departments = Department::where('is_active', true)
-            ->with('directorate.region')
+        $regions = Region::where('is_active', true)
+            ->with(['directorates' => function ($query) {
+                $query->where('is_active', true)->with(['departments' => function ($query) {
+                    $query->where('is_active', true);
+                }]);
+            }])
             ->get();
 
         // For @kenha.co.ke users, we already have their work email (used to login)
         // So we ask for their personal email instead
         $isKenhaEmail = ! empty($user->work_email) && str_ends_with($user->work_email, '@kenha.co.ke');
 
+        // Get current user's region and directorate if they have a department
+        $currentRegionId = null;
+        $currentDirectorateId = null;
+        if ($user->department_id) {
+            $department = Department::find($user->department_id);
+            if ($department && $department->directorate) {
+                $currentDirectorateId = $department->directorate_id;
+                if ($department->directorate->region) {
+                    $currentRegionId = $department->directorate->region_id;
+                }
+            }
+        }
+
         return inertia('auth/onboarding/Step3', [
-            'departments' => $departments,
+            'regions' => $regions,
             'user' => [
                 'work_email' => $user->work_email,
-                'email' => $isKenhaEmail ? '' : $user->email, // For Kenha users, ask for personal email
+                'email' => $isKenhaEmail ? '' : $user->email,
+                'region_id' => $currentRegionId,
+                'directorate_id' => $currentDirectorateId,
                 'department_id' => $user->department_id,
                 'employment_type' => $user->employment_type,
             ],
@@ -186,18 +206,22 @@ class OnboardingController extends Controller
         if ($isKenhaEmail) {
             // For Kenha users, they provided personal email in step 3
             $validated = $request->validate([
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'region_id' => ['required', 'exists:regions,id'],
+                'directorate_id' => ['required', 'exists:directorates,id'],
                 'department_id' => ['required', 'exists:departments,id'],
                 'employment_type' => ['required', 'string', 'in:attachment,internship,contract,permanent'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             ]);
 
             $user->update(array_merge($validated, ['is_staff' => true]));
         } else {
             // For non-Kenha users, they provided work email in step 3
             $validated = $request->validate([
-                'work_email' => ['required', 'string', 'email', 'max:255', 'unique:users,work_email'],
+                'region_id' => ['required', 'exists:regions,id'],
+                'directorate_id' => ['required', 'exists:directorates,id'],
                 'department_id' => ['required', 'exists:departments,id'],
                 'employment_type' => ['required', 'string', 'in:attachment,internship,contract,permanent'],
+                'work_email' => ['required', 'string', 'email', 'max:255', 'unique:users,work_email'],
             ]);
 
             $user->update(array_merge($validated, ['is_staff' => true]));

@@ -14,22 +14,17 @@ import { update } from '@/routes/onboarding/step2';
 export default function OnboardingStep2() {
     const { email } = usePage<{ email: string }>().props;
     const isKenhaEmail = email.endsWith('@kenha.co.ke');
-    const totalSteps = isKenhaEmail ? 3 : 2;
-
     // @kenha.co.ke emails are always staff; others can opt-in
     const [needsStaffDetails, setNeedsStaffDetails] = useState(isKenhaEmail);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     return (
-        <AuthSplitLayout
-            title="Step 2 of {totalSteps} - Security Setup"
-            description="Set up your account security"
-        >
+        <AuthSplitLayout>
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Set Up Your Account</CardTitle>
-                    <CardDescription>Step 2 of {totalSteps} - Security Setup</CardDescription>
+                    <CardDescription>Step 2 of {needsStaffDetails ? 3 : 2} - Security Setup</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form

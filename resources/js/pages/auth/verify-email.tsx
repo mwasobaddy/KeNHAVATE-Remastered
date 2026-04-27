@@ -7,7 +7,7 @@ import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
 
-export default function VerifyEmail({ status }: { status?: string }) {
+export default function VerifyEmail({ email, status }: { email: string, status?: string }) {
     return (
         <AuthSplitLayout
             title="Verify Email"
@@ -17,8 +17,8 @@ export default function VerifyEmail({ status }: { status?: string }) {
 
             {status === 'verification-link-sent' && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
+                    We sent a verification link to <strong>{email}</strong>.
+                    Please check your inbox and click the link.
                 </div>
             )}
 

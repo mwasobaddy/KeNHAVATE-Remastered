@@ -1,4 +1,5 @@
-import { Form, Link } from '@inertiajs/react';
+import { Form, Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,32 +10,61 @@ import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 import { step2 } from '@/routes/onboarding';
 import { update } from '@/routes/onboarding/step3';
 
+interface Region {
+    id: number;
+    name: string;
+    directorates: Directorate[];
+}
+
+interface Directorate {
+    id: number;
+    name: string;
+    departments: Department[];
+}
+
 interface Department {
     id: number;
     name: string;
-    directorate: {
-        name: string;
-        region: {
-            name: string;
-        };
-    };
 }
 
 interface Step3Props {
-    departments: Department[];
+    regions: Region[];
     user: {
         work_email: string | null;
         email: string | null;
+        region_id: number | null;
+        directorate_id: number | null;
         department_id: number | null;
         employment_type: string | null;
     };
 }
 
-export default function OnboardingStep3({ departments, user }: Step3Props) {
-    // For @kenha.co.ke users, we already have their work email (used to login)
-    // So we ask for their personal email instead
-    const isKenhaEmail = !!(user.work_email && user.work_email.endsWith('@kenha.co.ke'));
-    
+export default function OnboardingStep3({ regions, user }: Step3Props) {
+    const { email } = usePage<{ email: string }>().props;
+    const isKenhaEmail = email.endsWith('@kenha.co.ke');
+
+    const [selectedRegionId, setSelectedRegionId] = useState<number | null>(user.region_id);
+    const [selectedDirectorateId, setSelectedDirectorateId] = useState<number | null>(user.directorate_id);
+
+    // Get directorates for selected region
+    const directorates = selectedRegionId
+        ? regions.find(r => r.id === selectedRegionId)?.directorates || []
+        : [];
+
+    // Get departments for selected directorate
+    const departments = selectedDirectorateId
+        ? directorates.find(d => d.id === selectedDirectorateId)?.departments || []
+        : [];
+
+    const handleRegionChange = (regionId: string) => {
+        setSelectedRegionId(Number(regionId));
+        setSelectedDirectorateId(null);
+    };
+
+    const handleDirectorateChange = (directorateId: string) => {
+        setSelectedDirectorateId(Number(directorateId));
+    };
+
     return (
         <AuthSplitLayout
             title="Step 3 of 3 - Staff Details"
@@ -53,13 +83,12 @@ export default function OnboardingStep3({ departments, user }: Step3Props) {
                         {({ processing, errors }) => (
                             <>
                                 {isKenhaEmail ? (
-                                    // For Kenha users, ask for personal email since work email is already known
                                     <div className="space-y-2">
                                         <Label htmlFor="email" className="text-[#231F20]">Personal Email *</Label>
-                                        <Input 
-                                            id="email" 
-                                            name="email" 
-                                            type="email" 
+                                        <Input
+                                            id="email"
+                                            name="email"
+                                            type="email"
                                             placeholder="personal@email.com"
                                             defaultValue={user.email ?? ''}
                                             className="border-[#9B9EA4]/30 focus:border-[#231F20]"
@@ -67,13 +96,12 @@ export default function OnboardingStep3({ departments, user }: Step3Props) {
                                         <InputError message={errors.email} />
                                     </div>
                                 ) : (
-                                    // For non-Kenha users, ask for work email
                                     <div className="space-y-2">
                                         <Label htmlFor="work_email" className="text-[#231F20]">Work Email *</Label>
-                                        <Input 
-                                            id="work_email" 
-                                            name="work_email" 
-                                            type="email" 
+                                        <Input
+                                            id="work_email"
+                                            name="work_email"
+                                            type="email"
                                             placeholder="john.doe@kenha.co.ke"
                                             defaultValue={user.work_email ?? ''}
                                             className="border-[#9B9EA4]/30 focus:border-[#231F20]"
@@ -82,9 +110,57 @@ export default function OnboardingStep3({ departments, user }: Step3Props) {
                                     </div>
                                 )}
 
+                                <input type="hidden" name="region_id" value={selectedRegionId || ''} />
+                                <input type="hidden" name="directorate_id" value={selectedDirectorateId || ''} />
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="region_id" className="text-[#231F20]">Region *</Label>
+                                    <Select
+                                        value={selectedRegionId?.toString() ?? ''}
+                                        onValueChange={handleRegionChange}
+                                    >
+                                        <SelectTrigger className="border-[#9B9EA4]/30 focus:border-[#231F20]">
+                                            <SelectValue placeholder="Select region" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {regions.map((region) => (
+                                                <SelectItem key={region.id} value={region.id.toString()}>
+                                                    {region.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.region_id} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="directorate_id" className="text-[#231F20]">Directorate *</Label>
+                                    <Select
+                                        value={selectedDirectorateId?.toString() ?? ''}
+                                        onValueChange={handleDirectorateChange}
+                                        disabled={!selectedRegionId}
+                                    >
+                                        <SelectTrigger className="border-[#9B9EA4]/30 focus:border-[#231F20]">
+                                            <SelectValue placeholder="Select directorate" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {directorates.map((directorate) => (
+                                                <SelectItem key={directorate.id} value={directorate.id.toString()}>
+                                                    {directorate.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.directorate_id} />
+                                </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="department_id" className="text-[#231F20]">Department *</Label>
-                                    <Select name="department_id" defaultValue={user.department_id?.toString() ?? ''}>
+                                    <Select
+                                        name="department_id"
+                                        defaultValue={user.department_id?.toString() ?? ''}
+                                        disabled={!selectedDirectorateId}
+                                    >
                                         <SelectTrigger className="border-[#9B9EA4]/30 focus:border-[#231F20]">
                                             <SelectValue placeholder="Select department" />
                                         </SelectTrigger>
