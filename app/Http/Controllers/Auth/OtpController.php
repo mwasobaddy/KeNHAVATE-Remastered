@@ -66,15 +66,11 @@ class OtpController extends Controller
         $isKenhaEmail = Str::endsWith($email, '@kenha.co.ke');
 
         // Find or create the user
-        // For Kenha emails, we need to populate BOTH email and work_email to satisfy NOT NULL constraint on email
-        // For regular emails, only populate email
+        // For Kenha emails, search by work_email only (login identifier)
+        // For regular emails, search by email
         if ($isKenhaEmail) {
             $user = User::firstOrCreate(
-                // Search for existing user by either email or work_email (both should be the same for kenha emails)
-                [
-                    'email' => $email,
-                    'work_email' => $email,
-                ],
+                ['work_email' => $email],
                 [
                     'first_name' => explode('@', $email)[0],
                     'email' => $email,
