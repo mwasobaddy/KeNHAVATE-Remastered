@@ -1,7 +1,32 @@
 import { Head, Link } from '@inertiajs/react';
-import idea from '@/routes/idea';
+import ideaRoute from '@/routes/idea';
 
-export default function IdeaShow({ idea }) {
+type ThematicArea = {
+    name: string;
+};
+
+type Idea = {
+    idea_title: string;
+    status: string;
+    slug: string;
+    thematic_area?: ThematicArea;
+    abstract: string;
+    problem_statement: string;
+    proposed_solution: string;
+    cost_benefit_analysis: string;
+    declaration_of_interests: string;
+    original_idea_disclaimer?: boolean;
+    collaboration_enabled?: boolean;
+    comments_enabled?: boolean;
+    attachment_filename?: string;
+    attachment?: string;
+};
+
+interface IdeaShowProps {
+    idea: Idea;
+}
+
+export default function IdeaShow({ idea }: IdeaShowProps) {
     return (
         <>
             <Head title={idea.idea_title} />
@@ -15,7 +40,7 @@ export default function IdeaShow({ idea }) {
                                     Status: {idea.status}
                                 </p>
                             </div>
-                            <Link href={idea.edit(idea.slug).url}>
+                            <Link href={ideaRoute.edit(idea.slug).url}>
                                 <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
                                     Edit Idea
                                 </button>
@@ -90,15 +115,15 @@ export default function IdeaShow({ idea }) {
     );
 }
 
-IdeaShow.layout = {
+IdeaShow.layout = (page: { props: { idea: Idea } }) => ({
     breadcrumbs: [
         {
             title: 'Ideas',
-            href: idea.index(),
+            href: ideaRoute.index().url,
         },
         {
-            title: idea?.idea_title || 'Idea Details',
-            href: idea.show({ idea: 0 }),
+            title: page.props.idea?.idea_title || 'Idea Details',
+            href: ideaRoute.show(page.props.idea.slug),
         },
     ],
-};
+});

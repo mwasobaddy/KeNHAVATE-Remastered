@@ -1,10 +1,8 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import idea from '@/routes/idea';
-import { Button } from '@/components/ui/button';
 import InputError from '@/components/input-error';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -12,25 +10,42 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import ideaRoute from '@/routes/idea';
+import idea from '../../routes/idea/index';
 
-export default function IdeaEdit({ idea, thematicAreas }) {
-    const { data, setData, put, processing, errors } = useForm({
-        idea_title: idea.idea_title || '',
-        thematic_area_id: idea.thematic_area_id || '',
-        abstract: idea.abstract || '',
-        problem_statement: idea.problem_statement || '',
-        proposed_solution: idea.proposed_solution || '',
-        cost_benefit_analysis: idea.cost_benefit_analysis || '',
-        declaration_of_interests: idea.declaration_of_interests || '',
-        original_idea_disclaimer: idea.original_idea_disclaimer || false,
-        collaboration_enabled: idea.collaboration_enabled || false,
-        comments_enabled: idea.comments_enabled || false,
+type IdeaEditForm = {
+    idea_title: string;
+    thematic_area_id: string;
+    abstract: string;
+    problem_statement: string;
+    proposed_solution: string;
+    cost_benefit_analysis: string;
+    declaration_of_interests: string;
+    original_idea_disclaimer: boolean;
+    collaboration_enabled: boolean;
+    comments_enabled: boolean;
+    attachment: File | null;
+};
+
+export default function IdeaEdit({idea, thematicAreas}: { idea: any; thematicAreas: any[] }) {
+    const { data, setData, put, processing, errors } = useForm<IdeaEditForm>({
+        idea_title: idea?.idea_title || '',
+        thematic_area_id: idea?.thematic_area_id || '',
+        abstract: idea?.abstract || '',
+        problem_statement: idea?.problem_statement || '',
+        proposed_solution: idea?.proposed_solution || '',
+        cost_benefit_analysis: idea?.cost_benefit_analysis || '',
+        declaration_of_interests: idea?.declaration_of_interests || '',
+        original_idea_disclaimer: idea?.original_idea_disclaimer || false,
+        collaboration_enabled: idea?.collaboration_enabled || false,
+        comments_enabled: idea?.comments_enabled || false,
         attachment: null,
     });
 
-    const submit = (e) => {
+    const submit = (e: { preventDefault: () => void; }) => {
         e.preventDefault();
-        put(idea.update(idea.slug).url);
+        put(ideaRoute.update(idea.slug).url);
     };
 
     return (
@@ -147,7 +162,9 @@ export default function IdeaEdit({ idea, thematicAreas }) {
                                 <Checkbox
                                     id="original_idea_disclaimer"
                                     checked={data.original_idea_disclaimer}
-                                    onCheckedChange={(checked) => setData('original_idea_disclaimer', checked)}
+                                    onCheckedChange={(checked: boolean | "indeterminate") => {
+                                        setData('original_idea_disclaimer', checked === true);
+                                    }}
                                 />
                                 <Label htmlFor="original_idea_disclaimer">
                                     I confirm this is my original idea and has not been plagiarized *
@@ -160,9 +177,11 @@ export default function IdeaEdit({ idea, thematicAreas }) {
                                 <Checkbox
                                     id="collaboration_enabled"
                                     checked={data.collaboration_enabled}
-                                    onCheckedChange={(checked) => {
-                                        setData('collaboration_enabled', checked);
-                                        if (!checked) {
+                                    onCheckedChange={(checked: boolean | "indeterminate") => {
+                                        const isChecked = checked === true;
+                                        setData('collaboration_enabled', isChecked);
+
+                                        if (!isChecked) {
                                             setData('comments_enabled', false);
                                         }
                                     }}
@@ -179,7 +198,9 @@ export default function IdeaEdit({ idea, thematicAreas }) {
                                     <Checkbox
                                         id="comments_enabled"
                                         checked={data.comments_enabled}
-                                        onCheckedChange={(checked) => setData('comments_enabled', checked)}
+                                        onCheckedChange={(checked: boolean | "indeterminate") => {
+                                            setData('comments_enabled', checked === true);
+                                        }}
                                     />
                                     <Label htmlFor="comments_enabled">
                                         Enable comments
@@ -195,7 +216,10 @@ export default function IdeaEdit({ idea, thematicAreas }) {
                                     id="attachment"
                                     type="file"
                                     accept=".pdf"
-                                    onChange={(e) => setData('attachment', e.target.files[0])}
+                                    onChange={(e) => {
+                                        const files = e.target.files;
+                                        setData('attachment', files && files[0] ? files[0] : null as File | null);
+                                    }}
                                     className="w-full rounded-lg border px-3 py-2"
                                 />
                                 <InputError message={errors.attachment} />
@@ -206,9 +230,9 @@ export default function IdeaEdit({ idea, thematicAreas }) {
                                 <Button type="submit" disabled={processing}>
                                     {processing ? 'Updating...' : 'Update Idea'}
                                 </Button>
-                                <Link href={idea.show(idea.slug).url}>
-                                    <Button type="button" variant="outline">Cancel</Button>
-                                </Link>
+                                <Link href={ideaRoute.show(idea.slug).url}>
+                                     <Button type="button" variant="outline">Cancel</Button>
+                                 </Link>
                             </div>
                         </form>
                     </div>
@@ -226,7 +250,7 @@ IdeaEdit.layout = {
         },
         {
             title: 'Edit Idea',
-            href: idea.edit({ idea: 0 }),
+            href: idea.edit({ slug: '0' }),
         },
     ],
 };
