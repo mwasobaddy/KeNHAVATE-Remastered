@@ -32,6 +32,7 @@ class VerifyWorkEmail extends Notification implements ShouldQueue
         $verificationUrl = $this->verificationUrl($notifiable);
 
         return (new MailMessage)
+            ->to($notifiable->work_email)
             ->subject('Verify Your Work Email - KeNHAVATE')
             ->greeting('Hello '.$notifiable->first_name.'!')
             ->line('Please verify your work email address by clicking the button below.')
