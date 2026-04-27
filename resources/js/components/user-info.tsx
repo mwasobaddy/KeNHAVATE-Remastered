@@ -15,7 +15,11 @@ export function UserInfo({
         ? `${user.first_name} ${user.other_names}`
         : user.first_name;
 
-    const avatarUrl = user.avatar ? `/storage/${user.avatar}` : undefined;
+    const avatarUrl = user.avatar 
+        ? user.avatar.startsWith('http') 
+            ? user.avatar 
+            : `/storage/${user.avatar}`
+        : undefined;
 
     return (
         <div data-slot="user-info" className="flex items-center gap-2">

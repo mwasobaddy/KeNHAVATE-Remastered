@@ -45,7 +45,7 @@ export default function OnboardingStep1() {
                                             />
                                         ) : user.avatar ? (
                                             <img
-                                                src={'/storage/' + user.avatar}
+                                                src={user.avatar.startsWith('http') ? user.avatar : '/storage/' + user.avatar}
                                                 alt="Profile"
                                                 className="h-24 w-24 rounded-full object-cover border-2 border-border"
                                             />

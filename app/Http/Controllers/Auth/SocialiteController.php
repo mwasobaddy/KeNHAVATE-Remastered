@@ -39,11 +39,17 @@ class SocialiteController extends Controller
 
                 if ($user) {
                     // Link Google account to existing user
-                    $user->update([
+                    $updateData = [
                         'provider' => 'google',
                         'provider_id' => $googleUser->getId(),
-                        'avatar' => $googleUser->getAvatar(),
-                    ]);
+                    ];
+
+                    // Only update avatar if user doesn't have a custom one
+                    if (empty($user->avatar)) {
+                        $updateData['avatar'] = $googleUser->getAvatar();
+                    }
+
+                    $user->update($updateData);
                 } else {
                     // JIT Provisioning: Create new user from Google data
                     $user = User::create([
