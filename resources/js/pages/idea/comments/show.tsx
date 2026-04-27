@@ -1,4 +1,6 @@
 import { Head } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
+import { show as ideaShowRoute } from '@/routes/idea';
 
 interface Idea {
     id: number;
@@ -35,7 +37,7 @@ export default function CommentsShow({ idea, comments }: CommentsShowProps) {
                             <div>
                                 <h1 className="text-2xl font-bold">Comments</h1>
                                 <p className="mt-2 text-muted-foreground">
-                                    <Link href={idea.show(idea.slug).url} className="text-primary hover:underline">
+                                    <Link href={ideaShowRoute(idea.slug).url} className="text-primary hover:underline">
                                         ← Back to {idea.idea_title}
                                     </Link>
                                 </p>
