@@ -5,6 +5,14 @@ type ThematicArea = {
     name: string;
 };
 
+type TeamMember = {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    permissions: string;
+};
+
 type Idea = {
     idea_title: string;
     status: string;
@@ -20,6 +28,7 @@ type Idea = {
     comments_enabled?: boolean;
     attachment_filename?: string;
     attachment?: string;
+    team_members?: TeamMember[];
 };
 
 interface IdeaShowProps {
@@ -107,6 +116,25 @@ export default function IdeaShow({ idea }: IdeaShowProps) {
                                     </a>
                                 </div>
                             )}
+
+                            {/* Team Members */}
+                            {idea.team_members && idea.team_members.length > 0 && (
+                                <div>
+                                    <h3 className="text-sm font-medium text-muted-foreground">Team Members</h3>
+                                    <div className="mt-2 space-y-2">
+                                        {idea.team_members.map((member: TeamMember) => (
+                                            <div key={member.id} className="rounded-md bg-muted p-3">
+                                                <p className="font-medium">{member.name}</p>
+                                                <p className="text-sm text-muted-foreground">{member.email}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {member.role && `${member.role} • `}
+                                                    {member.permissions === 'edit' ? 'Can Edit' : 'Can View'}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -115,15 +143,15 @@ export default function IdeaShow({ idea }: IdeaShowProps) {
     );
 }
 
-IdeaShow.layout = (page: { props: { idea: Idea } }) => ({
+IdeaShow.layout = {
     breadcrumbs: [
         {
             title: 'Ideas',
             href: ideaRoute.index().url,
         },
         {
-            title: page.props.idea?.idea_title || 'Idea Details',
-            href: ideaRoute.show(page.props.idea.slug),
+            title: 'Idea Details',
+            href: ideaRoute.show({ slug: ':slug' }).url,
         },
     ],
-});
+};

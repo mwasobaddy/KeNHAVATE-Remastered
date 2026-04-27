@@ -1,14 +1,13 @@
-import { useForm } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
+import { Form } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
-import { acceptTerms } from '@/routes/terms';
+import { accept } from '@/routes/terms';
 
 export default function Terms() {
-    const submit = () => {
-        router.post(acceptTerms());
-    };
+    const { props } = usePage();
+    const intended = props.intended as string;
 
     return (
         <AuthSplitLayout
@@ -61,11 +60,16 @@ export default function Terms() {
                         </p>
                     </div>
 
-                    <form onSubmit={submit} className="flex justify-center">
-                        <Button type="submit" className="bg-[#231F20] hover:bg-[#231F20]/90">
-                            I Accept Terms and Conditions
-                        </Button>
-                    </form>
+                    <Form method="post" action={accept()} className="flex justify-center">
+                        {({ processing }) => (
+                            <>
+                                <input type="hidden" name="intended" value={intended} />
+                                <Button type="submit" className="bg-[#231F20] hover:bg-[#231F20]/90" disabled={processing}>
+                                    {processing ? 'Processing...' : 'I Accept Terms and Conditions'}
+                                </Button>
+                            </>
+                        )}
+                    </Form>
                 </CardContent>
             </Card>
         </AuthSplitLayout>

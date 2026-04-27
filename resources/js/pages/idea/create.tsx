@@ -1,11 +1,11 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import idea from '@/routes/idea';
-import { Button } from '@/components/ui/button';
+import { Trash2, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -13,10 +13,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import idea from '@/routes/idea';
 
-export default function IdeaCreate({ thematicAreas }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+interface CurrentUser {
+    name: string;
+    email: string | null;
+    work_email: string | null;
+}
+
+export default function IdeaCreate({ thematicAreas, currentUser }: { thematicAreas: any[]; currentUser: CurrentUser }) {
+    const { data, setData, post, processing, errors } = useForm({
         idea_title: '',
         thematic_area_id: '',
         abstract: '',
@@ -26,26 +33,100 @@ export default function IdeaCreate({ thematicAreas }) {
         declaration_of_interests: '',
         original_idea_disclaimer: false,
         collaboration_enabled: false,
+        team_effort: false,
         comments_enabled: false,
-        attachment: null,
+        attachment: undefined as File | undefined,
+        team_members: [],
     });
+
+    const [newMember, setNewMember] = useState({
+        name: '',
+        email: '',
+        role: '',
+        permission: 'view',
+    });
+    const [duplicateError, setDuplicateError] = useState('');
 
     const [showPublicWarning, setShowPublicWarning] = useState(false);
 
-    const handleCollaborationChange = (checked) => {
+    const handleCollaborationChange = (checked: boolean) => {
         setData('collaboration_enabled', checked);
+
         if (!checked) {
             setData('comments_enabled', false);
         }
+
         if (checked) {
             setShowPublicWarning(true);
         }
     };
 
-    const submit = (e) => {
+
+// Define TeamMember type at the top level (outside the component)
+type TeamMember = {
+    name: string;
+    email: string;
+    role: string;
+    permission: string;
+};
+
+    const addTeamMember = () => {
+
+        setDuplicateError('');
+
+        if (!newMember.name || !newMember.email) {
+            return;
+        }
+
+        // Check for duplicate email
+        const isDuplicate = ((data.team_members as TeamMember[]) || []).some(
+            (member) => member.email.toLowerCase() === newMember.email.toLowerCase()
+        );
+
+        if (isDuplicate) {
+            setDuplicateError('This email has already been added to the team.');
+
+            return;
+        }
+
+        setData('team_members', [
+            ...(((data.team_members as TeamMember[]) || [])),
+            { ...newMember } as TeamMember
+        ] as TeamMember[] as any);
+        setNewMember({ name: '', email: '', role: '', permission: 'view' });
+    };
+
+    const removeTeamMember = (index: number) => {
+        setData('team_members', ((data.team_members as TeamMember[]) || []).filter((_, i) => i !== index) as TeamMember[] as any);
+    };
+
+    const submit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        const formData = new FormData();
+
+        // Append all data fields
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === 'attachment' && value instanceof File) {
+                formData.append('attachment', value);
+            } else if (key === 'team_members' && Array.isArray(value)) {
+                // Handle team_members array
+                value.forEach((member: any, index: number) => {
+                    formData.append(`team_members[${index}][name]`, member.name || '');
+                    formData.append(`team_members[${index}][email]`, member.email || '');
+                    formData.append(`team_members[${index}][role]`, member.role || '');
+                    formData.append(`team_members[${index}][permission]`, member.permission || 'view');
+                });
+            } else if (typeof value === 'boolean') {
+                formData.append(key, value ? '1' : '0');
+            } else if (value !== null && value !== undefined && key !== 'attachment') {
+                formData.append(key, String(value));
+            }
+        });
+
         post(idea.store().url, {
-            onSuccess: () => reset(),
+            data: formData,
+            forceFormData: true,
         });
     };
 
@@ -66,7 +147,6 @@ export default function IdeaCreate({ thematicAreas }) {
                                     id="idea_title"
                                     value={data.idea_title}
                                     onChange={(e) => setData('idea_title', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.idea_title} />
                             </div>
@@ -99,7 +179,6 @@ export default function IdeaCreate({ thematicAreas }) {
                                     id="abstract"
                                     value={data.abstract}
                                     onChange={(e) => setData('abstract', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.abstract} />
                             </div>
@@ -111,7 +190,6 @@ export default function IdeaCreate({ thematicAreas }) {
                                     id="problem_statement"
                                     value={data.problem_statement}
                                     onChange={(e) => setData('problem_statement', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.problem_statement} />
                             </div>
@@ -123,7 +201,6 @@ export default function IdeaCreate({ thematicAreas }) {
                                     id="proposed_solution"
                                     value={data.proposed_solution}
                                     onChange={(e) => setData('proposed_solution', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.proposed_solution} />
                             </div>
@@ -135,7 +212,6 @@ export default function IdeaCreate({ thematicAreas }) {
                                     id="cost_benefit_analysis"
                                     value={data.cost_benefit_analysis}
                                     onChange={(e) => setData('cost_benefit_analysis', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.cost_benefit_analysis} />
                             </div>
@@ -147,7 +223,6 @@ export default function IdeaCreate({ thematicAreas }) {
                                     id="declaration_of_interests"
                                     value={data.declaration_of_interests}
                                     onChange={(e) => setData('declaration_of_interests', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.declaration_of_interests} />
                             </div>
@@ -157,7 +232,7 @@ export default function IdeaCreate({ thematicAreas }) {
                                 <Checkbox
                                     id="original_idea_disclaimer"
                                     checked={data.original_idea_disclaimer}
-                                    onCheckedChange={(checked) => setData('original_idea_disclaimer', checked)}
+                                    onCheckedChange={(checked) => setData('original_idea_disclaimer', Boolean(checked))}
                                 />
                                 <Label htmlFor="original_idea_disclaimer">
                                     I confirm this is my original idea and has not been plagiarized *
@@ -202,7 +277,7 @@ export default function IdeaCreate({ thematicAreas }) {
                                     <Checkbox
                                         id="comments_enabled"
                                         checked={data.comments_enabled}
-                                        onCheckedChange={(checked) => setData('comments_enabled', checked)}
+                                        onCheckedChange={(checked) => setData('comments_enabled', checked === true)}
                                     />
                                     <Label htmlFor="comments_enabled">
                                         Enable comments
@@ -211,16 +286,144 @@ export default function IdeaCreate({ thematicAreas }) {
                                 </div>
                             )}
 
+                            {/* Team Effort */}
+                            <div className="flex items-center space-x-3">
+                                <Checkbox
+                                    id="team_effort"
+                                    checked={data.team_effort}
+                                    onCheckedChange={(checked) => setData('team_effort', checked === true)}
+                                />
+                                <Label htmlFor="team_effort" className="after:ml-0.5 after:text-red-500 after:content-['*']">
+                                    This is a team effort - other members were involved
+                                </Label>
+                                <InputError message={errors.team_effort} />
+                            </div>
+
+                            {/* Team Members Section - only if team_effort is checked */}
+                            {data.team_effort && (
+                                <div className="ml-6 space-y-4 rounded-lg border p-4">
+                                    <h3 className="text-lg font-semibold">Team Members</h3>
+
+                                    {/* Warning about adding themselves */}
+                                    <div className="flex items-start gap-2 rounded-md bg-yellow-50 p-3">
+                                        <AlertCircle className="mt-0.5 h-4 w-4 text-yellow-600" />
+                                        <div className="text-sm">
+                                            <p className="font-medium text-yellow-800">Important:</p>
+                                            <p className="text-yellow-700">
+                                                You must add yourself as a team member. 
+                                                {currentUser && `Use: ${currentUser.name}, ${currentUser.email || currentUser.work_email}`}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Add New Member Form */}
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="member_name">Name *</Label>
+                                                <Input
+                                                    id="member_name"
+                                                    value={newMember.name}
+                                                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                                                    placeholder="Full name"
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="member_email">Email *</Label>
+                                                <Input
+                                                    id="member_email"
+                                                    type="email"
+                                                    value={newMember.email}
+                                                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                                                    placeholder="email@example.com"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="member_role">Role</Label>
+                                                <Input
+                                                    id="member_role"
+                                                    value={newMember.role}
+                                                    onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                                                    placeholder="e.g., Researcher, Team Leader"
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="member_permission">Permission</Label>
+                                                <Select
+                                                    value={newMember.permission}
+                                                    onValueChange={(value) => setNewMember({ ...newMember, permission: value })}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="view">Can View</SelectItem>
+                                                        <SelectItem value="edit">Can Edit</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={addTeamMember}
+                                            disabled={!newMember.name || !newMember.email}
+                                        >
+                                            Add Member
+                                        </Button>
+                                        {duplicateError && (
+                                            <p className="text-sm text-red-600">{duplicateError}</p>
+                                        )}
+                                    </div>
+
+                                    {/* List of Added Members */}
+                                    {data.team_members.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="font-medium">Added Members:</h4>
+                                            {(data.team_members as Array<{ name: string; email: string; role?: string; permission: string }> ).map((member, index) => (
+                                                <div key={index} className="flex items-center justify-between rounded-md bg-muted p-3">
+                                                    <div>
+                                                        <p className="font-medium">{member.name}</p>
+                                                        <p className="text-sm text-muted-foreground">{member.email}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {member.role && `${member.role} • `}
+                                                            {member.permission === 'edit' ? 'Can Edit' : 'Can View'}
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removeTeamMember(index)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <InputError message={errors.team_members} />
+                                </div>
+                            )}
+
                             {/* PDF Attachment */}
                             <div className="grid gap-2">
                                 <Label htmlFor="attachment">PDF Attachment *</Label>
-                                <Input
-                                    id="attachment"
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={(e) => setData('attachment', e.target.files[0])}
-                                    required
-                                />
+                                    <Input
+                                        id="attachment"
+                                        name="attachment"
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            setData('attachment', file || undefined);
+                                        }}
+                                    />
                                 <InputError message={errors.attachment} />
                             </div>
 

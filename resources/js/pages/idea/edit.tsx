@@ -1,7 +1,10 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { Trash2, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -12,7 +15,20 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import ideaRoute from '@/routes/idea';
-import idea from '../../routes/idea/index';
+
+interface CurrentUser {
+    name: string;
+    email: string | null;
+    work_email: string | null;
+}
+
+type TeamMember = {
+    id?: number;
+    name: string;
+    email: string;
+    role: string;
+    permission: string;
+};
 
 type IdeaEditForm = {
     idea_title: string;
@@ -26,9 +42,19 @@ type IdeaEditForm = {
     collaboration_enabled: boolean;
     comments_enabled: boolean;
     attachment: File | null;
+    team_members: TeamMember[];
+    team_effort: boolean;
 };
 
-export default function IdeaEdit({idea, thematicAreas}: { idea: any; thematicAreas: any[] }) {
+export default function IdeaEdit({ idea, thematicAreas, currentUser }: { idea: any; thematicAreas: any[]; currentUser: CurrentUser }) {
+    const existingTeamMembers = (idea?.team_members || []).map((member: any) => ({
+        id: member.id,
+        name: member.name || '',
+        email: member.email || '',
+        role: member.role || '',
+        permission: member.permissions || 'view',
+    }));
+
     const { data, setData, put, processing, errors } = useForm<IdeaEditForm>({
         idea_title: idea?.idea_title || '',
         thematic_area_id: idea?.thematic_area_id || '',
@@ -41,11 +67,94 @@ export default function IdeaEdit({idea, thematicAreas}: { idea: any; thematicAre
         collaboration_enabled: idea?.collaboration_enabled || false,
         comments_enabled: idea?.comments_enabled || false,
         attachment: null,
+        team_members: existingTeamMembers,
+        team_effort: existingTeamMembers.length > 0,
     });
 
-    const submit = (e: { preventDefault: () => void; }) => {
+    const [newMember, setNewMember] = useState({
+        name: '',
+        email: '',
+        role: '',
+        permission: 'edit',
+    });
+    const [duplicateError, setDuplicateError] = useState('');
+    const [submitError, setSubmitError] = useState('');
+
+    // Helper to get field error for a specific team member
+    const getMemberError = (index: number, field: string): string | undefined => {
+        const errorKey = `team_members.${index}.${field}`;
+        return (errors as Record<string, string>)[errorKey];
+    };
+
+    // Check if current user is in the team
+    const isCurrentUserInTeam = (): boolean => {
+        if (!currentUser) return false;
+        const userEmail = (currentUser.email || currentUser.work_email || '').toLowerCase();
+        return data.team_members.some(
+            (member) => member.email.toLowerCase() === userEmail
+        );
+    };
+
+    const addTeamMember = () => {
+        setDuplicateError('');
+
+        if (!newMember.name || !newMember.email) {
+            return;
+        }
+
+        // Check for duplicate email
+        const isDuplicate = data.team_members.some(
+            (member) => member.email.toLowerCase() === newMember.email.toLowerCase()
+        );
+
+        if (isDuplicate) {
+            setDuplicateError('This email has already been added to the team.');
+            return;
+        }
+
+        setData('team_members', [...data.team_members, { ...newMember }]);
+        setNewMember({ name: '', email: '', role: '', permission: 'edit' });
+    };
+
+    const removeTeamMember = (index: number) => {
+        setData('team_members', data.team_members.filter((_, i) => i !== index));
+    };
+
+    const submit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        put(ideaRoute.update(idea.slug).url);
+        setSubmitError('');
+
+        // Check if current user is in the team
+        if (data.team_effort && !isCurrentUserInTeam()) {
+            setSubmitError('You must add yourself as a team member before submitting.');
+            return;
+        }
+
+        const formData = new FormData();
+
+        // Append all data fields
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === 'attachment' && value instanceof File) {
+                formData.append('attachment', value);
+            } else if (key === 'team_members' && Array.isArray(value)) {
+                value.forEach((member: TeamMember, index: number) => {
+                    if (member.id) {
+                        formData.append(`team_members[${index}][id]`, member.id.toString());
+                    }
+                    formData.append(`team_members[${index}][name]`, member.name || '');
+                    formData.append(`team_members[${index}][email]`, member.email || '');
+                    formData.append(`team_members[${index}][role]`, member.role || '');
+                    formData.append(`team_members[${index}][permission]`, member.permission || 'edit');
+                });
+            } else if (typeof value === 'boolean') {
+                formData.append(key, value ? '1' : '0');
+            } else if (value !== null && value !== undefined && key !== 'attachment') {
+                formData.append(key, String(value));
+            }
+        });
+
+        // Use post with _method for proper FormData handling
+        put(ideaRoute.update(idea.slug).url, formData, { forceFormData: true });
     };
 
     return (
@@ -62,6 +171,20 @@ export default function IdeaEdit({idea, thematicAreas}: { idea: any; thematicAre
                         </div>
 
                         <form onSubmit={submit} className="mt-6 space-y-6">
+                            {/* Submit Error */}
+                            {submitError && (
+                                <div className="rounded-md bg-red-50 p-4">
+                                    <div className="flex">
+                                        <div className="ml-3">
+                                            <h3 className="text-sm font-medium text-red-800">Error</h3>
+                                            <div className="mt-2 text-sm text-red-700">
+                                                <p>{submitError}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Idea Title */}
                             <div className="grid gap-2">
                                 <Label htmlFor="idea_title">Idea Title *</Label>
@@ -209,6 +332,151 @@ export default function IdeaEdit({idea, thematicAreas}: { idea: any; thematicAre
                                 </div>
                             )}
 
+                            {/* Team Effort */}
+                            <div className="flex items-center space-x-3">
+                                <Checkbox
+                                    id="team_effort"
+                                    checked={data.team_effort}
+                                    onCheckedChange={(checked) => {
+                                        const isChecked = checked === true;
+                                        setData('team_effort', isChecked);
+                                        if (!isChecked) {
+                                            setData('team_members', []);
+                                        }
+                                    }}
+                                />
+                                <Label htmlFor="team_effort" className="after:ml-0.5 after:text-red-500 after:content-['*']">
+                                    This is a team effort - other members were involved
+                                </Label>
+                                <InputError message={errors.team_effort} />
+                            </div>
+
+                            {/* Team Members Section - only if team_effort is checked */}
+                            {data.team_effort && (
+                                <div className="ml-6 space-y-4 rounded-lg border p-4">
+                                    <h3 className="text-lg font-semibold">Team Members</h3>
+
+                                    {/* Warning about adding themselves */}
+                                    {currentUser && (
+                                        <div className="flex items-start gap-2 rounded-md bg-yellow-50 p-3">
+                                            <AlertCircle className="mt-0.5 h-4 w-4 text-yellow-600" />
+                                            <div className="text-sm">
+                                                <p className="font-medium text-yellow-800">Important:</p>
+                                                <p className="text-yellow-700">
+                                                    You must add yourself as a team member.
+                                                    Use: {currentUser.name}, {currentUser.email || currentUser.work_email}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Add New Member Form */}
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="member_name">Name *</Label>
+                                                <Input
+                                                    id="member_name"
+                                                    value={newMember.name}
+                                                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                                                    placeholder="Full name"
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="member_email">Email *</Label>
+                                                <Input
+                                                    id="member_email"
+                                                    type="email"
+                                                    value={newMember.email}
+                                                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                                                    placeholder="email@example.com"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="member_role">Role</Label>
+                                                <Input
+                                                    id="member_role"
+                                                    value={newMember.role}
+                                                    onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                                                    placeholder="e.g., Researcher, Team Leader"
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="member_permission">Permission</Label>
+                                                <Select
+                                                    value={newMember.permission}
+                                                    onValueChange={(value) => setNewMember({ ...newMember, permission: value })}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="view">Can View</SelectItem>
+                                                        <SelectItem value="edit">Can Edit</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={addTeamMember}
+                                            disabled={!newMember.name || !newMember.email}
+                                        >
+                                            Add Member
+                                        </Button>
+                                        {duplicateError && (
+                                            <p className="text-sm text-red-600">{duplicateError}</p>
+                                        )}
+                                    </div>
+
+                                    {/* List of Added Members */}
+                                    {data.team_members.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="font-medium">Added Members:</h4>
+                                            {data.team_members.map((member, index) => (
+                                                <div key={index} className="rounded-md bg-muted p-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1">
+                                                            <p className="font-medium">{member.name}</p>
+                                                            <p className="text-sm text-muted-foreground">{member.email}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {member.role && `${member.role} • `}
+                                                                {member.permission === 'edit' ? 'Can Edit' : 'Can View'}
+                                                            </p>
+                                                            {/* Inline errors for this member */}
+                                                            {getMemberError(index, 'name') && (
+                                                                <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'name')}</p>
+                                                            )}
+                                                            {getMemberError(index, 'email') && (
+                                                                <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'email')}</p>
+                                                            )}
+                                                            {getMemberError(index, 'permission') && (
+                                                                <p className="mt-1 text-sm text-red-600">{getMemberError(index, 'permission')}</p>
+                                                            )}
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeTeamMember(index)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <InputError message={errors.team_members} />
+                                </div>
+                            )}
+
                             {/* PDF Attachment */}
                             <div className="grid gap-2">
                                 <Label htmlFor="attachment">PDF Attachment (leave empty to keep current)</Label>
@@ -246,11 +514,11 @@ IdeaEdit.layout = {
     breadcrumbs: [
         {
             title: 'Ideas',
-            href: idea.index(),
+            href: ideaRoute.index(),
         },
         {
             title: 'Edit Idea',
-            href: idea.edit({ slug: '0' }),
+            href: ideaRoute.edit({ slug: '0' }),
         },
     ],
 };

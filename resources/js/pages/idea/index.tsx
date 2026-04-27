@@ -1,7 +1,60 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import idea from '@/routes/idea';
 
-export default function IdeaIndex({ ideas }) {
+type ThematicArea = {
+    name: string;
+};
+
+type TeamMember = {
+    id: number;
+    role: string | null;
+    permissions: 'view' | 'edit';
+};
+
+type IdeaItem = {
+    id: number;
+    idea_title: string;
+    status: string;
+    thematic_area?: ThematicArea;
+    slug: string;
+    team_members?: TeamMember[];
+};
+
+type IdeasProp = {
+    data: IdeaItem[];
+    links?: Record<string, string>;
+    current_page?: number;
+    last_page?: number;
+    per_page?: number;
+    total?: number;
+};
+
+interface IdeaIndexProps {
+    ideas: IdeasProp;
+    thematicAreas: ThematicArea[];
+    activeTab: string;
+    tabCounts: Record<string, number>;
+}
+
+export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProps) {
+    const tabs = [
+        { key: 'mine', label: `Mine (${tabCounts?.mine ?? 0})` },
+        { key: 'team', label: `Team (${tabCounts?.team ?? 0})` },
+        { key: 'public', label: `Public (${tabCounts?.public ?? 0})` },
+    ];
+
+    const handleTabChange = (tab: string) => {
+        router.get(idea.index().url, { tab }, { preserveState: true });
+    };
+
+    const getTeamMemberForIdea = (ideaItem: IdeaItem): TeamMember | null => {
+        if (!ideaItem.team_members || ideaItem.team_members.length === 0) {
+            return null;
+        }
+
+        return ideaItem.team_members[0];
+    };
+
     return (
         <>
             <Head title="Ideas" />
@@ -13,42 +66,82 @@ export default function IdeaIndex({ ideas }) {
                                 <h1 className="text-2xl font-bold">Ideas</h1>
                                 <p className="mt-2 text-muted-foreground">Manage and browse all ideas</p>
                             </div>
-                            <Link href={idea.create().url}>
-                                <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-                                    Create Idea
-                                </button>
-                            </Link>
+                            {activeTab !== 'public' && (
+                                <Link href={idea.create().url}>
+                                    <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+                                        Create Idea
+                                    </button>
+                                </Link>
+                            )}
                         </div>
+
+                        {/* Tabs */}
+                        <div className="mt-6 border-b">
+                            <div className="flex gap-4 flex-between">
+                                {tabs.map((tab) => (
+                                    <button
+                                        key={tab.key}
+                                        onClick={() => handleTabChange(tab.key)}
+                                        className={`border-b-2 px-4 py-2 text-sm font-medium ${
+                                            activeTab === tab.key
+                                                ? 'border-primary text-primary'
+                                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="mt-6">
                             {ideas.data.length === 0 ? (
-                                <p className="text-muted-foreground">No ideas yet. Create your first idea!</p>
+                                <p className="text-muted-foreground">No ideas found.</p>
                             ) : (
                                 <div className="space-y-4">
-                                    {ideas.data.map((ideaItem) => (
-                                        <div key={ideaItem.id} className="rounded-lg border p-4">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <h3 className="font-medium">{ideaItem.idea_title}</h3>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Status: {ideaItem.status}
-                                                    </p>
-                                                    {ideaItem.thematic_area && (
+                                    {ideas.data.map((ideaItem: IdeaItem) => {
+                                        const teamMember = getTeamMemberForIdea(ideaItem);
+
+                                        return (
+                                            <div key={ideaItem.id} className="rounded-lg border p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="font-medium">{ideaItem.idea_title}</h3>
+                                                            {teamMember && (
+                                                                <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+                                                                    {teamMember.role || 'Team Member'} ({teamMember.permissions})
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <p className="text-sm text-muted-foreground">
-                                                            {ideaItem.thematic_area.name}
+                                                            Status: {ideaItem.status}
                                                         </p>
-                                                    )}
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <Link href={idea.show(ideaItem.slug).url}>
-                                                        <button className="text-sm text-primary">View</button>
-                                                    </Link>
-                                                    <Link href={idea.edit(ideaItem.slug).url}>
-                                                        <button className="text-sm text-primary">Edit</button>
-                                                    </Link>
+                                                        {ideaItem.thematic_area && (
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {ideaItem.thematic_area.name}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Link href={idea.show(ideaItem.slug).url}>
+                                                            <button className="text-sm text-primary">View</button>
+                                                        </Link>
+                                                        {activeTab !== 'public' && teamMember?.permissions === 'edit' && (
+                                                            <Link href={idea.edit(ideaItem.slug).url}>
+                                                                <button className="text-sm text-primary">Edit</button>
+                                                            </Link>
+                                                        )}
+                                                        {activeTab === 'mine' && (
+                                                            <Link href={idea.edit(ideaItem.slug).url}>
+                                                                <button className="text-sm text-primary">Edit</button>
+                                                            </Link>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
