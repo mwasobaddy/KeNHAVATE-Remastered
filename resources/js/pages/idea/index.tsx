@@ -1,4 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { Heart, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
 import idea from '@/routes/idea';
 
 type ThematicArea = {
@@ -18,6 +20,9 @@ type IdeaItem = {
     thematic_area?: ThematicArea;
     slug: string;
     team_members?: TeamMember[];
+    likes_count?: number;
+    comments_count?: number;
+    user_has_liked?: boolean;
 };
 
 type IdeasProp = {
@@ -37,6 +42,8 @@ interface IdeaIndexProps {
 }
 
 export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProps) {
+    const [likingStates, setLikingStates] = useState<Record<number, boolean>>({});
+
     const tabs = [
         { key: 'mine', label: `Mine (${tabCounts?.mine ?? 0})` },
         { key: 'team', label: `Team (${tabCounts?.team ?? 0})` },
@@ -53,6 +60,33 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
         }
 
         return ideaItem.team_members[0];
+    };
+
+    const toggleLike = (ideaItem: IdeaItem) => {
+        setLikingStates(prev => ({ ...prev, [ideaItem.id]: true }));
+
+        router.post('/likes', {
+            likeable_type: 'idea',
+            likeable_id: ideaItem.id,
+        }, {
+            preserveState: true,
+            onSuccess: () => {
+                setLikingStates(prev => {
+                    const newState = { ...prev };
+                    delete newState[ideaItem.id];
+
+                    return newState;
+                });
+            },
+            onError: () => {
+                setLikingStates(prev => {
+                    const newState = { ...prev };
+                    delete newState[ideaItem.id];
+
+                    return newState;
+                });
+            },
+        });
     };
 
     return (
@@ -105,7 +139,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                         return (
                                             <div key={ideaItem.id} className="rounded-lg border p-4">
                                                 <div className="flex items-center justify-between">
-                                                    <div>
+                                                    <div className="flex-1">
                                                         <div className="flex items-center gap-2">
                                                             <h3 className="font-medium">{ideaItem.idea_title}</h3>
                                                             {teamMember && (
@@ -123,20 +157,45 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <div className="flex gap-2">
-                                                        <Link href={idea.show(ideaItem.slug).url}>
-                                                            <button className="text-sm text-primary">View</button>
-                                                        </Link>
-                                                        {activeTab !== 'public' && teamMember?.permissions === 'edit' && (
-                                                            <Link href={idea.edit(ideaItem.slug).url}>
-                                                                <button className="text-sm text-primary">Edit</button>
+                                                    <div className="flex items-center gap-4">
+                                                        {/* Like Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleLike(ideaItem)}
+                                                            disabled={likingStates[ideaItem.id]}
+                                                            className={`flex items-center gap-1 ${
+                                                                ideaItem.user_has_liked ? 'text-red-500' : 'text-muted-foreground'
+                                                            } hover:text-red-500 transition-colors`}
+                                                        >
+                                                            <Heart className={`h-5 w-5 ${ideaItem.user_has_liked ? 'fill-current' : ''}`} />
+                                                            <span className="text-sm">{ideaItem.likes_count ?? 0}</span>
+                                                        </button>
+
+                                                        {/* Comment Button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => router.visit(`/ideas/${ideaItem.slug}/comments`)}
+                                                            className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+                                                        >
+                                                            <MessageCircle className="h-5 w-5" />
+                                                            <span className="text-sm">{ideaItem.comments_count ?? 0}</span>
+                                                        </button>
+
+                                                        <div className="flex gap-2">
+                                                            <Link href={idea.show(ideaItem.slug).url}>
+                                                                <button className="text-sm text-primary">View</button>
                                                             </Link>
-                                                        )}
-                                                        {activeTab === 'mine' && (
-                                                            <Link href={idea.edit(ideaItem.slug).url}>
-                                                                <button className="text-sm text-primary">Edit</button>
-                                                            </Link>
-                                                        )}
+                                                            {activeTab !== 'public' && teamMember?.permissions === 'edit' && (
+                                                                <Link href={idea.edit(ideaItem.slug).url}>
+                                                                    <button className="text-sm text-primary">Edit</button>
+                                                                </Link>
+                                                            )}
+                                                            {activeTab === 'mine' && (
+                                                                <Link href={idea.edit(ideaItem.slug).url}>
+                                                                    <button className="text-sm text-primary">Edit</button>
+                                                                </Link>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
