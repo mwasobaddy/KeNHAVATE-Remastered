@@ -102,7 +102,21 @@ class RolePermissionSeeder extends Seeder
             'view challenges',
         ]);
 
-        // 2. Idea Reviewer
+        // 2. Staff (same permissions as user)
+        $staffRole = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
+        $staffRole->syncPermissions([
+            'view profile',
+            'edit profile',
+            'view onboarding',
+            'edit onboarding',
+            'skip onboarding',
+            'view ideas',
+            'create ideas',
+            'edit ideas',
+            'view challenges',
+        ]);
+
+        // 3. Idea Reviewer
         $ideaReviewerRole = Role::firstOrCreate(['name' => 'idea_reviewer', 'guard_name' => 'web']);
         $ideaReviewerRole->syncPermissions([
             'view users',
