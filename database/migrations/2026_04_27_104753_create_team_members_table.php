@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email');
             $table->string('role')->nullable();
-            $table->json('permissions')->nullable()->comment('JSON array of permissions: view, edit, delete, etc.');
+            $table->enum('permissions', ['view', 'edit'])->nullable()->comment('Permission: view or edit');
             $table->timestamps();
 
             $table->index(['idea_id', 'user_id']);

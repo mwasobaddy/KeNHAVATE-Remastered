@@ -15,10 +15,6 @@ class TeamMember extends Model
         'permissions',
     ];
 
-    protected $casts = [
-        'permissions' => 'array',
-    ];
-
     public function idea()
     {
         return $this->belongsTo(Idea::class);
@@ -31,16 +27,16 @@ class TeamMember extends Model
 
     public function canView(): bool
     {
-        return in_array('view', $this->permissions ?? []);
+        return in_array($this->permissions, ['view', 'edit']);
     }
 
     public function canEdit(): bool
     {
-        return in_array('edit', $this->permissions ?? []);
+        return $this->permissions === 'edit';
     }
 
     public function canDelete(): bool
     {
-        return in_array('delete', $this->permissions ?? []);
+        return $this->permissions === 'edit';
     }
 }

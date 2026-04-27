@@ -53,7 +53,7 @@ class Idea extends Model
                 $model->slug = static::generateUniqueSlug($model->idea_title);
             }
             if (empty($model->path)) {
-                $model->path = 'idea/' . $model->slug;
+                $model->path = 'idea/'.$model->slug;
             }
         });
     }
@@ -65,7 +65,7 @@ class Idea extends Model
         $counter = 1;
 
         while (static::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $counter;
+            $slug = $baseSlug.'-'.$counter;
             $counter++;
         }
 
