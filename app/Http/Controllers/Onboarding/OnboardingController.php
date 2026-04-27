@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 
 class OnboardingController extends Controller
 {
@@ -103,20 +102,22 @@ class OnboardingController extends Controller
     {
         $user = Auth::user();
 
+        $hasPassword = ! empty($user->password);
+        $passwordFilled = $request->filled('password');
+
         $rules = [
-            'password' => [Rule::requiredIf(! $user->password), 'string', 'min:8', 'confirmed'],
             'needs_staff_details' => ['nullable', 'boolean'],
         ];
 
-        // If user already has a password, make it optional
-        if ($user->password) {
-            $rules['password'] = ['nullable', 'string', 'min:8', 'confirmed'];
+        // Require password if user doesn't have one or if they're trying to set a new one
+        if (! $hasPassword || $passwordFilled) {
+            $rules['password'] = ['required', 'string', 'min:8', 'confirmed'];
         }
 
         $validated = $request->validate($rules);
 
         $user->update([
-            'password' => $validated['password']
+            'password' => ! empty($validated['password'])
                 ? Hash::make($validated['password'])
                 : $user->password,
             'is_staff' => $request->boolean('needs_staff_details'),
