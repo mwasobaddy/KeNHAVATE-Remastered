@@ -26,7 +26,7 @@ class EnsureOnboardingCompleted
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next): mixed
     {
         $user = Auth::user();
 

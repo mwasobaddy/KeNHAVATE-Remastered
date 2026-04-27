@@ -13,7 +13,9 @@ class TermsController extends Controller
      */
     public function show()
     {
-        return inertia('auth/terms');
+        return inertia('auth/terms', [
+            'intended' => request()->query('intended', route('dashboard')),
+        ]);
     }
 
     /**
@@ -25,6 +27,8 @@ class TermsController extends Controller
 
         $user->update(['read_terms' => true]);
 
-        return redirect()->intended(route('dashboard'));
+        $intended = $request->input('intended', route('dashboard'));
+
+        return redirect()->to($intended);
     }
 }

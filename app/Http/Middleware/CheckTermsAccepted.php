@@ -14,7 +14,7 @@ class CheckTermsAccepted
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next): mixed
     {
         $user = Auth::user();
 
@@ -25,7 +25,9 @@ class CheckTermsAccepted
 
         // Check if user has accepted terms
         if ($user && ! $user->read_terms) {
-            return redirect()->route('terms.show');
+            $intended = $request->fullUrl();
+
+            return redirect()->route('terms.show', ['intended' => $intended]);
         }
 
         return $next($request);

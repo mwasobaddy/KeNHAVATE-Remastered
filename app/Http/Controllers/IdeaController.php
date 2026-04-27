@@ -8,6 +8,7 @@ use App\Models\Idea;
 use App\Models\ThematicArea;
 use App\Services\IdeaService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,13 +20,31 @@ class IdeaController extends Controller
 
     public function index(): Response
     {
-        $ideas = $this->ideaService->getPaginatedForUser(
-            auth()->id(),
-            request()->only(['status', 'thematic_area_id'])
-        );
+        $tab = request()->get('tab', 'mine');
+        $userId = auth()->id();
+
+        $ideas = match ($tab) {
+            'team' => $this->ideaService->getForTeamMember($userId, request()->only(['status', 'thematic_area_id'])),
+            'public' => $this->ideaService->getPublicIndex(request()->only(['status', 'thematic_area_id'])),
+            default => $this->ideaService->getPaginatedForUser($userId, request()->only(['status', 'thematic_area_id'])),
+        };
+
+        // Calculate tab counts efficiently
+        $tabCounts = [
+            'mine' => Idea::where('user_id', $userId)->count(),
+            'team' => Idea::whereHas('teamMembers', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })->count(),
+            'public' => Idea::where('status', '!=', 'draft')->where('collaboration_enabled', true)->count(),
+        ];
+
+        $thematicAreas = ThematicArea::where('is_active', true)->orderBy('sort_order')->get();
 
         return Inertia::render('idea/index', [
             'ideas' => $ideas,
+            'thematicAreas' => $thematicAreas,
+            'activeTab' => $tab,
+            'tabCounts' => $tabCounts,
         ]);
     }
 
@@ -35,8 +54,15 @@ class IdeaController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        $currentUser = auth()->user();
+
         return Inertia::render('idea/create', [
             'thematicAreas' => $thematicAreas,
+            'currentUser' => [
+                'name' => $currentUser->getFullName(),
+                'email' => $currentUser->email,
+                'work_email' => $currentUser->work_email,
+            ],
         ]);
     }
 
@@ -51,9 +77,14 @@ class IdeaController extends Controller
             return redirect()->route('idea.show', $idea)
                 ->with('success', 'Idea created successfully!');
         } catch (\Exception $e) {
+            Log::error('Failed to create idea', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return back()
                 ->withInput()
-                ->withErrors(['error' => 'Failed to create idea.']);
+                ->withErrors(['error' => 'Failed to create idea: '.$e->getMessage()]);
         }
     }
 
@@ -72,9 +103,18 @@ class IdeaController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        $idea->load('teamMembers');
+
+        $currentUser = auth()->user();
+
         return Inertia::render('idea/edit', [
             'idea' => $idea,
             'thematicAreas' => $thematicAreas,
+            'currentUser' => [
+                'name' => $currentUser->getFullName(),
+                'email' => $currentUser->email,
+                'work_email' => $currentUser->work_email,
+            ],
         ]);
     }
 
