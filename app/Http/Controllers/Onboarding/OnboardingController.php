@@ -116,12 +116,15 @@ class OnboardingController extends Controller
 
         $validated = $request->validate($rules);
 
-        $user->update([
-            'password' => ! empty($validated['password'])
-                ? Hash::make($validated['password'])
-                : $user->password,
+        $updateData = [
             'is_staff' => $request->boolean('needs_staff_details'),
-        ]);
+        ];
+
+        if (! empty($validated['password'])) {
+            $updateData['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($updateData);
 
         $request->session()->put('onboarding.step2_completed', true);
 
