@@ -179,7 +179,6 @@ class OnboardingController extends Controller
         $user->update(['onboarding_completed' => true]);
 
         // Send appropriate verification notification based on user type
-        $isKenhaEmail = ! empty($user->work_email) && str_ends_with($user->work_email, '@kenha.co.ke');
         if ($isKenhaEmail) {
             // For Kenha users who just entered personal email, verify that email
             $user->sendEmailVerificationNotification();
