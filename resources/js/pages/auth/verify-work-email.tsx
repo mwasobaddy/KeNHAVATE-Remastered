@@ -23,7 +23,7 @@ export default function VerifyWorkEmail({ workEmail, status }: { workEmail: stri
             <Form {...workEmailResend.form()} className="space-y-6 text-center">
                 {({ processing }) => (
                     <>
-                        <p className="text-sm text-[#9B9EA4] max-w-md mx-auto">
+                        <p className="text-sm text-green-600 max-w-md mx-auto">
                             We sent a verification link to <strong>{workEmail}</strong>.
                             Please check your inbox and click the link.
                         </p>
@@ -35,7 +35,7 @@ export default function VerifyWorkEmail({ workEmail, status }: { workEmail: stri
 
                         <TextLink
                             href={logout()}
-                            className="mx-auto block text-sm text-[#9B9EA4] hover:text-[#231F20]"
+                            className="mx-auto block text-sm text-red-600 hover:text-red-800"
                         >
                             Log out
                         </TextLink>
