@@ -2,63 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCommentRequest;
 use App\Models\Comment;
 use App\Models\Idea;
-use App\Services\CommentService;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 
 class CommentController extends Controller
 {
-    public function __construct(
-        private CommentService $commentService
-    ) {}
-
-    public function index(Idea $idea): Response
+    /**
+     * Show comments for an idea.
+     */
+    public function index(Idea $idea)
     {
-        $comments = $this->commentService->getForIdea(
-            $idea->id,
-            request()->only(['is_internal'])
-        );
+        $comments = $idea->comments()
+            ->with('user', 'likes')
+            ->whereNull('parent_id')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
 
-        return Inertia::render('idea/comments/index', [
-            'idea' => $idea->load('user'),
+        return inertia('idea/comments/show', [
+            'idea' => $idea,
             'comments' => $comments,
         ]);
     }
 
-    public function store(Request $request, Idea $idea): RedirectResponse
+    /**
+     * Store a new comment or reply.
+     */
+    public function store(StoreCommentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'content' => ['required', 'string', 'min:3'],
-            'parent_id' => ['nullable', 'exists:comments,id'],
-            'is_internal' => ['boolean'],
+        $validated = $request->validated();
+        $validated['user_id'] = $request->user()->id;
+
+        $comment = Comment::create($validated);
+
+        // Load the comment with user and likes
+        $comment->load('user', 'likes', 'idea');
+
+        return response()->json([
+            'comment' => $comment,
+            'comments_count' => $comment->idea->comments()->count(),
         ]);
-
-        $validated['idea_id'] = $idea->id;
-        $validated['user_id'] = auth()->id();
-
-        try {
-            $this->commentService->create($validated);
-
-            return back()->with('success', 'Comment added successfully!');
-        } catch (\Exception $e) {
-            return back()
-                ->withInput()
-                ->withErrors(['error' => 'Failed to add comment.']);
-        }
-    }
-
-    public function destroy(Comment $comment): RedirectResponse
-    {
-        try {
-            $this->commentService->delete($comment);
-
-            return back()->with('success', 'Comment deleted successfully!');
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to delete comment.']);
-        }
     }
 }
