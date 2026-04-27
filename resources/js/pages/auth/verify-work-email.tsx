@@ -39,15 +39,19 @@ export default function VerifyWorkEmail({
             <Head title="Verify work email" />
 
             {status === 'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    A new verification link has been sent to your work email.
-                </div>
+                 <p className="mx-auto mb-6 max-w-md text-sm text-green-600">
+                    A new verification link has been sent to to <strong>{workEmail}</strong>.
+                    Please check your inbox and click the link.
+                </p>
             )}
 
-            <p className="mx-auto mb-6 max-w-md text-sm text-green-600">
-                We sent a verification link to <strong>{workEmail}</strong>.
-                Please check your inbox and click the link.
-            </p>
+
+            {status !== 'verification-link-sent' && (
+                <p className="mx-auto mb-6 max-w-md text-sm text-green-600">
+                    We sent a verification link to <strong>{workEmail}</strong>.
+                    Please check your inbox and click the link.
+                </p>
+            )}
 
             <Form {...workEmailResend.form()} className="space-y-6 text-center">
                 {({ processing }) => (

@@ -39,15 +39,18 @@ export default function VerifyEmail({
             <Head title="Email verification" />
 
             {status === 'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    A new verification link has been sent to your email.
-                </div>
+                <p className="mx-auto mb-6 max-w-md text-sm text-green-600">
+                    A new verification link has been sent to <strong>{email}</strong>. Please
+                    check your inbox and click the link.
+                </p>
             )}
 
-            <p className="mx-auto mb-6 max-w-md text-sm text-green-600">
-                We sent a verification link to <strong>{email}</strong>. Please
-                check your inbox and click the link.
-            </p>
+            {status !== 'verification-link-sent' && (
+                <p className="mx-auto mb-6 max-w-md text-sm text-green-600">
+                    We sent a verification link to <strong>{email}</strong>. Please
+                    check your inbox and click the link.
+                </p>
+            )}
 
             <Form {...send.form()} className="space-y-6 text-center">
                 {({ processing }) => (
