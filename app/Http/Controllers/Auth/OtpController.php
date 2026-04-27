@@ -37,7 +37,10 @@ class OtpController extends Controller
         }
 
         // Check if user is a Google OAuth user — skip OTP, log them in directly
-        $user = User::where('email', $email)->first();
+        $user = User::where(function($query) use ($email) {
+            $query->where('email', $email)
+                  ->orWhere('work_email', $email);
+        })->first();
         if ($user && $user->usesGoogleOAuth()) {
             Auth::login($user, true);
 
@@ -60,16 +63,41 @@ class OtpController extends Controller
 
         $email = $request->input('email');
 
+        // Determine if this is a Kenha email that should go to work_email
+        $isKenhaEmail = Str::endsWith($email, '@kenha.co.ke');
+         
         // Find or create the user
-        $user = User::firstOrCreate(
-            ['email' => $email],
-            [
-                'first_name' => explode('@', $email)[0],
-                'password' => Hash::make(Str::random(24)),
-                'email_verified_at' => now(),
-                'onboarding_completed' => false,
-            ]
-        );
+        // For Kenha emails, search by either email or work_email, then set both fields
+        // For regular emails, search and set only email field
+        if ($isKenhaEmail) {
+            $user = User::firstOrCreate(
+                // Search for existing user by either email or work_email
+                [
+                    'email' => $email,
+                    'work_email' => $email,
+                ],
+                [
+                    'first_name' => explode('@', $email)[0],
+                    'email' => $email,
+                    'work_email' => $email,
+                    'password' => Hash::make(Str::random(24)),
+                    'email_verified_at' => null,
+                    'work_email_verified_at' => now(),
+                    'onboarding_completed' => false,
+                ]
+            );
+        } else {
+            $user = User::firstOrCreate(
+                ['email' => $email],
+                [
+                    'first_name' => explode('@', $email)[0],
+                    'email' => $email,
+                    'password' => Hash::make(Str::random(24)),
+                    'email_verified_at' => now(),
+                    'onboarding_completed' => false,
+                ]
+            );
+        }
 
         if ($user->wasRecentlyCreated) {
             $user->assignRole('user');
@@ -119,8 +147,11 @@ class OtpController extends Controller
 
         $otpCode = $request->input('otp');
 
-        // Find the user
-        $user = User::where('email', $email)->first();
+        // Find the user - check both email and work_email fields
+        $user = User::where(function($query) use ($email) {
+            $query->where('email', $email)
+                  ->orWhere('work_email', $email);
+        })->first();
 
         if (! $user) {
             return redirect()->route('login')->withErrors([
@@ -146,9 +177,18 @@ class OtpController extends Controller
         // Mark OTP as used
         $otp->markAsUsed();
 
-        // Mark email as verified if not already
-        if (! $user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
+        // Mark the appropriate email field as verified
+        $isKenhaEmail = Str::endsWith($email, '@kenha.co.ke');
+        if ($isKenhaEmail) {
+            // Mark work email as verified
+            if (! $user->hasVerifiedWorkEmail()) {
+                $user->markWorkEmailAsVerified();
+            }
+        } else {
+            // Mark regular email as verified
+            if (! $user->hasVerifiedEmail()) {
+                $user->markEmailAsVerified();
+            }
         }
 
         Auth::login($user, $request->boolean('remember'));
@@ -173,7 +213,10 @@ class OtpController extends Controller
             ]);
         }
 
-        $user = User::where('email', $email)->first();
+         $user = User::where(function($query) use ($email) {
+             $query->where('email', $email)
+                   ->orWhere('work_email', $email);
+         })->first();
 
         if (! $user) {
             return redirect()->route('login')->withErrors([

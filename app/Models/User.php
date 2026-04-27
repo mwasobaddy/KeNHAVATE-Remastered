@@ -38,6 +38,11 @@ class User extends Authenticatable
      */
     public function getEmailForPasswordReset(): string
     {
+        // For @kenha.co.ke emails, use work_email for password reset
+        if ($this->work_email && Str::endsWith($this->work_email, '@kenha.co.ke')) {
+            return $this->work_email;
+        }
+        
         return $this->email;
     }
 
@@ -71,6 +76,16 @@ class User extends Authenticatable
     public function hasVerifiedWorkEmail(): bool
     {
         return ! is_null($this->work_email_verified_at);
+    }
+
+    /**
+     * Mark the work email as verified.
+     */
+    public function markWorkEmailAsVerified(): void
+    {
+        $this->forceFill([
+            'work_email_verified_at' => now(),
+        ])->save();
     }
 
     /**
