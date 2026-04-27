@@ -93,7 +93,6 @@ class OnboardingController extends Controller
 
         return inertia('auth/onboarding/Step2', [
             'email' => $user->getLoginEmail(),
-            'hasPassword' => ! is_null($user->password),
         ]);
     }
 

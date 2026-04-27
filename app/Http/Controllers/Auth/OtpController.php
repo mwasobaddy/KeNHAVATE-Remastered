@@ -9,7 +9,6 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -80,7 +79,7 @@ class OtpController extends Controller
                     'first_name' => explode('@', $email)[0],
                     'email' => $email,
                     'work_email' => $email,
-                    'password' => Hash::make(Str::random(24)),
+                    'password' => null,
                     'email_verified_at' => null,
                     'work_email_verified_at' => now(),
                     'onboarding_completed' => false,
@@ -92,7 +91,7 @@ class OtpController extends Controller
                 [
                     'first_name' => explode('@', $email)[0],
                     'email' => $email,
-                    'password' => Hash::make(Str::random(24)),
+                    'password' => null,
                     'email_verified_at' => now(),
                     'onboarding_completed' => false,
                 ]

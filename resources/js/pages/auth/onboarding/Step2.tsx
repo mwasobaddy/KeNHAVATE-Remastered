@@ -12,13 +12,12 @@ import { step1 } from '@/routes/onboarding';
 import { update } from '@/routes/onboarding/step2';
 
 export default function OnboardingStep2() {
-    const { email, hasPassword } = usePage<{ email: string; hasPassword: boolean }>().props;
+    const { email } = usePage<{ email: string }>().props;
     const isKenhaEmail = email.endsWith('@kenha.co.ke');
     const totalSteps = isKenhaEmail ? 3 : 2;
 
     // @kenha.co.ke emails are always staff; others can opt-in
     const [needsStaffDetails, setNeedsStaffDetails] = useState(isKenhaEmail);
-    const [showPasswordFields, setShowPasswordFields] = useState(!hasPassword);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -39,81 +38,56 @@ export default function OnboardingStep2() {
                     >
                         {({ processing, errors }) => (
                             <>
-                                {hasPassword && (
-                                    <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-                                        A password is already set for your account. You can{' '}
+                                <div className="space-y-2">
+                                    <Label htmlFor="password" className="text-[#231F20]">Password *</Label>
+                                    <div className="relative">
+                                        <Input 
+                                            id="password" 
+                                            name="password" 
+                                            type={showPassword ? "text" : "password"} 
+                                            placeholder="Enter a secure password"
+                                            minLength={8}
+                                            className="border-[#9B9EA4]/30 focus:border-[#231F20]"
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => setShowPasswordFields(!showPasswordFields)}
-                                            className="text-primary hover:underline"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[#231F20]"
                                         >
-                                            {showPasswordFields ? 'keep it as is' : 'change it'}
+                                            {showPassword ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
                                         </button>
-                                        .
                                     </div>
-                                )}
+                                    <InputError message={errors.password} />
+                                </div>
 
-                                {showPasswordFields && (
-                                    <>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="password" className="text-[#231F20]">Password *</Label>
-                                            <div className="relative">
-                                                <Input 
-                                                    id="password" 
-                                                    name="password" 
-                                                    type={showPassword ? "text" : "password"} 
-                                                    placeholder="Enter a secure password"
-                                                    minLength={8}
-                                                    className="border-[#9B9EA4]/30 focus:border-[#231F20]"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPassword(!showPassword)}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[#231F20]"
-                                                >
-                                                    {showPassword ? (
-                                                        <EyeOff className="h-4 w-4" />
-                                                    ) : (
-                                                        <Eye className="h-4 w-4" />
-                                                    )}
-                                                </button>
-                                            </div>
-                                            <InputError message={errors.password} />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="password_confirmation" className="text-[#231F20]">Confirm Password *</Label>
-                                            <div className="relative">
-                                                <Input 
-                                                    id="password_confirmation" 
-                                                    name="password_confirmation" 
-                                                    type={showConfirmPassword ? "text" : "password"} 
-                                                    placeholder="Confirm your password"
-                                                    className="border-[#9B9EA4]/30 focus:border-[#231F20]"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[#231F20]"
-                                                >
-                                                    {showConfirmPassword ? (
-                                                        <EyeOff className="h-4 w-4" />
-                                                    ) : (
-                                                        <Eye className="h-4 w-4" />
-                                                    )}
-                                                </button>
-                                            </div>
-                                            <InputError message={errors.password_confirmation} />
-                                        </div>
-                                    </>
-                                )}
-
-                                {!showPasswordFields && hasPassword && (
-                                    <>
-                                        <input type="hidden" name="password" value="placeholder" />
-                                        <input type="hidden" name="password_confirmation" value="placeholder" />
-                                    </>
-                                )}
+                                <div className="space-y-2">
+                                    <Label htmlFor="password_confirmation" className="text-[#231F20]">Confirm Password *</Label>
+                                    <div className="relative">
+                                        <Input 
+                                            id="password_confirmation" 
+                                            name="password_confirmation" 
+                                            type={showConfirmPassword ? "text" : "password"} 
+                                            placeholder="Confirm your password"
+                                            className="border-[#9B9EA4]/30 focus:border-[#231F20]"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[#231F20]"
+                                        >
+                                            {showConfirmPassword ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    </div>
+                                    <InputError message={errors.password_confirmation} />
+                                </div>
 
                                 {!isKenhaEmail && (
                                     <div className="flex items-start gap-3 pt-2">
