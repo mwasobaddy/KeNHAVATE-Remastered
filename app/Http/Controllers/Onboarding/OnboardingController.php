@@ -213,7 +213,12 @@ class OnboardingController extends Controller
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             ]);
 
-            $user->update(array_merge($validated, ['is_staff' => true]));
+            $user->update([
+                'email' => $validated['email'],
+                'department_id' => $validated['department_id'],
+                'employment_type' => $validated['employment_type'],
+                'is_staff' => true,
+            ]);
         } else {
             // For non-Kenha users, they provided work email in step 3
             $validated = $request->validate([
@@ -224,7 +229,12 @@ class OnboardingController extends Controller
                 'work_email' => ['required', 'string', 'email', 'max:255', 'unique:users,work_email'],
             ]);
 
-            $user->update(array_merge($validated, ['is_staff' => true]));
+            $user->update([
+                'work_email' => $validated['work_email'],
+                'department_id' => $validated['department_id'],
+                'employment_type' => $validated['employment_type'],
+                'is_staff' => true,
+            ]);
         }
 
         // Complete onboarding
