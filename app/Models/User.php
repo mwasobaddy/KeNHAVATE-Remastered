@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\VerifyWorkEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -177,5 +178,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getRegionNameAttribute()
     {
         return $this->department->directorate->region->name ?? null;
+    }
+
+    /**
+     * Get the email address for mail notifications.
+     */
+    public function routeNotificationForMail($notification = null): string
+    {
+        if ($notification instanceof VerifyWorkEmail) {
+            return $this->work_email;
+        }
+
+        return $this->email;
     }
 }
