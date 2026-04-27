@@ -3,6 +3,8 @@
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DdReviewController;
 use App\Http\Controllers\IdeaController;
+use App\Http\Controllers\LikeController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SmeReviewController;
 use App\Http\Controllers\TeamMemberController;
 use Illuminate\Support\Facades\Route;
@@ -16,8 +18,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('idea/{idea:slug}/edit', [IdeaController::class, 'edit'])->name('idea.edit');
     Route::put('idea/{idea:slug}', [IdeaController::class, 'update'])->name('idea.update');
 
+    // Likes route
+    Route::post('likes', [LikeController::class, 'store'])->name('likes.store');
+
     // Comments routes
-    Route::get('idea/{idea}/comments', [CommentController::class, 'index'])->name('idea.comments.index');
+    Route::get('idea/{idea:slug}/comments', [CommentController::class, 'index'])->name('idea.comments.index');
+    Route::post('comments', [CommentController::class, 'store'])->name('comments.store');
+
+    // Notifications route
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
 
     // Team Members routes
     Route::get('idea/{idea}/team-members', [TeamMemberController::class, 'index'])->name('idea.team-members.index');

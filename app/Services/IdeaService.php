@@ -52,6 +52,12 @@ class IdeaService
     public function getPublicIndex(array $filters = []): LengthAwarePaginator
     {
         $query = Idea::with(['thematicArea', 'user'])
+            ->withCount(['likes', 'comments' => function ($q) {
+                $q->whereNull('parent_id');
+            }])
+            ->withExists(['likes as user_has_liked' => function ($q) {
+                $q->where('user_id', auth()->id());
+            }])
             ->where('collaboration_enabled', true);
 
         if (! empty($filters['status'])) {
