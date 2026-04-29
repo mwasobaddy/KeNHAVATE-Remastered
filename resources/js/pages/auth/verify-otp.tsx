@@ -1,9 +1,10 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
+import { login } from '@/routes';
 import { resend as otpResend } from '@/routes/otp';
 import { submit as otpVerifySubmit } from '@/routes/otp/verify';
 
@@ -102,8 +103,8 @@ export default function VerifyOtp({ email, status }: Props) {
 
     return (
         <AuthSplitLayout
-            // title="Check Your Email"
-            // description="Enter the verification code sent to your email"
+        // title="Check Your Email"
+        // description="Enter the verification code sent to your email"
         >
             <Head title="Verify Code" />
 
@@ -149,9 +150,9 @@ export default function VerifyOtp({ email, status }: Props) {
 
                             {errorMessage ? (
                                 <div className="mt-2 w-full">
-                                    <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
+                                    <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
                                         <svg
-                                            className="h-4 w-4 shrink-0"
+                                            className="h-4 w-4 shrink-0 mt-0.5"
                                             viewBox="0 0 16 16"
                                             fill="currentColor"
                                         >
@@ -161,7 +162,17 @@ export default function VerifyOtp({ email, status }: Props) {
                                                 clipRule="evenodd"
                                             />
                                         </svg>
-                                        <span>{errorMessage}</span>
+                                        <div>
+                                            <span>{errorMessage}</span>
+                                            <div className="mt-1">
+                                                <a
+                                                    href="mailto:support@kenha.ke"
+                                                    className="font-medium text-sm text-red-600 hover:underline dark:text-red-400"
+                                                >
+                                                    Contact support →
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             ) : null}
@@ -176,26 +187,35 @@ export default function VerifyOtp({ email, status }: Props) {
                             {isProcessing ? 'Verifying...' : 'Verify Code'}
                         </Button>
 
-                        <div className="text-center text-sm text-[#9B9EA4]">
-                            {canResend ? (
-                                <button
-                                    type="button"
-                                    onClick={handleResend}
-                                    disabled={isProcessing || isResending}
-                                    className="text-[#231F20] hover:underline disabled:opacity-50 disabled:no-underline"
-                                >
-                                    {isProcessing || isResending
-                                        ? 'Sending...'
-                                        : 'Resend code'}
-                                </button>
-                            ) : (
-                                <span>
-                                    Resend code in{' '}
-                                    <span className="font-medium text-[#231F20]">
-                                        {resendCooldown}s
+                        <div className="mt-4 flex flex-col items-center gap-2">
+                            <div aria-live="polite" className="text-center text-sm text-[#9B9EA4]">
+                                {canResend ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleResend}
+                                        disabled={isProcessing || isResending}
+                                        className="text-[#231F20] hover:underline disabled:opacity-50 disabled:no-underline"
+                                    >
+                                        {isProcessing || isResending
+                                            ? 'Sending...'
+                                            : 'Resend code'}
+                                    </button>
+                                ) : (
+                                    <span>
+                                        Resend code in{' '}
+                                        <span className="font-medium text-[#231F20]">
+                                            {resendCooldown}s
+                                        </span>
                                     </span>
-                                </span>
-                            )}
+                                )}
+                            </div>
+
+                            <Link
+                                href={login.url()}
+                                className="mt-2 text-center text-sm font-medium text-[#231F20] hover:underline"
+                            >
+                                Use a different email
+                            </Link>
                         </div>
                     </form>
                 </CardContent>
