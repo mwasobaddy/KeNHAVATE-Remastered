@@ -25,9 +25,11 @@ Route::get('work-email/verify/{id}', [WorkEmailVerificationController::class, 'v
 Route::get('otp/verify', [OtpController::class, 'showVerifyForm'])
     ->name('otp.verify');
 Route::post('otp/send', [OtpController::class, 'send'])
-    ->name('otp.send');
+ ->middleware('throttle:6,1')
+ ->name('otp.send');
 Route::post('otp/verify', [OtpController::class, 'verify'])
-    ->name('otp.verify.submit');
+ ->middleware('throttle:6,1')
+ ->name('otp.verify.submit');
 Route::post('otp/resend', [OtpController::class, 'resend'])
     ->name('otp.resend');
 
