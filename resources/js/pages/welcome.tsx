@@ -1,8 +1,16 @@
+
 import { Head, Link, usePage } from '@inertiajs/react';
 import { dashboard, login } from '@/routes';
 
+interface AuthProps {
+    user?: {
+        // Add more user fields as needed
+        [key: string]: any;
+    };
+}
+
 export default function Welcome() {
-    const { auth } = usePage().props;
+    const { auth } = usePage().props as unknown as { auth: AuthProps };
 
     return (
         <>
