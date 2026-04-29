@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Idea;
 
+use App\Rules\SafePdf;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateIdeaRequest extends FormRequest
@@ -29,7 +30,7 @@ class UpdateIdeaRequest extends FormRequest
             'team_effort' => ['sometimes', 'boolean'],
             'comments_enabled' => ['sometimes', 'boolean'],
             'collaboration_deadline' => ['sometimes', 'nullable', 'date', 'after:today'],
-            'attachment' => ['sometimes', 'nullable', 'file', 'max:10240'],
+            'attachment' => ['sometimes', 'nullable', new SafePdf],
             'status' => ['sometimes', 'in:draft,stage 1 review,stage 2 review,stage 1 revise,stage 2 revise,approved,rejected'],
             'team_members' => ['sometimes', 'array'],
             'team_members.*.id' => ['nullable', 'exists:team_members,id'],

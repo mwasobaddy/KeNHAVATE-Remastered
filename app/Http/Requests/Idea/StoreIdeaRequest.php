@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Idea;
 
+use App\Rules\SafePdf;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreIdeaRequest extends FormRequest
@@ -26,7 +27,7 @@ class StoreIdeaRequest extends FormRequest
             'team_effort' => ['required', 'accepted'],
             'comments_enabled' => ['boolean'],
             'collaboration_deadline' => ['nullable', 'date', 'after:today'],
-            'attachment' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'attachment' => ['required', 'file', 'mimes:pdf', new SafePdf],
             'team_members' => ['required_if:team_effort,true', 'array'],
             'team_members.*.name' => ['required_with:team_members', 'string', 'max:255'],
             'team_members.*.email' => ['required_with:team_members', 'email', 'max:255'],

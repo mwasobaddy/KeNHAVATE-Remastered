@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\Idea;
+use App\Models\IdeaRevision;
 use App\Models\TeamMember;
+use App\Models\TeamMemberInvitation as TeamMemberInvitationModel;
 use App\Models\User;
-use App\Notifications\TeamMemberInvitation;
+use App\Notifications\TeamMemberInvitation as TeamMemberInvitationNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -91,11 +93,10 @@ class IdeaService
 
             $data['user_id'] = $userId;
             $data['slug'] = $data['slug'] ?? \Str::slug($data['idea_title']);
-            $data['path'] = 'idea/'.$data['slug'];
 
             if (isset($data['attachment'])) {
-                $path = $this->storeAttachment($data['attachment']);
-                $data['attachment'] = $path;
+                $data['attachment_path'] = $this->storeAttachment($data['attachment']);
+                unset($data['attachment']);
             }
 
             $idea = Idea::create($data);
@@ -123,11 +124,11 @@ class IdeaService
             unset($data['team_members']);
 
             if (isset($data['attachment'])) {
-                if ($idea->attachment) {
-                    Storage::disk('public')->delete($idea->attachment);
+                if ($idea->attachment_path) {
+                    Storage::disk('public')->delete($idea->attachment_path);
                 }
-                $path = $this->storeAttachment($data['attachment']);
-                $data['attachment'] = $path;
+                $data['attachment_path'] = $this->storeAttachment($data['attachment']);
+                unset($data['attachment']);
             }
 
             $idea->update($data);
@@ -173,6 +174,15 @@ class IdeaService
         if (! empty($idsToDelete)) {
             TeamMember::whereIn('id', $idsToDelete)->delete();
         }
+
+        // Log ownership change
+        IdeaRevision::create([
+            'idea_id' => $idea->id,
+            'changed_by' => $inviterId,
+            'field' => 'team_members',
+            'old_value' => json_encode($existingIds),
+            'new_value' => json_encode($updatedIds),
+        ]);
     }
 
     protected function processNewTeamMember(Idea $idea, array $memberData, int $inviterId): ?TeamMember
@@ -210,6 +220,17 @@ class IdeaService
             $user = User::create($userData);
         }
 
+        // Create invitation
+        $invitation = TeamMemberInvitationModel::create([
+            'idea_id' => $idea->id,
+            'user_id' => $inviterId,
+            'invitee_name' => $memberData['name'],
+            'invitee_email' => $memberData['email'],
+            'role' => $memberData['role'] ?? null,
+            'permission' => $memberData['permission'],
+            'expires_at' => now()->addMinutes(30),
+        ]);
+
         // Create team member record
         $teamMember = TeamMember::create([
             'idea_id' => $idea->id,
@@ -218,23 +239,24 @@ class IdeaService
             'email' => $memberData['email'],
             'role' => $memberData['role'] ?? null,
             'permissions' => $memberData['permission'],
+            'invitation_id' => $invitation->id,
         ]);
 
-        // Send invitation notification (skip if member is the inviter/creator)
-        if ($inviterId !== $user->id) {
-            try {
-                $user->notify(new TeamMemberInvitation(
-                    $inviter->getFullName(),
-                    $idea->idea_title,
-                    $memberData['role'] ?? 'Team Member',
-                    $memberData['permission']
-                ));
-            } catch (\Exception $e) {
-                Log::error('Failed to send team member invitation', [
-                    'email' => $memberData['email'],
-                    'error' => $e->getMessage(),
-                ]);
-            }
+        // Send invitation notification
+        try {
+            $user->notify(new TeamMemberInvitationNotification(
+                $inviter->getFullName(),
+                $idea->idea_title,
+                $idea->id,
+                $memberData['role'] ?? 'Team Member',
+                $memberData['permission']
+            ));
+        } catch (\Exception $e) {
+            Log::error('Failed to send team member invitation', [
+                'email' => $memberData['email'],
+                'error' => $e->getMessage(),
+            ]);
+            session()->flash('error', 'Failed to send invitation to '.$memberData['email']);
         }
 
         return $teamMember;
@@ -243,8 +265,8 @@ class IdeaService
     public function delete(Idea $idea): void
     {
         DB::transaction(function () use ($idea) {
-            if ($idea->attachment) {
-                Storage::disk('public')->delete($idea->attachment);
+            if ($idea->attachment_path) {
+                Storage::disk('public')->delete($idea->attachment_path);
             }
             $idea->delete();
         });
@@ -257,6 +279,6 @@ class IdeaService
 
     protected function storeAttachment($file): string
     {
-        return Storage::disk('public')->put('ideas/attachments', $file);
+        return Storage::disk('public')->putFile('ideas/attachments', $file);
     }
 }

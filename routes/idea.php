@@ -28,10 +28,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Notifications route
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
 
-    // Team Members routes
-    Route::get('idea/{idea}/team-members', [TeamMemberController::class, 'index'])->name('idea.team-members.index');
-    Route::get('idea/{idea}/team-members/create', [TeamMemberController::class, 'create'])->name('idea.team-members.create');
-    Route::post('idea/{idea}/team-members', [TeamMemberController::class, 'store'])->name('idea.team-members.store');
+    // Accept team member invitation (signed URL)
+    Route::get('/idea/{invitation}/accept', [TeamMemberController::class, 'accept'])
+        ->name('idea.team-members.accept')
+        ->middleware(['signed']);
     Route::get('idea/{idea}/team-members/{teamMember}', [TeamMemberController::class, 'show'])->name('idea.team-members.show');
     Route::get('idea/{idea}/team-members/{teamMember}/edit', [TeamMemberController::class, 'edit'])->name('idea.team-members.edit');
     Route::put('idea/{idea}/team-members/{teamMember}', [TeamMemberController::class, 'update'])->name('idea.team-members.update');

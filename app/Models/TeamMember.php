@@ -13,7 +13,13 @@ class TeamMember extends Model
         'email',
         'role',
         'permissions',
+        'invitation_id',
     ];
+
+    public function invitation()
+    {
+        return $this->belongsTo(TeamMemberInvitation::class, 'invitation_id');
+    }
 
     public function idea()
     {
