@@ -15,11 +15,34 @@ export default defineConfig({
         react({
             babel: {
                 plugins: ['babel-plugin-react-compiler'],
-            },
+            }
         }),
         tailwindcss(),
         wayfinder({
             formVariants: true,
         }),
     ],
+    optimizeDeps: {
+        include: [
+            "react-secure-password",
+            "react",
+            "react-dom",
+            "@react-pdf/renderer",
+            "pdf-lib"
+        ],
+        force: true
+    },
+    build: {
+        rollupOptions: {
+            external: [
+                "@react-pdf/renderer",
+                "react-pdf",
+                "react-pdf/dist/esm/Page/AnnotationLayer.css",
+                "react-pdf/dist/esm/Page/TextLayer.css"
+            ],
+            output: {
+                chunkFileNames: 'js/chunks/[name].[hash].js',
+            }
+        }
+    }
 });
