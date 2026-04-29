@@ -105,11 +105,11 @@ class OtpService
     }
 
     /**
-     * Generate a 6-digit OTP.
+     * Generate a 6-character alphanumeric OTP.
      */
     private function generateOtp(): string
     {
-        return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        return substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 6);
     }
 
     /**
