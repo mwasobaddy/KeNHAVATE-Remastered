@@ -23,12 +23,8 @@ class Idea extends Model
         'current_revision_number',
         'collaboration_deadline',
         'status',
-        'attachment',
-        'attachment_filename',
-        'attachment_mime',
-        'attachment_size',
-        'path',
         'user_id',
+        'attachment_path',
     ];
 
     protected $casts = [
@@ -52,9 +48,6 @@ class Idea extends Model
             if (empty($model->slug)) {
                 $model->slug = static::generateUniqueSlug($model->idea_title);
             }
-            if (empty($model->path)) {
-                $model->path = 'idea/'.$model->slug;
-            }
         });
     }
 
@@ -65,7 +58,7 @@ class Idea extends Model
         $counter = 1;
 
         while (static::where('slug', $slug)->exists()) {
-            $slug = $baseSlug.'-'.$counter;
+            $slug = $baseSlug.'-'.auth()->id().'-'.$counter;
             $counter++;
         }
 

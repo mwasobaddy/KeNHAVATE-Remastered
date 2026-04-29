@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('idea_title', 255);
             $table->string('slug')->unique();
-            $table->foreignId('thematic_area_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('thematic_area_id')->constrained()->cascadeOnDelete();
             $table->text('abstract')->nullable();
             $table->text('problem_statement')->nullable();
             $table->text('proposed_solution')->nullable();
@@ -33,14 +33,11 @@ return new class extends Migration
             // Idea status: draft or submitted
             $table->enum('status', ['draft', 'stage 1 review', 'stage 2 review', 'stage 1 revise', 'stage 2 revise', 'approved', 'rejected'])->default('draft');
 
-            // Attachment stored as binary blob in DB
-            $table->binary('attachment')->nullable();
-            $table->string('attachment_filename')->nullable();
-            $table->string('attachment_mime')->nullable();
-            $table->unsignedBigInteger('attachment_size')->nullable();
+            // Attachment stored in public/ideas/attachments (Storage::disk('public'))
+            // Path stored in attachment_path column
 
-            // Path URL for the idea
-            $table->string('path')->nullable();
+            // Path to PDF attachment in public/ideas/attachments
+            $table->string('attachment_path')->nullable();
 
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
 
