@@ -12,6 +12,9 @@ class RegionSeeder extends Seeder
      */
     public function run(): void
     {
+        // Clear existing regions to avoid conflicts on re-seed
+        Region::truncate();
+
         $regions = [
             [
                 'name' => 'Nairobi Region',
