@@ -13,9 +13,15 @@ class CommentController extends Controller
      */
     public function index(Idea $idea)
     {
+        $userId = auth()->id();
+
         $comments = $idea->comments()
-            ->with('user', 'likes')
+            ->with('user')
             ->whereNull('parent_id')
+            ->withCount('likes')
+            ->withExists(['likes as user_has_liked' => function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            }])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 

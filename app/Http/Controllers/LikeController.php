@@ -43,7 +43,7 @@ class LikeController extends Controller
             ]);
         }
 
-        Like::create([
+        Like::firstOrCreate([
             'user_id' => $userId,
             'likeable_id' => $likeableId,
             'likeable_type' => get_class($likeable),
