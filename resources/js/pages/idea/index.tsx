@@ -57,11 +57,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
     ];
 
     const handleTabChange = (tab: string) => {
-        if (tab === 'collabo') {
-            router.visit(idea.collabo.index().url);
-        } else {
-            router.get(idea.index().url, { tab }, { preserveState: true });
-        }
+        router.get(idea.index().url, { tab }, { preserveState: true });
     };
 
     const getTeamMemberForIdea = (ideaItem: IdeaItem): TeamMember | null => {
@@ -199,7 +195,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                                                         <TooltipTrigger asChild>
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => router.visit(idea.collabo.index().url)}
+                                                                                onClick={() => router.visit(idea.collabo.show(ideaItem.slug).url)}
                                                                                 className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-purple-200 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-950"
                                                                             >
                                                                                 <Users className="h-4 w-4" />

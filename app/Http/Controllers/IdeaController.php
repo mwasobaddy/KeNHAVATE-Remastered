@@ -26,6 +26,17 @@ class IdeaController extends Controller
         $ideas = match ($tab) {
             'team' => $this->ideaService->getForTeamMember($userId, request()->only(['status', 'thematic_area_id'])),
             'public' => $this->ideaService->getPublicIndex(request()->only(['status', 'thematic_area_id'])),
+            'collabo' => Idea::where('collaboration_enabled', true)
+                ->where(function ($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                        ->orWhereHas('teamMembers', function ($q) use ($userId) {
+                            $q->where('user_id', $userId);
+                        });
+                })
+                ->with('user')
+                ->withCount(['teamMembers', 'likes', 'comments'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(20),
             default => $this->ideaService->getPaginatedForUser($userId, request()->only(['status', 'thematic_area_id'])),
         };
 
