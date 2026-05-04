@@ -15,10 +15,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('idea', [IdeaController::class, 'index'])->name('idea.index');
 
     // Collabo routes
-    Route::get('idea/collabo', [CollaboController::class, 'index'])->name('idea.collabo.index');
-    Route::get('idea/collabo/{idea:slug}', [CollaboController::class, 'show'])->name('idea.collabo.show');
-    Route::get('idea/create', [IdeaController::class, 'create'])->name('idea.create');
     Route::post('idea', [IdeaController::class, 'store'])->name('idea.store');
+    Route::get('idea/create', [IdeaController::class, 'create'])->name('idea.create');
+    Route::get('idea/collabo', [CollaboController::class, 'index'])->name('idea.collabo.index');
+    Route::get('idea/{idea:slug}/collabo', [CollaboController::class, 'show'])->name('idea.collabo.show');
     Route::get('idea/{idea:slug}', [IdeaController::class, 'show'])->name('idea.show');
     Route::get('idea/{idea:slug}/edit', [IdeaController::class, 'edit'])->name('idea.edit');
     Route::put('idea/{idea:slug}', [IdeaController::class, 'update'])->name('idea.update');

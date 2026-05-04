@@ -319,7 +319,7 @@ CollaboShow.layout = {
         },
         {
             title: 'Idea',
-            href: idea.collabo.show(idea.slug),
+            href: idea.collabo.show({ slug: ':slug' }).url,
         },
     ],
 };
