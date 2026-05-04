@@ -46,6 +46,7 @@ export function useTeamMembers(initialMembers: TeamMember[] = []): UseTeamMember
 
     if (isDuplicate) {
       setDuplicateError('This email has already been added to the team.');
+
       return;
     }
 
@@ -58,7 +59,9 @@ export function useTeamMembers(initialMembers: TeamMember[] = []): UseTeamMember
   };
 
   const isCurrentUserInTeam = (currentUserEmail: string | null, currentUserWorkEmail: string | null): boolean => {
-    if (!currentUserEmail && !currentUserWorkEmail) return false;
+    if (!currentUserEmail && !currentUserWorkEmail) {
+return false;
+}
     
     const userEmail = (currentUserEmail || '').toLowerCase();
     const userWorkEmail = (currentUserWorkEmail || '').toLowerCase();
@@ -73,7 +76,9 @@ export function useTeamMembers(initialMembers: TeamMember[] = []): UseTeamMember
     currentUserEmail: string | null, 
     currentUserWorkEmail: string | null
   ): boolean => {
-    if (!currentUserEmail && !currentUserWorkEmail) return true;
+    if (!currentUserEmail && !currentUserWorkEmail) {
+return true;
+}
     
     const userEmail = (currentUserEmail || '').toLowerCase();
     const userWorkEmail = (currentUserWorkEmail || '').toLowerCase();

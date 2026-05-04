@@ -39,6 +39,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Notifications route
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/count', [NotificationController::class, 'count'])->name('notifications.count');
+    Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllRead');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
 
     // Accept team member invitation (signed URL)
     Route::get('/idea/{invitation}/accept', [TeamMemberController::class, 'accept'])

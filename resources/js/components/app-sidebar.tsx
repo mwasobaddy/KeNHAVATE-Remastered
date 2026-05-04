@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, FolderGit2, LayoutGrid, Lightbulb, ClipboardCheck, FileCheck, Bell } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -13,37 +13,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useNotificationCount } from '@/hooks/use-notifications';
 import { dashboard } from '@/routes';
 import idea from '@/routes/idea';
 import type { NavItem } from '@/types';
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Ideas',
-        href: idea.index(),
-        icon: Lightbulb,
-    },
-    {
-        title: 'Notifications',
-        href: '/notifications',
-        icon: Bell,
-    },
-    {
-        title: 'SME Reviews',
-        href: idea.smeReview.index(),
-        icon: ClipboardCheck,
-    },
-    {
-        title: 'DD Reviews',
-        href: idea.ddReview.index(),
-        icon: FileCheck,
-    },
-];
 
 const footerNavItems: NavItem[] = [
     {
@@ -53,12 +26,46 @@ const footerNavItems: NavItem[] = [
     },
     {
         title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
+        href: 'https://laravel.com/docs/starter-kits#laravel',
         icon: BookOpen,
     },
 ];
 
 export function AppSidebar() {
+    const { props } = usePage();
+    const auth = props.auth as any;
+    const initialCount = auth?.unread_notifications ?? 0;
+    const { unreadCount } = useNotificationCount(initialCount);
+
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Ideas',
+            href: idea.index(),
+            icon: Lightbulb,
+        },
+        {
+            title: 'Notifications',
+            href: '/notifications',
+            icon: Bell,
+            badge: unreadCount,
+        },
+        {
+            title: 'SME Reviews',
+            href: idea.smeReview.index(),
+            icon: ClipboardCheck,
+        },
+        {
+            title: 'DD Reviews',
+            href: idea.ddReview.index(),
+            icon: FileCheck,
+        },
+    ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>

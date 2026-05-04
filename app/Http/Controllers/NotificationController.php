@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
@@ -24,9 +23,17 @@ class NotificationController extends Controller
     }
 
     /**
+     * Get the unread notification count.
+     */
+    public function count(Request $request)
+    {
+        return response()->json(['unread_count' => $request->user()->unreadNotifications()->count()]);
+    }
+
+    /**
      * Mark a notification as read.
      */
-    public function markAsRead(Request $request, $id): JsonResponse
+    public function markAsRead(Request $request, $id)
     {
         $notification = $request->user()
             ->notifications()
@@ -35,16 +42,16 @@ class NotificationController extends Controller
 
         $notification->markAsRead();
 
-        return response()->json(['success' => true]);
+        return back();
     }
 
     /**
      * Mark all notifications as read.
      */
-    public function markAllAsRead(Request $request): JsonResponse
+    public function markAllAsRead(Request $request)
     {
         $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
-        return response()->json(['success' => true]);
+        return back();
     }
 }
