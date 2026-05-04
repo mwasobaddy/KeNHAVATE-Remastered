@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
-import idea from '@/routes/idea';
+import { Link } from '@inertiajs/react';
 
-export default function TeamMembersIndex({ idea, members }) {
+export default function TeamMembersIndex({ idea, members }: { idea: { id: number; slug: string; idea_title: string }; members: any }) {
     return (
         <>
             <Head title="Team Members" />
@@ -15,11 +15,11 @@ export default function TeamMembersIndex({ idea, members }) {
                                     Manage co-authors for: {idea.idea_title}
                                 </p>
                             </div>
-                            <a href={idea.teamMembers.create({ idea: idea.id })}>
+                            <Link href={`/idea/${idea.slug}/team-members/create`}>
                                 <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
                                     Add Member
                                 </button>
-                            </a>
+                            </Link>
                         </div>
                         <div className="mt-6">
                             {members.data.length === 0 ? (
@@ -37,9 +37,9 @@ export default function TeamMembersIndex({ idea, members }) {
                                                     )}
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <a href={idea.teamMembers.edit({ idea: idea.id, teamMember: member.id })}>
+                                                    <Link href={`/idea/${idea.slug}/team-members/${member.id}/edit`}>
                                                         <button className="text-sm text-primary">Edit</button>
-                                                    </a>
+                                                    </Link>
                                                 </div>
                                             </div>
                                         </div>
@@ -58,11 +58,11 @@ TeamMembersIndex.layout = {
     breadcrumbs: [
         {
             title: 'Ideas',
-            href: idea.index(),
+            href: '/ideas',
         },
         {
             title: 'Team Members',
-            href: idea.teamMembers.index({ idea: 0 }),
+            href: '#',
         },
     ],
 };

@@ -47,10 +47,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/idea/{invitation}/accept', [TeamMemberController::class, 'accept'])
         ->name('idea.team-members.accept')
         ->middleware(['signed']);
+    Route::get('idea/{idea}/team-members', [TeamMemberController::class, 'index'])->name('idea.team-members.index');
+    Route::get('idea/{idea}/team-members/create', [TeamMemberController::class, 'create'])->name('idea.team-members.create');
+    Route::post('idea/{idea}/team-members', [TeamMemberController::class, 'store'])->name('idea.team-members.store');
     Route::get('idea/{idea}/team-members/{teamMember}', [TeamMemberController::class, 'show'])->name('idea.team-members.show');
     Route::get('idea/{idea}/team-members/{teamMember}/edit', [TeamMemberController::class, 'edit'])->name('idea.team-members.edit');
     Route::put('idea/{idea}/team-members/{teamMember}', [TeamMemberController::class, 'update'])->name('idea.team-members.update');
     Route::delete('idea/{idea}/team-members/{teamMember}', [TeamMemberController::class, 'destroy'])->name('idea.team-members.destroy');
+
+    // Suggestions routes
+    Route::post('idea/{idea}/suggestions', [SuggestionController::class, 'store'])->name('idea.suggestions.store');
+    Route::post('idea/{idea}/suggestions/{suggestion}/approve', [SuggestionController::class, 'approve'])->name('idea.suggestions.approve');
+    Route::post('idea/{idea}/suggestions/{suggestion}/decline', [SuggestionController::class, 'decline'])->name('idea.suggestions.decline');
 
     // SME Review routes
     Route::get('idea/sme-review', [SmeReviewController::class, 'index'])->name('idea.smeReview.index');

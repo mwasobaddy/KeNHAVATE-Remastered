@@ -46,9 +46,9 @@ class CollaborationRequestReceived extends Notification
 
         return (new MailMessage)
             ->subject('New Collaboration Request for "'.$idea->idea_title.'"')
-            ->greeting('Hello '.$notifiable->name.'!')
+            ->greeting('Hello '.$notifiable->first_name.'!')
             ->line('You have received a new collaboration request for your idea: "'.$idea->idea_title.'"')
-            ->line('Request from: '.$this->requester->name)
+            ->line('Request from: '.$this->requester->first_name)
             ->line($this->collaborationRequest->message ? 'Message: '.$this->collaborationRequest->message : 'No message included.')
             ->action('View Requests', url('/idea/'.$idea->slug.'/collabo'))
             ->line('Thank you for using our application!');

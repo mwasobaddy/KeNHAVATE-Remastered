@@ -105,6 +105,11 @@ class Idea extends Model
         return $this->hasMany(CollaborationRequest::class)->where('status', 'pending');
     }
 
+    public function suggestions()
+    {
+        return $this->hasMany(Suggestion::class)->orderBy('created_at', 'desc');
+    }
+
     /**
      * Get the likes for this idea.
      */

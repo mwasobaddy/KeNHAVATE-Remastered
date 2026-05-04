@@ -2,12 +2,60 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Idea;
 use App\Models\TeamMember;
 use App\Models\TeamMemberInvitation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class TeamMemberController extends Controller
 {
+    public function index(Idea $idea): Response
+    {
+        abort_unless($idea->user_id === auth()->id(), 403);
+
+        $members = $idea->teamMembers()->paginate(20);
+
+        return Inertia::render('idea/team-members/index', [
+            'idea' => $idea,
+            'members' => $members,
+        ]);
+    }
+
+    public function create(Idea $idea): Response
+    {
+        abort_unless($idea->user_id === auth()->id(), 403);
+
+        return Inertia::render('idea/team-members/create', [
+            'idea' => $idea,
+        ]);
+    }
+
+    public function store(Request $request, Idea $idea): RedirectResponse
+    {
+        abort_unless($idea->user_id === auth()->id(), 403);
+
+        $request->validate([
+            'email' => 'required|email',
+            'name' => 'required|string',
+            'role' => 'nullable|string',
+            'permissions' => 'required|in:view,edit',
+        ]);
+
+        TeamMember::create([
+            'idea_id' => $idea->id,
+            'user_id' => null,
+            'email' => $request->email,
+            'name' => $request->name,
+            'role' => $request->role ?? 'Collaborator',
+            'permissions' => $request->permissions,
+        ]);
+
+        return redirect()->route('idea.teamMembers.index', $idea)->with('success', 'Team member added.');
+    }
+
     // existing methods...
 
     public function accept(TeamMemberInvitation $invitation): RedirectResponse

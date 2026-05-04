@@ -39,7 +39,15 @@ class CollaboController extends Controller
     {
         $userId = auth()->id();
 
-        $idea->load(['user', 'teamMembers.user', 'thematicArea', 'pendingCollaborationRequests.user']);
+        $idea->load([
+            'user',
+            'teamMembers.user',
+            'thematicArea',
+            'pendingCollaborationRequests.user',
+            'suggestions.user',
+        ]);
+
+        $idea->loadCount('suggestions');
 
         $isOwner = $idea->user_id === $userId;
         $isCollaborator = $isOwner || $idea->teamMembers()->where('user_id', $userId)->exists();
@@ -124,7 +132,7 @@ class CollaboController extends Controller
         TeamMember::create([
             'idea_id' => $idea->id,
             'user_id' => $collaborationRequest->user_id,
-            'name' => $collaborationRequest->user->name ?? $collaborationRequest->user->getFullNameAttribute(),
+            'name' => $collaborationRequest->user->name ?? $collaborationRequest->user->name,
             'email' => $collaborationRequest->user->email,
             'role' => 'Collaborator',
             'permissions' => 'view',
