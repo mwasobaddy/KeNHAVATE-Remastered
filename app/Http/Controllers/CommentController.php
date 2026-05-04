@@ -22,6 +22,14 @@ class CommentController extends Controller
             ->withExists(['likes as user_has_liked' => function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             }])
+            ->with(['replies' => function ($query) use ($userId) {
+                $query->with('user')
+                    ->withCount('likes')
+                    ->withExists(['likes as user_has_liked' => function ($q) use ($userId) {
+                        $q->where('user_id', $userId);
+                    }])
+                    ->orderBy('created_at', 'asc');
+            }])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
