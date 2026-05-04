@@ -78,11 +78,12 @@ const getDisplayName = (user: { email?: string; work_email?: string; name?: stri
 
 const getAvatarLabel = (displayName: string) => {
     const label = displayName.replace(/^@/, '');
+
     return label.charAt(0).toUpperCase();
 };
 
 const formatTimeAgo = (date: string) => {
-    // eslint-disable-next-line react-hooks/purity
+     
     const now = Date.now();
     const then = new Date(date).getTime();
     const diff = Math.max(now - then, 0);
@@ -102,9 +103,31 @@ const formatTimeAgo = (date: string) => {
 };
 
 export default function CommentsShow({ idea, comments }: CommentsShowProps) {
+    const [localComments, setLocalComments] = useState<Comment[]>([]);
+
+    const allComments = [...comments.data, ...localComments];
+
+    const addReplyToComment = (parentId: number, reply: Comment) => {
+        setLocalComments((prev) => {
+            const newComments = [...prev];
+            const parentIndex = newComments.findIndex((c) => c.id === parentId);
+
+            if (parentIndex >= 0) {
+                if (!newComments[parentIndex].replies) {
+                    newComments[parentIndex].replies = [];
+                }
+
+                newComments[parentIndex].replies = [...newComments[parentIndex].replies, reply];
+            }
+
+            return newComments;
+        });
+    };
+
     const form = useForm({
         idea_id: idea.id,
         content: '',
+        parent_id: null as number | null,
     });
     const [commentLikes, setCommentLikes] = useState<Record<number, number>>(() =>
         Object.fromEntries(comments.data.map((comment) => [comment.id, comment.likes_count]))
@@ -139,32 +162,47 @@ export default function CommentsShow({ idea, comments }: CommentsShowProps) {
         }
     };
 
-const handleReplyToComment = (user: { email?: string; work_email?: string; name: string } | null) => {
+const handleReplyToComment = (user: { email?: string; work_email?: string; name: string } | null, commentId: number) => {
     if (!user) {
         return;
     }
 
-        const prefix = getReplyTag(user);
-        form.setData('content', `${prefix} `);
+    const prefix = getReplyTag(user);
+    form.setData('content', `${prefix} `);
+    form.setData('parent_id', commentId);
 
-        if (replyInputRef.current) {
-            replyInputRef.current.focus();
-        }
-    };
+    if (replyInputRef.current) {
+        replyInputRef.current.focus();
+    }
+};
 
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         if (!form.data.content.trim()) {
             return;
         }
 
-        form.post(commentsRoute.store().url, {
-            preserveScroll: true,
-            onSuccess: () => {
-                form.reset('content');
-            },
-        });
+        try {
+            const response = await axios.post(commentsRoute.store().url, {
+                idea_id: form.data.idea_id,
+                content: form.data.content,
+                parent_id: form.data.parent_id,
+            });
+
+            const newComment = response.data.comment;
+
+            if (newComment.parent_id) {
+                addReplyToComment(newComment.parent_id, newComment);
+            } else {
+                setLocalComments((prev) => [newComment, ...prev]);
+            }
+
+            form.reset();
+            form.setData('parent_id', null);
+        } catch {
+            // Error handling
+        }
     };
 
     return (
@@ -172,7 +210,7 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
             <Head title={`Comments - ${idea.idea_title}`} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <div className="flex h-full flex-col">
+                    <div className="flex flex-col">
                         <div className="p-6">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -192,7 +230,7 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                             <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
                         ) : (
                             <div className="space-y-4">
-                                {comments.data.map((comment) => {
+                                {allComments.map((comment) => {
                                     const displayName = getDisplayName(comment.user);
 
                                     return (
@@ -225,7 +263,7 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                                                             <button
                                                                 type="button"
                                                                 className="font-medium text-primary hover:underline"
-                                                                onClick={() => handleReplyToComment(comment.user)}
+                                                                onClick={() => handleReplyToComment(comment.user, comment.id)}
                                                             >
                                                                 Reply
                                                             </button>
@@ -249,6 +287,7 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                                                             <div className="space-y-3">
                                                                 {comment.replies.map((reply) => {
                                                                     const replyDisplayName = getDisplayName(reply.user);
+
                                                                     return (
                                                                         <div key={reply.id} className="rounded-3xl border border-border bg-muted/5 p-3">
                                                                             <div className="flex gap-3">
@@ -292,6 +331,20 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                         className="sticky bottom-0 border-t border-border bg-background/95 p-4 backdrop-blur"
                     >
                         <div className="flex gap-2">
+                            {form.data.parent_id && (
+                                <div className="flex items-center pr-2 text-sm text-muted-foreground">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            form.setData('parent_id', null);
+                                            form.setData('content', '');
+                                        }}
+                                        className="text-xs text-muted-foreground hover:text-foreground"
+                                    >
+                                        ✕ Cancel reply
+                                    </button>
+                                </div>
+                            )}
                             <div className="relative flex-1">
                                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
                                     <Smile className="h-5 w-5" />
@@ -300,7 +353,7 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                                     ref={replyInputRef}
                                     value={form.data.content}
                                     onChange={(event) => form.setData('content', event.target.value)}
-                                    placeholder="Add a comment"
+                                    placeholder={form.data.parent_id ? 'Write a reply...' : 'Add a comment'}
                                     className="w-full rounded-full border border-border bg-background px-12 py-3"
                                 />
                             </div>

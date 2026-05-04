@@ -49,9 +49,22 @@ class CommentController extends Controller
 
         $comment = Comment::create($validated);
 
-        // Load the comment with user and likes
-        $comment->load('user', 'likes', 'idea');
+        $comment->load(['user', 'likes']);
 
-        return back()->with('success', 'Comment posted successfully!');
+        $userId = auth()->id();
+
+        return response()->json([
+            'success' => 'Comment posted successfully!',
+            'comment' => [
+                'id' => $comment->id,
+                'content' => $comment->content,
+                'created_at' => $comment->created_at->toISOString(),
+                'parent_id' => $comment->parent_id,
+                'user' => $comment->user,
+                'likes_count' => $comment->likes()->count(),
+                'user_has_liked' => false,
+                'replies' => [],
+            ],
+        ]);
     }
 }
