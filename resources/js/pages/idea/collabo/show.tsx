@@ -3,7 +3,7 @@
 import { Head, router } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import { Heart, MessageCircle, Users, Calendar, FileText, Lightbulb, AlertCircle } from 'lucide-react';
-import idea from '@/routes/idea';
+import ideaRoutes from '@/routes/idea';
 
 interface User {
     id: number;
@@ -103,7 +103,7 @@ export default function CollaboShow({ idea }: CollaboShowProps) {
                                     </span>
                                 </div>
                                 <p className="mt-2 text-muted-foreground">
-                                    <Link href={idea.collabo.index().url} className="text-primary hover:underline">
+                                    <Link href={ideaRoutes.collabo.index().url} className="text-primary hover:underline">
                                         ← Back to Collaborations
                                     </Link>
                                 </p>
@@ -112,7 +112,7 @@ export default function CollaboShow({ idea }: CollaboShowProps) {
                                 <button
                                     type="button"
                                     className="flex items-center gap-2 rounded-lg border border-purple-200 px-4 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-950"
-                                    onClick={() => router.visit(idea.show(idea.slug).url)}
+                                    onClick={() => router.visit(ideaRoutes.show(idea.slug).url)}
                                 >
                                     <FileText className="h-4 w-4" />
                                     View Full Idea
@@ -269,7 +269,7 @@ export default function CollaboShow({ idea }: CollaboShowProps) {
                                     <button
                                         type="button"
                                         className="flex w-full items-center justify-between rounded-lg border border-border p-3 text-sm font-medium hover:bg-muted"
-                                        onClick={() => router.visit(idea.show(idea.slug).url)}
+                                        onClick={() => router.visit(ideaRoutes.show(idea.slug).url)}
                                     >
                                         <span>View Full Details</span>
                                         <FileText className="h-4 w-4 text-muted-foreground" />
@@ -315,11 +315,11 @@ CollaboShow.layout = {
     breadcrumbs: [
         {
             title: 'Collaborations',
-            href: idea.collabo.index(),
+            href: ideaRoutes.collabo.index(),
         },
         {
             title: 'Idea',
-            href: idea.collabo.show({ slug: ':slug' }).url,
+            href: ideaRoutes.collabo.show({ slug: ':slug' }).url,
         },
     ],
 };
