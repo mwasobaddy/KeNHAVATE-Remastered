@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CollaboController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DdReviewController;
 use App\Http\Controllers\IdeaController;
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified'])->group(function () {
     // Idea resource routes (using slug)
     Route::get('idea', [IdeaController::class, 'index'])->name('idea.index');
+
+    // Collabo routes
+    Route::get('idea/collabo', [CollaboController::class, 'index'])->name('idea.collabo.index');
+    Route::get('idea/collabo/{idea:slug}', [CollaboController::class, 'show'])->name('idea.collabo.show');
     Route::get('idea/create', [IdeaController::class, 'create'])->name('idea.create');
     Route::post('idea', [IdeaController::class, 'store'])->name('idea.store');
     Route::get('idea/{idea:slug}', [IdeaController::class, 'show'])->name('idea.show');

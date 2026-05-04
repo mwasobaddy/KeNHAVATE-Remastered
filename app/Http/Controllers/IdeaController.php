@@ -36,6 +36,13 @@ class IdeaController extends Controller
                 $q->where('user_id', $userId);
             })->count(),
             'public' => Idea::where('collaboration_enabled', true)->count(),
+            'collabo' => Idea::where('collaboration_enabled', true)
+                ->where(function ($query) use ($userId) {
+                    $query->where('user_id', $userId)
+                        ->orWhereHas('teamMembers', function ($q) use ($userId) {
+                            $q->where('user_id', $userId);
+                        });
+                })->count(),
         ];
 
         $thematicAreas = ThematicArea::where('is_active', true)->orderBy('sort_order')->get();

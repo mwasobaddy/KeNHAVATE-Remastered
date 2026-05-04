@@ -53,11 +53,15 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
         { key: 'mine', label: `Mine (${tabCounts?.mine ?? 0})` },
         { key: 'team', label: `Team (${tabCounts?.team ?? 0})` },
         { key: 'public', label: `Public (${tabCounts?.public ?? 0})` },
-        { key: 'public', label: `Collabo (${tabCounts?.public ?? 0})` },
+        { key: 'collabo', label: `Collabo (${tabCounts?.collabo ?? 0})` },
     ];
 
     const handleTabChange = (tab: string) => {
-        router.get(idea.index().url, { tab }, { preserveState: true });
+        if (tab === 'collabo') {
+            router.visit(idea.collabo.index().url);
+        } else {
+            router.get(idea.index().url, { tab }, { preserveState: true });
+        }
     };
 
     const getTeamMemberForIdea = (ideaItem: IdeaItem): TeamMember | null => {
@@ -190,7 +194,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                                                 {(activeTab !== 'public' && teamMember?.permissions === 'edit') || activeTab === 'mine' ? (
                                                                     <EditButton onClick={() => router.visit(idea.edit(ideaItem.slug).url)} />
                                                                 ) : null}
-                                                                {ideaItem.collaboration_enabled && (ideaItem.status === 'draft' || ideaItem.status === 'stage 1 revise') && (
+                                                                {ideaItem.collaboration_enabled && (ideaItem.status === 'draft' || ideaItem.status === 'stage 1 revise' || ideaItem.status === 'stage 2 revise') && (
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
                                                                             <button
