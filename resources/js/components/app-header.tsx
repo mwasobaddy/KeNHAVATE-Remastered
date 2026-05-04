@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Menu, Search, Bell } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -177,6 +177,19 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Link
+                                    href="/notifications"
+                                    className="group flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium text-accent-foreground ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                >
+                                    <Bell className="size-5 opacity-80 group-hover:opacity-100" />
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Notifications</p>
+                            </TooltipContent>
+                        </Tooltip>
                         <div className="relative flex items-center space-x-1">
                             <Button
                                 variant="ghost"

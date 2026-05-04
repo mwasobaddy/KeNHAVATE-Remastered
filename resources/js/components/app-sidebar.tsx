@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, Lightbulb, ClipboardCheck, FileCheck } from 'lucide-react';
+import { BookOpen, FolderGit2, LayoutGrid, Lightbulb, ClipboardCheck, FileCheck, Bell } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -27,6 +27,11 @@ const mainNavItems: NavItem[] = [
         title: 'Ideas',
         href: idea.index(),
         icon: Lightbulb,
+    },
+    {
+        title: 'Notifications',
+        href: '/notifications',
+        icon: Bell,
     },
     {
         title: 'SME Reviews',

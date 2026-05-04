@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\CollaborationRequest;
 use App\Models\Idea;
 use App\Models\TeamMember;
+use App\Notifications\CollaborationRequestApproved;
+use App\Notifications\CollaborationRequestReceived;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -81,16 +83,20 @@ class CollaboController extends Controller
             if ($existingRequest->isDeclined()) {
                 $existingRequest->update(['status' => 'pending', 'message' => $request->message]);
 
+                $idea->user->notify(new CollaborationRequestReceived($existingRequest, auth()->user()));
+
                 return response()->json(['success' => true, 'message' => 'Request submitted']);
             }
         }
 
-        CollaborationRequest::create([
+        $collaborationRequest = CollaborationRequest::create([
             'user_id' => $userId,
             'idea_id' => $idea->id,
             'status' => 'pending',
             'message' => $request->message,
         ]);
+
+        $idea->user->notify(new CollaborationRequestReceived($collaborationRequest, auth()->user()));
 
         return response()->json(['success' => true, 'message' => 'Collaboration request submitted']);
     }
@@ -123,6 +129,8 @@ class CollaboController extends Controller
             'role' => 'Collaborator',
             'permissions' => 'view',
         ]);
+
+        $collaborationRequest->user->notify(new CollaborationRequestApproved($collaborationRequest, auth()->user()));
 
         return response()->json(['success' => true, 'message' => 'Collaborator added']);
     }
