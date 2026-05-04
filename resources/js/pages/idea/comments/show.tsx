@@ -102,26 +102,115 @@ const formatTimeAgo = (date: string) => {
     return `${days}d`;
 };
 
+interface CommentItemProps {
+    comment: Comment;
+    depth: number;
+    onReply: (user: { email?: string; work_email?: string; name: string } | null, commentId: number) => void;
+    onLike: (commentId: number) => void;
+    commentLikes: Record<number, number>;
+    commentLiked: Record<number, boolean>;
+    commentLiking: Record<number, boolean>;
+    localReplies: Record<number, Comment[]>;
+}
+
+function CommentItem({
+    comment,
+    depth,
+    onReply,
+    onLike,
+    commentLikes,
+    commentLiked,
+    commentLiking,
+    localReplies,
+}: CommentItemProps) {
+    const displayName = getDisplayName(comment.user);
+    const replies = [...(comment.replies || []), ...(localReplies[comment.id] || [])];
+    const canReply = depth < 4;
+
+    return (
+        <div className="flex gap-3">
+            {comment.user?.avatar ? (
+                <img
+                    src={comment.user.avatar}
+                    alt={`${comment.user?.name ?? [comment.user?.first_name, comment.user?.other_names].filter(Boolean).join(' ') ?? 'Unknown'}'s avatar`}
+                    className={`${depth === 0 ? 'h-11 w-11' : 'h-8 w-8'} shrink-0 rounded-full object-cover border-2 border-border`}
+                />
+            ) : (
+                <div className={`flex ${depth === 0 ? 'h-11 w-11' : 'h-8 w-8'} shrink-0 items-center justify-center rounded-full bg-slate-300 text-sm font-semibold uppercase text-slate-700`}>
+                    {getAvatarLabel(displayName)}
+                </div>
+            )}
+            <div className="min-w-0 flex-1">
+                <p className={`${depth === 0 ? 'text-sm leading-6' : 'text-sm leading-5'} text-foreground`}>
+                    <span className="font-semibold text-foreground">
+                        {displayName}
+                    </span>{' '}
+                    {comment.content}
+                </p>
+
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <span>{formatTimeAgo(comment.created_at)}</span>
+                    <span>{(commentLikes[comment.id] ?? comment.likes_count) ?? 0} likes</span>
+                    {comment.user && canReply && (
+                        <button
+                            type="button"
+                            className="font-medium text-primary hover:underline"
+                            onClick={() => onReply(comment.user, comment.id)}
+                        >
+                            Reply
+                        </button>
+                    )}
+                </div>
+
+                <div className="mt-2 flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => onLike(comment.id)}
+                        disabled={commentLiking[comment.id]}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition ${(commentLiked[comment.id] ?? comment.user_has_liked) ? 'border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20' : 'border-border text-muted-foreground hover:bg-muted/10'}`}
+                    >
+                        <Heart className="h-3 w-3" />
+                        {(commentLiked[comment.id] ?? comment.user_has_liked) ? 'Liked' : 'Like'}
+                    </button>
+                </div>
+
+                {replies.length > 0 && depth < 4 && (
+                    <div className="mt-3 space-y-2 border-l-2 border-border pl-3">
+                        {replies.map((reply) => (
+                            <CommentItem
+                                key={reply.id}
+                                comment={reply}
+                                depth={depth + 1}
+                                onReply={onReply}
+                                onLike={onLike}
+                                commentLikes={commentLikes}
+                                commentLiked={commentLiked}
+                                commentLiking={commentLiking}
+                                localReplies={localReplies}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function CommentsShow({ idea, comments }: CommentsShowProps) {
     const [localComments, setLocalComments] = useState<Comment[]>([]);
+    const [localReplies, setLocalReplies] = useState<Record<number, Comment[]>>({});
 
     const allComments = [...comments.data, ...localComments];
 
-    const addReplyToComment = (parentId: number, reply: Comment) => {
-        setLocalComments((prev) => {
-            const newComments = [...prev];
-            const parentIndex = newComments.findIndex((c) => c.id === parentId);
-
-            if (parentIndex >= 0) {
-                if (!newComments[parentIndex].replies) {
-                    newComments[parentIndex].replies = [];
-                }
-
-                newComments[parentIndex].replies = [...newComments[parentIndex].replies, reply];
-            }
-
-            return newComments;
-        });
+    const addReplyToComment = (parentId: number | null, reply: Comment) => {
+        if (!parentId) {
+            setLocalComments((prev) => [reply, ...prev]);
+        } else {
+            setLocalReplies((prev) => ({
+                ...prev,
+                [parentId]: [...(prev[parentId] || []), reply],
+            }));
+        }
     };
 
     const form = useForm({
@@ -230,98 +319,20 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                             <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
                         ) : (
                             <div className="space-y-4">
-                                {allComments.map((comment) => {
-                                    const displayName = getDisplayName(comment.user);
-
-                                    return (
-                                        <div key={comment.id} className="rounded-3xl border border-border bg-background p-4 shadow-sm">
-                                            <div className="flex gap-3">
-                                                {comment.user?.avatar ? (
-                                                    <img
-                                                        src={comment.user.avatar}
-                                                        alt={`${comment.user?.name ?? [comment.user?.first_name, comment.user?.other_names].filter(Boolean).join(' ') ?? 'Unknown'}'s avatar`}
-                                                        className="h-11 w-11 shrink-0 rounded-full object-cover border-2 border-border"
-                                                    />
-                                                ) : (
-                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-300 text-base font-semibold uppercase text-slate-700">
-                                                        {getAvatarLabel(displayName)}
-                                                    </div>
-                                                )}
-
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm leading-6 text-foreground">
-                                                        <span className="font-semibold text-foreground">
-                                                            {displayName}
-                                                        </span>{' '}
-                                                        {comment.content}
-                                                    </p>
-
-                                                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                                                        <span>{formatTimeAgo(comment.created_at)}</span>
-                                                        <span>{(commentLikes[comment.id] ?? comment.likes_count) ?? 0} likes</span>
-                                                        {comment.user ? (
-                                                            <button
-                                                                type="button"
-                                                                className="font-medium text-primary hover:underline"
-                                                                onClick={() => handleReplyToComment(comment.user, comment.id)}
-                                                            >
-                                                                Reply
-                                                            </button>
-                                                        ) : null}
-                                                    </div>
-
-                                                    <div className="mt-4 flex items-center justify-end gap-2 text-sm text-muted-foreground">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleLikeComment(comment.id)}
-                                                            disabled={commentLiking[comment.id]}
-                                                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${(commentLiked[comment.id] ?? comment.user_has_liked) ? 'border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20' : 'border-border text-muted-foreground hover:bg-muted/10'}`}
-                                                        >
-                                                            <Heart className="h-4 w-4" />
-                                                            {(commentLiked[comment.id] ?? comment.user_has_liked) ? 'Liked' : 'Like'}
-                                                        </button>
-                                                    </div>
-
-                                                    {comment.replies && comment.replies.length > 0 && (
-                                                        <div className="mt-4 border-t border-border pt-4">
-                                                            <div className="space-y-3">
-                                                                {comment.replies.map((reply) => {
-                                                                    const replyDisplayName = getDisplayName(reply.user);
-
-                                                                    return (
-                                                                        <div key={reply.id} className="rounded-3xl border border-border bg-muted/5 p-3">
-                                                                            <div className="flex gap-3">
-                                                                                {reply.user?.avatar ? (
-                                                                                    <img
-                                                                                        src={reply.user.avatar}
-                                                                                        alt={`${reply.user?.name ?? 'Unknown'}'s avatar`}
-                                                                                        className="h-9 w-9 shrink-0 rounded-full object-cover border-2 border-border"
-                                                                                    />
-                                                                                ) : (
-                                                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-300 text-sm font-semibold uppercase text-slate-700">
-                                                                                        {getAvatarLabel(replyDisplayName)}
-                                                                                    </div>
-                                                                                )}
-                                                                                <div className="min-w-0 flex-1">
-                                                                                    <p className="text-sm leading-5 text-foreground">
-                                                                                        <span className="font-semibold text-foreground">
-                                                                                            {replyDisplayName}
-                                                                                        </span>{' '}
-                                                                                        {reply.content}
-                                                                                    </p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
+                                {allComments.map((comment) => (
+                                    <div key={comment.id} className="rounded-3xl border border-border bg-background p-4 shadow-sm">
+                                        <CommentItem
+                                            comment={comment}
+                                            depth={0}
+                                            onReply={handleReplyToComment}
+                                            onLike={handleLikeComment}
+                                            commentLikes={commentLikes}
+                                            commentLiked={commentLiked}
+                                            commentLiking={commentLiking}
+                                            localReplies={localReplies}
+                                        />
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
