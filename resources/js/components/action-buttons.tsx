@@ -16,7 +16,7 @@ export function ViewButton({ onClick, title = 'View' }: ViewButtonProps) {
             type="button"
             onClick={onClick}
             title={title}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
         >
             <Eye className="h-4 w-4" />
         </button>
@@ -34,7 +34,7 @@ export function EditButton({ onClick, title = 'Edit' }: EditButtonProps) {
             type="button"
             onClick={onClick}
             title={title}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950"
         >
             <Pencil className="h-4 w-4" />
         </button>
@@ -72,7 +72,7 @@ export function DeleteButton({
                 onClick={() => setOpen(true)}
                 disabled={disabled}
                 title="Delete"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed dark:text-red-400 dark:hover:bg-red-950"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
             >
                 <Trash2 className="h-4 w-4" />
             </button>

@@ -139,7 +139,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
 
                                         return (
                                             <div key={ideaItem.id} className="rounded-lg border p-4">
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-col justify-between">
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2">
                                                             <h3 className="font-medium">{ideaItem.idea_title}</h3>
@@ -158,7 +158,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-4">
+                                                    <div className="flex items-center justify-end gap-4">
                                                         {/* Like Button */}
                                                         <button
                                                             type="button"
