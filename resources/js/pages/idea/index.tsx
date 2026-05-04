@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
 import { Heart, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
+import { ViewButton, EditButton } from '@/components/action-buttons';
 import idea from '@/routes/idea';
 import comments from '@/routes/idea/comments';
 
@@ -181,20 +182,11 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                                             <span className="text-sm">{ideaItem.comments_count ?? 0}</span>
                                                         </button>
 
-                                                        <div className="flex gap-2">
-                                                            <Link href={idea.show(ideaItem.slug).url}>
-                                                                <button className="text-sm text-primary">View</button>
-                                                            </Link>
-                                                            {activeTab !== 'public' && teamMember?.permissions === 'edit' && (
-                                                                <Link href={idea.edit(ideaItem.slug).url}>
-                                                                    <button className="text-sm text-primary">Edit</button>
-                                                                </Link>
-                                                            )}
-                                                            {activeTab === 'mine' && (
-                                                                <Link href={idea.edit(ideaItem.slug).url}>
-                                                                    <button className="text-sm text-primary">Edit</button>
-                                                                </Link>
-                                                            )}
+                                                        <div className="flex items-center gap-1">
+                                                            <ViewButton onClick={() => router.visit(idea.show(ideaItem.slug).url)} />
+                                                            {(activeTab !== 'public' && teamMember?.permissions === 'edit') || activeTab === 'mine' ? (
+                                                                <EditButton onClick={() => router.visit(idea.edit(ideaItem.slug).url)} />
+                                                            ) : null}
                                                         </div>
                                                     </div>
                                                 </div>
