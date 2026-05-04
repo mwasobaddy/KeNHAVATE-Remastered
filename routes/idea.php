@@ -21,11 +21,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('idea/{idea:slug}/collabo', [CollaboController::class, 'show'])->name('idea.collabo.show');
 
     // Collaboration requests
-    Route::post('idea/{idea}/collabo/request', [CollaboController::class, 'requestCollaboration'])->name('idea.collabo.request');
-    Route::delete('idea/{idea}/collabo/request', [CollaboController::class, 'cancelRequest'])->name('idea.collabo.cancel');
-    Route::post('idea/{idea}/collabo/requests/{collaborationRequest}/approve', [CollaboController::class, 'approveRequest'])->name('idea.collabo.approve');
-    Route::post('idea/{idea}/collabo/requests/{collaborationRequest}/decline', [CollaboController::class, 'declineRequest'])->name('idea.collabo.decline');
-    Route::delete('idea/{idea}/collabo/collaborators/{teamMember}', [CollaboController::class, 'removeCollaborator'])->name('idea.collabo.remove');
+    Route::post('idea/{idea:slug}/collabo/request', [CollaboController::class, 'requestCollaboration'])->name('idea.collabo.request');
+    Route::delete('idea/{idea:slug}/collabo/request', [CollaboController::class, 'cancelRequest'])->name('idea.collabo.cancel');
+    Route::post('idea/{idea:slug}/collabo/requests/{collaborationRequest}/approve', [CollaboController::class, 'approveRequest'])->name('idea.collabo.approve');
+    Route::post('idea/{idea:slug}/collabo/requests/{collaborationRequest}/decline', [CollaboController::class, 'declineRequest'])->name('idea.collabo.decline');
+    Route::delete('idea/{idea:slug}/collabo/collaborators/{teamMember}', [CollaboController::class, 'removeCollaborator'])->name('idea.collabo.remove');
     Route::get('idea/{idea:slug}', [IdeaController::class, 'show'])->name('idea.show');
     Route::get('idea/{idea:slug}/edit', [IdeaController::class, 'edit'])->name('idea.edit');
     Route::put('idea/{idea:slug}', [IdeaController::class, 'update'])->name('idea.update');

@@ -112,7 +112,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
         setSubmitting(true);
 
         try {
-            await axios.post(`/idea/${idea.id}/collabo/request`, {
+            await axios.post(`/idea/${idea.slug}/collabo/request`, {
                 message: requestMessage,
             });
             router.reload();
@@ -127,7 +127,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
         setSubmitting(true);
 
         try {
-            await axios.delete(`/idea/${idea.id}/collabo/request`);
+            await axios.delete(`/idea/${idea.slug}/collabo/request`);
             router.reload();
         } catch (error) {
             console.error('Failed to cancel request:', error);
@@ -138,7 +138,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
 
     const approveRequest = async (requestId: number) => {
         try {
-            await axios.post(`/idea/${idea.id}/collabo/requests/${requestId}/approve`);
+            await axios.post(`/idea/${idea.slug}/collabo/requests/${requestId}/approve`);
             router.reload();
         } catch (error) {
             console.error('Failed to approve request:', error);
@@ -147,7 +147,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
 
     const declineRequest = async (requestId: number) => {
         try {
-            await axios.post(`/idea/${idea.id}/collabo/requests/${requestId}/decline`);
+            await axios.post(`/idea/${idea.slug}/collabo/requests/${requestId}/decline`);
             router.reload();
         } catch (error) {
             console.error('Failed to decline request:', error);
@@ -160,7 +160,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
         }
 
         try {
-            await axios.delete(`/idea/${idea.id}/collabo/collaborators/${memberId}`);
+            await axios.delete(`/idea/${idea.slug}/collabo/collaborators/${memberId}`);
             router.reload();
         } catch (error) {
             console.error('Failed to remove collaborator:', error);
