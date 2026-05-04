@@ -140,38 +140,43 @@ function CommentItem({
                     {getAvatarLabel(displayName)}
                 </div>
             )}
-            <div className="min-w-0 flex-1">
-                <p className={`${depth === 0 ? 'text-sm leading-6' : 'text-sm leading-5'} text-foreground`}>
-                    <span className="font-semibold text-foreground">
-                        {displayName}
-                    </span>{' '}
-                    {comment.content}
-                </p>
+            <div className="min-w-0 flex-col flex-1">
+                <div className="flex items-center gap-2 justify-between mb-8">
+                    <div>
+                        <p className={`${depth === 0 ? 'text-sm leading-6' : 'text-sm leading-5'} text-foreground`}>
+                            <span className="font-semibold text-foreground">
+                                {displayName}
+                            </span>{' '}
+                            {comment.content}
+                        </p>
 
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span>{formatTimeAgo(comment.created_at)}</span>
-                    <span>{(commentLikes[comment.id] ?? comment.likes_count) ?? 0} likes</span>
-                    {comment.user && canReply && (
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                            <span>{formatTimeAgo(comment.created_at)}</span>
+                            <span>{(commentLikes[comment.id] ?? comment.likes_count) ?? 0} likes</span>
+                            {comment.user && canReply && (
+                                <button
+                                    type="button"
+                                    className="font-medium text-primary hover:underline"
+                                    onClick={() => onReply(comment.user, comment.id)}
+                                >
+                                    Reply
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2">
                         <button
                             type="button"
-                            className="font-medium text-primary hover:underline"
-                            onClick={() => onReply(comment.user, comment.id)}
+                            onClick={() => onLike(comment.id)}
+                            disabled={commentLiking[comment.id]}
+                            className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium transition ${(commentLiked[comment.id] ?? comment.user_has_liked) ? 'text-red-500' : 'text-muted-foreground'}`}
                         >
-                            Reply
+                            <Heart
+                                className={`h-3 w-3 ${commentLiked[comment.id] ? 'fill-current' : ''}`}
+                            />
                         </button>
-                    )}
-                </div>
-
-                <div className="mt-2 flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => onLike(comment.id)}
-                        disabled={commentLiking[comment.id]}
-                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition ${(commentLiked[comment.id] ?? comment.user_has_liked) ? 'border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20' : 'border-border text-muted-foreground hover:bg-muted/10'}`}
-                    >
-                        <Heart className="h-3 w-3" />
-                        {(commentLiked[comment.id] ?? comment.user_has_liked) ? 'Liked' : 'Like'}
-                    </button>
+                    </div>
                 </div>
 
                 {replies.length > 0 && depth < 4 && (
@@ -298,7 +303,7 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
         <>
             <Head title={`Comments - ${idea.idea_title}`} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
+                <div className="flex flex-col relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
                     <div className="flex flex-col">
                         <div className="p-6">
                             <div className="flex items-center justify-between">
@@ -320,7 +325,7 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                         ) : (
                             <div className="space-y-4">
                                 {allComments.map((comment) => (
-                                    <div key={comment.id} className="rounded-3xl border border-border bg-background p-4 shadow-sm">
+                                    <div key={comment.id} className="bg-background border-border border-b-2 p-4 pb-4 pt-0 shadow-sm mb-">
                                         <CommentItem
                                             comment={comment}
                                             depth={0}
@@ -342,40 +347,46 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                         className="sticky bottom-0 border-t border-border bg-background/95 p-4 backdrop-blur"
                     >
                         <div className="flex gap-2">
-                            {form.data.parent_id && (
-                                <div className="flex items-center pr-2 text-sm text-muted-foreground">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            form.setData('parent_id', null);
-                                            form.setData('content', '');
-                                        }}
-                                        className="text-xs text-muted-foreground hover:text-foreground"
+                            <div className='w-full'>
+                                <div>
+                                    {form.data.parent_id && (
+                                        <div className="flex items-center pr-2 text-sm text-muted-foreground">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    form.setData('parent_id', null);
+                                                    form.setData('content', '');
+                                                }}
+                                                className="text-xs text-muted-foreground hover:text-foreground bg-amber-500/50 px-2 py-1 mb-2 rounded-full"
+                                            >
+                                                {form.data.content} ✕ 
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                                            <Smile className="h-5 w-5" />
+                                        </div>
+                                        <Input
+                                            ref={replyInputRef}
+                                            value={form.data.content}
+                                            onChange={(event) => form.setData('content', event.target.value)}
+                                            placeholder={form.data.parent_id ? 'Write a reply...' : 'Add a comment'}
+                                            className="w-full rounded-full border border-border bg-background px-12 py-3"
+                                        />
+                                    </div>
+                                    <Button
+                                        type="submit"
+                                        disabled={form.processing || !form.data.content.trim()}
+                                        className="rounded-full px-6"
                                     >
-                                        ✕ Cancel reply
-                                    </button>
+                                        <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                                        Post
+                                    </Button>
                                 </div>
-                            )}
-                            <div className="relative flex-1">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                                    <Smile className="h-5 w-5" />
-                                </div>
-                                <Input
-                                    ref={replyInputRef}
-                                    value={form.data.content}
-                                    onChange={(event) => form.setData('content', event.target.value)}
-                                    placeholder={form.data.parent_id ? 'Write a reply...' : 'Add a comment'}
-                                    className="w-full rounded-full border border-border bg-background px-12 py-3"
-                                />
                             </div>
-                            <Button
-                                type="submit"
-                                disabled={form.processing || !form.data.content.trim()}
-                                className="rounded-full px-6"
-                            >
-                                <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                                Post
-                            </Button>
                         </div>
                         {form.errors.content && (
                             <p className="mt-2 text-sm text-destructive">{form.errors.content}</p>

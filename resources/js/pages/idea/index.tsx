@@ -50,6 +50,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
         { key: 'mine', label: `Mine (${tabCounts?.mine ?? 0})` },
         { key: 'team', label: `Team (${tabCounts?.team ?? 0})` },
         { key: 'public', label: `Public (${tabCounts?.public ?? 0})` },
+        { key: 'public', label: `Collabo (${tabCounts?.public ?? 0})` },
     ];
 
     const handleTabChange = (tab: string) => {
@@ -115,7 +116,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                     <button
                                         key={tab.key}
                                         onClick={() => handleTabChange(tab.key)}
-                                        className={`border-b-2 px-4 py-2 text-sm font-medium ${
+                                        className={`border-b-2 px-2 py-2 text-sm font-medium ${
                                             activeTab === tab.key
                                                 ? 'border-primary text-primary'
                                                 : 'border-transparent text-muted-foreground hover:text-foreground'
