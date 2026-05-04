@@ -55,7 +55,7 @@ const getDisplayName = (user: User | null): string => {
 return 'Unknown';
 }
 
-    return user.name ?? [user.first_name, user.other_names].filter(Boolean).join(' ').trim() || 'Unknown';
+    return user.name ?? ([user.first_name, user.other_names].filter(Boolean).join(' ').trim() || 'Unknown');
 };
 
 const getAvatarLabel = (displayName: string) => {
