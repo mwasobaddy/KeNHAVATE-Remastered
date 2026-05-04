@@ -237,7 +237,7 @@ const handleReplyToComment = (user: { email?: string; work_email?: string; name:
                                                             type="button"
                                                             onClick={() => handleLikeComment(comment.id)}
                                                             disabled={commentLiking[comment.id]}
-                                                            className=`{inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${(commentLiked[comment.id] ?? comment.user_has_liked) ? 'border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20' : 'border-border text-muted-foreground hover:bg-muted/10'}}`
+                                                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${(commentLiked[comment.id] ?? comment.user_has_liked) ? 'border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20' : 'border-border text-muted-foreground hover:bg-muted/10'}`}
                                                         >
                                                             <Heart className="h-4 w-4" />
                                                             {(commentLiked[comment.id] ?? comment.user_has_liked) ? 'Liked' : 'Like'}
