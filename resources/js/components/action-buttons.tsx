@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { Eye, SquarePen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -36,7 +36,7 @@ export function EditButton({ onClick, title = 'Edit' }: EditButtonProps) {
             title={title}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-green-200 text-green-600 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950"
         >
-            <Pencil className="h-4 w-4" />
+            <SquarePen className="h-4 w-4" />
         </button>
     );
 }

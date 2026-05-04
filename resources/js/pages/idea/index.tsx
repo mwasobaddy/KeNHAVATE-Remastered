@@ -1,8 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Heart, MessageCircle } from 'lucide-react';
+import { Heart, MessageCircle, Users } from 'lucide-react';
 import { useState } from 'react';
 import { ViewButton, EditButton } from '@/components/action-buttons';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import idea from '@/routes/idea';
 import comments from '@/routes/idea/comments';
 
@@ -20,6 +21,7 @@ type IdeaItem = {
     id: number;
     idea_title: string;
     status: string;
+    collaboration_enabled: boolean;
     thematic_area?: ThematicArea;
     slug: string;
     team_members?: TeamMember[];
@@ -182,12 +184,30 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                                             <span className="text-sm">{ideaItem.comments_count ?? 0}</span>
                                                         </button>
 
-                                                        <div className="flex items-center gap-1">
-                                                            <ViewButton onClick={() => router.visit(idea.show(ideaItem.slug).url)} />
-                                                            {(activeTab !== 'public' && teamMember?.permissions === 'edit') || activeTab === 'mine' ? (
-                                                                <EditButton onClick={() => router.visit(idea.edit(ideaItem.slug).url)} />
-                                                            ) : null}
-                                                        </div>
+                                                        <TooltipProvider>
+                                                            <div className="flex items-center gap-1">
+                                                                <ViewButton onClick={() => router.visit(idea.show(ideaItem.slug).url)} />
+                                                                {(activeTab !== 'public' && teamMember?.permissions === 'edit') || activeTab === 'mine' ? (
+                                                                    <EditButton onClick={() => router.visit(idea.edit(ideaItem.slug).url)} />
+                                                                ) : null}
+                                                                {ideaItem.collaboration_enabled && (ideaItem.status === 'draft' || ideaItem.status === 'stage 1 revise') && (
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => router.visit(idea.collabo.index().url)}
+                                                                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-purple-200 text-purple-600 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-400 dark:hover:bg-purple-950"
+                                                                            >
+                                                                                <Users className="h-4 w-4" />
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>Collaborate on this idea</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                )}
+                                                            </div>
+                                                        </TooltipProvider>
                                                     </div>
                                                 </div>
                                             </div>
