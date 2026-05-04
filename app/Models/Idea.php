@@ -95,6 +95,16 @@ class Idea extends Model
         return $this->hasMany(TeamMember::class);
     }
 
+    public function collaborationRequests()
+    {
+        return $this->hasMany(CollaborationRequest::class);
+    }
+
+    public function pendingCollaborationRequests()
+    {
+        return $this->hasMany(CollaborationRequest::class)->where('status', 'pending');
+    }
+
     /**
      * Get the likes for this idea.
      */
