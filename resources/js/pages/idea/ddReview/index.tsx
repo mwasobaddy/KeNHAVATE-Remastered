@@ -1,28 +1,50 @@
 'use client';
 
+import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import {
-    Lock,
-    FileText,
-    ClipboardList,
-    Users,
-    CheckCircle,
-    Lightbulb,
-    BarChart3,
-    TrendingUp,
-    Clock,
-    AlertTriangle,
-    XCircle,
-} from 'lucide-react';
+import { Lock, ClipboardList, Users, Lightbulb, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
 import ideaRoutes from '@/routes/idea';
+import { Badge } from '@/components/ui/badge';
+
+interface User {
+    id: number;
+    first_name: string;
+    other_names: string;
+}
+
+interface ThematicArea {
+    id: number;
+    name: string;
+}
+
+interface Status {
+    id: number;
+    name: string;
+}
+
+interface DdReview {
+    id: number;
+    review_deadline: string | null;
+}
+
+interface Idea {
+    id: number;
+    idea_title: string;
+    slug: string;
+    created_at: string;
+    user: User | null;
+    thematic_area: ThematicArea | null;
+    status: Status | null;
+    dd_review: DdReview | null;
+}
 
 interface Counts {
     pendingUnlock: number;
@@ -33,244 +55,159 @@ interface Counts {
     allActive: number;
 }
 
-interface Stats {
-    total: number;
-    approved: number;
-    rejected: number;
-    pending: number;
-    inReview: number;
-    draft: number;
-    thematicDistribution: { name: string; count: number }[];
-    deadlineStats: {
-        overdue: number;
-        dueSoon: number;
-        onTrack: number;
-    };
-}
-
-interface DdReviewIndexProps {
+interface Props {
     counts: Counts;
-    stats?: Stats;
+    pendingUnlockIdeas: Idea[];
+    pendingCompilationIdeas: Idea[];
+    pendingDecisionIdeas: Idea[];
+    allActiveIdeas: Idea[];
 }
 
-interface CategoryCardProps {
-    title: string;
-    description: string;
-    count: number;
-    href: string;
-    icon: React.ElementType;
-    color: string;
-}
+const tabs = [
+    { id: 'unlock', label: 'Pending Unlock', icon: Lock, getCount: (c: Counts) => c.pendingUnlock },
+    { id: 'compilation', label: 'Pending Compilation', icon: ClipboardList, getCount: (c: Counts) => c.pendingSmeCompilation + c.pendingBoardCompilation },
+    { id: 'decision', label: 'Pending Decision', icon: Users, getCount: (c: Counts) => c.pendingSmeDecision + c.pendingBoardDecision },
+    { id: 'active', label: 'All Active', icon: Lightbulb, getCount: (c: Counts) => c.allActive },
+];
 
-function CategoryCard({ title, description, count, href, icon: Icon, color }: CategoryCardProps) {
-    return (
-        <Link href={href} className="block">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-lg font-medium">{title}</CardTitle>
-                    <div className={`p-2 rounded-full ${color}`}>
-                        <Icon className="h-5 w-5 text-white" />
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold">{count}</div>
-                    <CardDescription className="mt-1">{description}</CardDescription>
-                </CardContent>
-            </Card>
-        </Link>
-    );
-}
+export default function DdReviewIndex({ counts, pendingUnlockIdeas, pendingCompilationIdeas, pendingDecisionIdeas, allActiveIdeas }: Props) {
+    const [activeTab, setActiveTab] = useState('unlock');
+    const [searchQuery, setSearchQuery] = useState('');
 
-export default function DdReviewIndex({ counts, stats }: DdReviewIndexProps) {
-    const categories = [
-        {
-            title: 'Pending Unlock',
-            description: 'Ideas submitted, awaiting DD to unlock',
-            count: counts.pendingUnlock,
-            href: ideaRoutes.ddReview.pendingUnlock().url,
-            icon: Lock,
-            color: 'bg-orange-500',
-        },
-        {
-            title: 'Pending SME Compilation',
-            description: 'Awaiting DD to compile SME comments',
-            count: counts.pendingSmeCompilation,
-            href: ideaRoutes.ddReview.pendingSmeCompilation().url,
-            icon: ClipboardList,
-            color: 'bg-yellow-500',
-        },
-        {
-            title: 'Pending Board Compilation',
-            description: 'Awaiting DD to compile Board comments',
-            count: counts.pendingBoardCompilation,
-            href: ideaRoutes.ddReview.pendingBoardCompilation().url,
-            icon: ClipboardList,
-            color: 'bg-amber-600',
-        },
-        {
-            title: 'Pending SME Decision',
-            description: 'Awaiting DD final decision',
-            count: counts.pendingSmeDecision,
-            href: ideaRoutes.ddReview.pendingSmeDecision().url,
-            icon: Users,
-            color: 'bg-blue-500',
-        },
-        {
-            title: 'Pending Board Decision',
-            description: 'Awaiting Board scheduling/review',
-            count: counts.pendingBoardDecision,
-            href: ideaRoutes.ddReview.pendingBoardDecision().url,
-            icon: CheckCircle,
-            color: 'bg-indigo-500',
-        },
-        {
-            title: 'All Active',
-            description: 'All ideas in active workflow',
-            count: counts.allActive,
-            href: ideaRoutes.ddReview.active().url,
-            icon: Lightbulb,
-            color: 'bg-green-500',
-        },
-    ];
+    const ideasMap: Record<string, Idea[]> = {
+        unlock: pendingUnlockIdeas,
+        compilation: pendingCompilationIdeas,
+        decision: pendingDecisionIdeas,
+        active: allActiveIdeas,
+    };
 
-    const completionRate = stats && stats.total > 0
-        ? Math.round(((stats.approved + stats.rejected) / stats.total) * 100)
-        : 0;
+    const currentIdeas = ideasMap[activeTab]?.filter((idea) =>
+        idea.idea_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        idea.user?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        idea.thematic_area?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+
+    const activeTabData = tabs.find((t) => t.id === activeTab);
 
     return (
         <>
-            <Head title="DD Review Dashboard" />
+            <Head title="DD Review" />
 
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold">DD Review Dashboard</h1>
-                        <p className="text-muted-foreground">
-                            Manage ideas submitted for Deputy Director review
-                        </p>
-                    </div>
-                    {stats && (
-                        <Link href={ideaRoutes.ddReview.dashboard()}>
-                            <Button variant="outline">
-                                <BarChart3 className="mr-2 h-4 w-4" />
-                                Full Analytics
-                            </Button>
-                        </Link>
-                    )}
+                <div>
+                    <h1 className="text-3xl font-bold">DD Review</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Manage ideas through the Deputy Director review process
+                    </p>
                 </div>
 
-                {/* Category Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {categories.map((category) => (
-                        <CategoryCard key={category.title} {...category} />
-                    ))}
+                {/* Tabs */}
+                <div className="border-b">
+                    <nav className="flex gap-4">
+                        {tabs.map((tab) => {
+                            const Icon = tab.icon;
+                            const count = tab.getCount(counts);
+                            const isActive = activeTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                                        isActive
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <Icon className="h-4 w-4" />
+                                    {tab.label}
+                                    {count > 0 && (
+                                        <Badge variant="secondary" className="ml-1">
+                                            {count}
+                                        </Badge>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </nav>
                 </div>
 
-                {/* Quick Stats (only show if stats provided) */}
-                {stats && (
-                    <div className="grid gap-4 md:grid-cols-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Total Ideas</CardTitle>
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats.total}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">In Review</CardTitle>
-                                <Clock className="h-4 w-4 text-blue-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats.inReview}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Approved</CardTitle>
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats.approved}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-                                <XCircle className="h-4 w-4 text-red-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats.rejected}</div>
-                            </CardContent>
-                        </Card>
+                {/* Search */}
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search ideas..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9"
+                        />
                     </div>
-                )}
+                    <span className="text-sm text-muted-foreground">
+                        {currentIdeas.length} ideas
+                    </span>
+                </div>
 
-                {/* Deadline Status */}
-                {stats && stats.deadlineStats && (
+                {/* Ideas List */}
+                {currentIdeas.length === 0 ? (
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <AlertTriangle className="h-5 w-5" />
-                                Deadline Status
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-4 md:grid-cols-3">
-                                <div className="text-center p-4 bg-red-50 dark:bg-red-950 rounded-lg">
-                                    <div className="text-2xl font-bold text-red-600">{stats.deadlineStats.overdue}</div>
-                                    <div className="text-sm text-red-600">Overdue</div>
-                                </div>
-                                <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-                                    <div className="text-2xl font-bold text-yellow-600">{stats.deadlineStats.dueSoon}</div>
-                                    <div className="text-sm text-yellow-600">Due Soon (3 days)</div>
-                                </div>
-                                <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg">
-                                    <div className="text-2xl font-bold text-green-600">{stats.deadlineStats.onTrack}</div>
-                                    <div className="text-sm text-green-600">On Track</div>
-                                </div>
+                        <CardContent className="flex flex-col items-center justify-center py-12">
+                            <div className="text-center">
+                                <p className="text-muted-foreground">No ideas found</p>
+                                {searchQuery && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Try adjusting your search
+                                    </p>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
+                ) : (
+                    <div className="space-y-3">
+                        {currentIdeas.map((idea) => (
+                            <Card key={idea.id} className="hover:shadow-md transition-shadow">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1 min-w-0">
+                                            <Link
+                                                href={ideaRoutes.ddReview.show(idea.slug)}
+                                                className="text-lg font-medium hover:text-primary truncate block"
+                                            >
+                                                {idea.idea_title}
+                                            </Link>
+                                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                                <span>{idea.user?.first_name} {idea.user?.other_names}</span>
+                                                {idea.thematic_area && (
+                                                    <>
+                                                        <span>•</span>
+                                                        <span>{idea.thematic_area.name}</span>
+                                                    </>
+                                                )}
+                                                {idea.status && (
+                                                    <>
+                                                        <span>•</span>
+                                                        <Badge variant="outline">{idea.status.name}</Badge>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {idea.dd_review?.review_deadline && (
+                                                <span className="text-sm text-muted-foreground">
+                                                    Due: {new Date(idea.dd_review.review_deadline).toLocaleDateString()}
+                                                </span>
+                                            )}
+                                            <Link href={ideaRoutes.ddReview.show(idea.slug)}>
+                                                <Button variant="outline" size="sm">
+                                                    View
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
                 )}
-
-                {/* Quick Actions */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Quick Actions</CardTitle>
-                        <CardDescription>Common tasks for Deputy Director</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                            <Link href={ideaRoutes.ddReview.pendingUnlock().url}>
-                                <Button variant="outline" size="sm">
-                                    <Lock className="mr-2 h-4 w-4" />
-                                    Unlock Ideas
-                                </Button>
-                            </Link>
-                            <Link href={ideaRoutes.ddReview.pendingSmeCompilation().url}>
-                                <Button variant="outline" size="sm">
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    Compile SME
-                                </Button>
-                            </Link>
-                            <Link href={ideaRoutes.ddReview.pendingBoardCompilation().url}>
-                                <Button variant="outline" size="sm">
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    Compile Board
-                                </Button>
-                            </Link>
-                            <Link href={ideaRoutes.ddReview.active().url}>
-                                <Button variant="outline" size="sm">
-                                    <Lightbulb className="mr-2 h-4 w-4" />
-                                    View Active
-                                </Button>
-                            </Link>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         </>
     );

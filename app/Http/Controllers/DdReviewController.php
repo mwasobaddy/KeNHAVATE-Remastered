@@ -80,6 +80,22 @@ class DdReviewController extends Controller
         return Inertia::render('idea/ddReview/index', [
             'counts' => $counts,
             'stats' => $stats,
+            'pendingUnlockIdeas' => Idea::where('status_id', 2)
+                ->with('user', 'thematicArea', 'status')
+                ->latest()
+                ->get(),
+            'pendingCompilationIdeas' => Idea::whereIn('status_id', [5, 13])
+                ->with('user', 'thematicArea', 'status')
+                ->latest()
+                ->get(),
+            'pendingDecisionIdeas' => Idea::whereIn('status_id', [10, 11])
+                ->with('user', 'thematicArea', 'ddReview', 'status')
+                ->latest()
+                ->get(),
+            'allActiveIdeas' => Idea::whereNotIn('status_id', [17, 18, 19, 20])
+                ->with('user', 'thematicArea', 'status')
+                ->latest()
+                ->get(),
         ]);
     }
 
