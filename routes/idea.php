@@ -7,6 +7,7 @@ use App\Http\Controllers\IdeaController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SmeReviewController;
+use App\Http\Controllers\SuggestionController;
 use App\Http\Controllers\TeamMemberController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,11 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('idea/{idea:slug}/collabo/request', [CollaboController::class, 'cancelRequest'])->name('idea.collabo.cancel');
     Route::post('idea/{idea:slug}/collabo/requests/{collaborationRequest}/approve', [CollaboController::class, 'approveRequest'])->name('idea.collabo.approve');
     Route::post('idea/{idea:slug}/collabo/requests/{collaborationRequest}/decline', [CollaboController::class, 'declineRequest'])->name('idea.collabo.decline');
-    Route::delete('idea/{idea:slug}/collabo/collaborators/{teamMember}', [CollaboController::class, 'removeCollaborator'])->name('idea.collabo.remove');
-    Route::get('idea/{idea:slug}', [IdeaController::class, 'show'])->name('idea.show');
-    Route::get('idea/{idea:slug}/edit', [IdeaController::class, 'edit'])->name('idea.edit');
-    Route::put('idea/{idea:slug}', [IdeaController::class, 'update'])->name('idea.update');
-
+    Route::delete('idea/{idea:slug}/collabo/collaborators/{collaborator}', [CollaboController::class, 'removeCollaborator'])->name('idea.collabo.remove');
     // Likes route
     Route::post('likes', [LikeController::class, 'store'])->name('likes.store');
 
@@ -56,9 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('idea/{idea}/team-members/{teamMember}', [TeamMemberController::class, 'destroy'])->name('idea.team-members.destroy');
 
     // Suggestions routes
-    Route::post('idea/{idea}/suggestions', [SuggestionController::class, 'store'])->name('idea.suggestions.store');
-    Route::post('idea/{idea}/suggestions/{suggestion}/approve', [SuggestionController::class, 'approve'])->name('idea.suggestions.approve');
-    Route::post('idea/{idea}/suggestions/{suggestion}/decline', [SuggestionController::class, 'decline'])->name('idea.suggestions.decline');
+    Route::post('idea/{idea:slug}/suggestions', [SuggestionController::class, 'store'])->name('idea.suggestions.store');
+    Route::post('idea/{idea:slug}/suggestions/{suggestion}/approve', [SuggestionController::class, 'approve'])->name('idea.suggestions.approve');
+    Route::post('idea/{idea:slug}/suggestions/{suggestion}/decline', [SuggestionController::class, 'decline'])->name('idea.suggestions.decline');
 
     // SME Review routes
     Route::get('idea/sme-review', [SmeReviewController::class, 'index'])->name('idea.smeReview.index');
@@ -70,7 +67,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // DD Review routes
     Route::get('idea/dd-review', [DdReviewController::class, 'index'])->name('idea.ddReview.index');
+    Route::get('idea/dd-review/dashboard', [DdReviewController::class, 'dashboard'])->name('idea.ddReview.dashboard');
+    Route::get('idea/dd-review/reviewer', [DdReviewController::class, 'dashboard'])->name('idea.ddReview.reviewer');
     Route::get('idea/dd-review/create', [DdReviewController::class, 'create'])->name('idea.ddReview.create');
     Route::post('idea/dd-review', [DdReviewController::class, 'store'])->name('idea.ddReview.store');
     Route::get('idea/dd-review/{ddReview}', [DdReviewController::class, 'show'])->name('idea.ddReview.show');
+
+    // DD Review workflow
+    Route::post('idea/{idea:slug}/dd-review/unlock', [DdReviewController::class, 'unlock'])->name('idea.ddReview.unlock');
+    Route::post('idea/{idea:slug}/dd-review/comment', [DdReviewController::class, 'addComment'])->name('idea.ddReview.comment');
+    Route::post('idea/{idea:slug}/dd-review/feedback', [DdReviewController::class, 'sendFeedback'])->name('idea.ddReview.feedback');
+    Route::post('idea/{idea:slug}/dd-review/approve', [DdReviewController::class, 'approve'])->name('idea.ddReview.approve');
+    Route::post('idea/{idea:slug}/dd-review/reject', [DdReviewController::class, 'reject'])->name('idea.ddReview.reject');
+
+    Route::get('idea/{idea:slug}', [IdeaController::class, 'show'])->name('idea.show');
+    Route::get('idea/{idea:slug}/edit', [IdeaController::class, 'edit'])->name('idea.edit');
+    Route::put('idea/{idea:slug}', [IdeaController::class, 'update'])->name('idea.update');
 });
