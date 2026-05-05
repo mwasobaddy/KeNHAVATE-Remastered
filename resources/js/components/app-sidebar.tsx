@@ -42,23 +42,18 @@ export function AppSidebar() {
     const canViewDDAnalytics = userPermissions.includes('view dd_analytics');
 
     const ddReviewItems: NavItem[] = [
-        { title: 'Overview', href: idea.ddReview.index(), icon: FileCheck },
-        ...(userPermissions.includes('unlock dd_review') ? [{ title: 'Pending Unlock', href: idea.ddReview.pendingUnlock().url, icon: Lock }] : []),
-        ...(userPermissions.includes('compile sme_feedback') ? [{ title: 'Pending SME Compilation', href: idea.ddReview.pendingSmeCompilation().url, icon: ClipboardList }] : []),
-        ...(userPermissions.includes('compile board_feedback') ? [{ title: 'Pending Board Compilation', href: idea.ddReview.pendingBoardCompilation().url, icon: ClipboardList }] : []),
-        ...(userPermissions.includes('decide sme') ? [{ title: 'Pending SME Decision', href: idea.ddReview.pendingSmeDecision().url, icon: Users }] : []),
-        ...(userPermissions.includes('decide board') ? [{ title: 'Pending Board Decision', href: idea.ddReview.pendingBoardDecision().url, icon: CheckCircle }] : []),
-        { title: 'All Active', href: idea.ddReview.active().url, icon: Lightbulb },
-        ...(canViewDDAnalytics ? [{ title: 'Analytics', href: idea.ddReview.dashboard(), icon: BarChart3 }] : []),
+        { title: 'Overview', href: idea.ddReview.index(), icon: FileCheck, group: 'DD Review' },
+        ...(userPermissions.includes('unlock dd_review') ? [{ title: 'Pending Unlock', href: idea.ddReview.pendingUnlock().url, icon: Lock, group: 'DD Review' }] : []),
+        ...(userPermissions.includes('compile sme_feedback') ? [{ title: 'Pending SME Compilation', href: idea.ddReview.pendingSmeCompilation().url, icon: ClipboardList, group: 'DD Review' }] : []),
+        ...(userPermissions.includes('compile board_feedback') ? [{ title: 'Pending Board Compilation', href: idea.ddReview.pendingBoardCompilation().url, icon: ClipboardList, group: 'DD Review' }] : []),
+        ...(userPermissions.includes('decide sme') ? [{ title: 'Pending SME Decision', href: idea.ddReview.pendingSmeDecision().url, icon: Users, group: 'DD Review' }] : []),
+        ...(userPermissions.includes('decide board') ? [{ title: 'Pending Board Decision', href: idea.ddReview.pendingBoardDecision().url, icon: CheckCircle, group: 'DD Review' }] : []),
+        { title: 'All Active', href: idea.ddReview.active().url, icon: Lightbulb, group: 'DD Review' },
+        ...(canViewDDAnalytics ? [{ title: 'Analytics', href: idea.ddReview.dashboard(), icon: BarChart3, group: 'DD Review' }] : []),
     ];
 
     const mainNavItems: NavItem[] = [
-        ...(canViewDDReview ? [{
-            title: 'DD Review',
-            icon: FileCheck,
-            group: 'Review',
-            items: ddReviewItems,
-        }] : []),
+        ...(canViewDDReview ? ddReviewItems : []),
         {
             title: 'SME Reviews',
             href: idea.smeReview.index(),
