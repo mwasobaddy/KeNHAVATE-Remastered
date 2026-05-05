@@ -24,53 +24,143 @@ class DdReviewController extends Controller
         private DdReviewService $reviewService
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $user = auth()->user();
 
-        $draftIdeas = Idea::where('status', 'draft')
-            ->with('user', 'thematicArea')
-            ->latest()
-            ->get();
+        // Get counts for each category
+        $counts = [
+            'pendingUnlock' => Idea::where('status_id', 2)->count(), // SUBMITTED
+            'pendingSmeCompilation' => Idea::where('status_id', 5)->count(), // PENDING_DD_COMPILATION_SME
+            'pendingBoardCompilation' => Idea::where('status_id', 13)->count(), // PENDING_DD_COMPILATION_BOARD
+            'pendingSmeDecision' => Idea::where('status_id', 10)->count(), // PENDING_DD_DECISION
+            'pendingBoardDecision' => Idea::where('status_id', 11)->count(), // PENDING_BOARD_REVIEW
+            'allActive' => Idea::whereNotIn('status_id', [17, 18, 19, 20])->count(), // All non-terminal
+        ];
 
-        $ddReviewedIdeas = Idea::whereIn('status', ['dd_approved', 'dd_rejected'])
-            ->with('user', 'thematicArea', 'ddReview', 'smeReviews')
-            ->latest()
-            ->get();
+        // Get stats for users with view dd_analytics permission
+        $stats = null;
+        if ($user->hasPermissionTo('view dd_analytics')) {
+            $allDdIdeas = Idea::whereIn('status_id', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+                ->with('thematicArea', 'ddReview')
+                ->get();
 
-        $smeReviewedIdeas = Idea::where('status', 'stage 1 review')
-            ->orWhere(function ($query) {
-                $query->whereIn('status', ['approved', 'rejected'])
-                    ->whereHas('smeReviews', function ($q) {
-                        $q->whereNotNull('review_comments');
-                    });
-            })
-            ->with('user', 'thematicArea', 'smeReviews', 'ddReview')
-            ->latest()
-            ->get();
+            $inReviewIdeas = $allDdIdeas->whereIn('status_id', [3, 4, 5, 11, 12, 13]); // Active review statuses
 
-        $stage1Revised = Idea::where('status', 'stage 1 revise')
-            ->with('user', 'thematicArea', 'smeReviews')
-            ->latest()
-            ->get();
-
-        $stage2Revised = Idea::where('status', 'stage 2 revise')
-            ->with('user', 'thematicArea', 'ddReview')
-            ->latest()
-            ->get();
+            $stats = [
+                'total' => $allDdIdeas->count(),
+                'approved' => Idea::where('status_id', 18)->count(),
+                'rejected' => Idea::where('status_id', 17)->count(),
+                'pending' => Idea::where('status_id', 1)->count(),
+                'inReview' => $inReviewIdeas->count(),
+                'draft' => Idea::where('status_id', 1)->count(),
+                'thematicDistribution' => $allDdIdeas
+                    ->groupBy('thematic_area_id')
+                    ->map(fn ($group) => [
+                        'name' => $group->first()?->thematicArea?->name ?? 'Unassigned',
+                        'count' => $group->count(),
+                    ])
+                    ->values()
+                    ->toArray(),
+                'deadlineStats' => [
+                    'overdue' => $inReviewIdeas->filter(fn ($idea) => $idea->ddReview?->review_deadline &&
+                        Carbon::parse($idea->ddReview->review_deadline)->lt(now())
+                    )->count(),
+                    'dueSoon' => $inReviewIdeas->filter(fn ($idea) => $idea->ddReview?->review_deadline &&
+                        Carbon::parse($idea->ddReview->review_deadline)->diffInDays(now()) <= 3 &&
+                        Carbon::parse($idea->ddReview->review_deadline)->gte(now())
+                    )->count(),
+                    'onTrack' => $inReviewIdeas->filter(fn ($idea) => $idea->ddReview?->review_deadline &&
+                        Carbon::parse($idea->ddReview->review_deadline)->diffInDays(now()) > 3
+                    )->count(),
+                ],
+            ];
+        }
 
         return Inertia::render('idea/ddReview/index', [
-            'lockedNewIdeas' => $draftIdeas,
-            'ddReviewedIdeas' => $ddReviewedIdeas,
-            'smeReviewedIdeas' => $smeReviewedIdeas,
-            'stage1RevisedIdeas' => $stage1Revised,
-            'stage2RevisedIdeas' => $stage2Revised,
+            'counts' => $counts,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function pendingUnlock(): Response
+    {
+        $ideas = Idea::where('status_id', 2) // SUBMITTED
+            ->with('user', 'thematicArea', 'ddReview', 'status', 'stage')
+            ->latest()
+            ->get();
+
+        return Inertia::render('idea/ddReview/pendingUnlock', [
+            'ideas' => $ideas,
+        ]);
+    }
+
+    public function pendingSmeCompilation(): Response
+    {
+        $ideas = Idea::where('status_id', 5) // PENDING_DD_COMPILATION_SME
+            ->with('user', 'thematicArea', 'ddReview', 'smeReviews', 'status', 'stage')
+            ->latest()
+            ->get();
+
+        return Inertia::render('idea/ddReview/pendingSmeCompilation', [
+            'ideas' => $ideas,
+        ]);
+    }
+
+    public function pendingBoardCompilation(): Response
+    {
+        $ideas = Idea::where('status_id', 13) // PENDING_DD_COMPILATION_BOARD
+            ->with('user', 'thematicArea', 'ddReview', 'status', 'stage')
+            ->latest()
+            ->get();
+
+        return Inertia::render('idea/ddReview/pendingBoardCompilation', [
+            'ideas' => $ideas,
+        ]);
+    }
+
+    public function pendingSmeDecision(): Response
+    {
+        $ideas = Idea::where('status_id', 10) // PENDING_DD_DECISION
+            ->with('user', 'thematicArea', 'ddReview', 'smeReviews', 'status', 'stage')
+            ->latest()
+            ->get();
+
+        return Inertia::render('idea/ddReview/pendingSmeDecision', [
+            'ideas' => $ideas,
+        ]);
+    }
+
+    public function pendingBoardDecision(): Response
+    {
+        $ideas = Idea::where('status_id', 11) // PENDING_BOARD_REVIEW
+            ->with('user', 'thematicArea', 'ddReview', 'status', 'stage')
+            ->latest()
+            ->get();
+
+        return Inertia::render('idea/ddReview/pendingBoardDecision', [
+            'ideas' => $ideas,
+        ]);
+    }
+
+    public function allActive(): Response
+    {
+        // All non-terminal statuses (not rejected, approved, implementation, closed)
+        $terminalStatuses = [17, 18, 19, 20]; // REJECTED, BOARD_APPROVED, IMPLEMENTATION_IN_PROGRESS, CLOSED
+
+        $ideas = Idea::whereNotIn('status_id', $terminalStatuses)
+            ->with('user', 'thematicArea', 'ddReview', 'status', 'stage')
+            ->latest()
+            ->get();
+
+        return Inertia::render('idea/ddReview/allActive', [
+            'ideas' => $ideas,
         ]);
     }
 
     public function create(): Response
     {
-        $ideas = Idea::whereIn('status', ['draft'])
+        $ideas = Idea::where('status_id', 1) // DRAFT
             ->with('user')
             ->get();
 
@@ -114,7 +204,7 @@ class DdReviewController extends Controller
 
     public function unlock(Request $request, Idea $idea): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('deputy_director'), 403);
+        abort_unless(auth()->user()->hasPermissionTo('unlock dd_review'), 403);
 
         $request->validate([
             'review_deadline' => ['required', 'date', 'after:now'],
@@ -133,10 +223,10 @@ class DdReviewController extends Controller
             'review_deadline' => $request->review_deadline,
         ]);
 
-        $idea->update(['status' => 'stage 2 review']);
+        $idea->update(['status_id' => 11]); // PENDING_BOARD_REVIEW
 
         $deputyDirector = auth()->user();
-        $ideaReviewers = User::role('idea_reviewer')->get();
+        $ideaReviewers = User::permission('view dd_review')->get();
         $author = $idea->user;
 
         Notification::send($ideaReviewers, new DdReviewUnlocked($ddReview, $deputyDirector));
@@ -148,7 +238,7 @@ class DdReviewController extends Controller
 
     public function addComment(Request $request, Idea $idea): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('idea_reviewer'), 403);
+        abort_unless(auth()->user()->hasPermissionTo('send dd_feedback'), 403);
 
         $ddReview = DdReview::where('idea_id', $idea->id)->firstOrFail();
 
@@ -171,7 +261,7 @@ class DdReviewController extends Controller
 
     public function sendFeedback(Request $request, Idea $idea): JsonResponse
     {
-        abort_unless(auth()->user()->hasRole('deputy_director'), 403);
+        abort_unless(auth()->user()->hasPermissionTo('send dd_feedback'), 403);
 
         $ddReview = DdReview::where('idea_id', $idea->id)->firstOrFail();
 
@@ -199,7 +289,7 @@ class DdReviewController extends Controller
 
     public function approve(Request $request, Idea $idea): JsonResponse
     {
-        abort_unless(auth()->user()->hasRole('deputy_director'), 403);
+        abort_unless(auth()->user()->hasPermissionTo('approve dd_review'), 403);
 
         $ddReview = DdReview::where('idea_id', $idea->id)->firstOrFail();
 
@@ -208,7 +298,7 @@ class DdReviewController extends Controller
             'status' => 'approved',
         ]);
 
-        $idea->update(['status' => 'dd_approved']);
+        $idea->update(['status_id' => 18]); // BOARD_APPROVED
 
         $author = $idea->user;
         $author->notify(new IdeaApproved($ddReview, auth()->user()));
@@ -225,7 +315,7 @@ class DdReviewController extends Controller
 
     public function reject(Request $request, Idea $idea): JsonResponse
     {
-        abort_unless(auth()->user()->hasRole('deputy_director'), 403);
+        abort_unless(auth()->user()->hasPermissionTo('reject dd_review'), 403);
 
         $ddReview = DdReview::where('idea_id', $idea->id)->firstOrFail();
 
@@ -234,7 +324,7 @@ class DdReviewController extends Controller
             'status' => 'rejected',
         ]);
 
-        $idea->update(['status' => 'dd_rejected']);
+        $idea->update(['status_id' => 17]); // REJECTED
 
         $author = $idea->user;
         $author->notify(new IdeaRejected($ddReview, auth()->user()));
@@ -251,26 +341,26 @@ class DdReviewController extends Controller
 
     public function dashboard(): Response
     {
-        abort_unless(auth()->user()->hasRole(['deputy_director', 'idea_reviewer']), 403);
+        abort_unless(auth()->user()->hasAnyPermission(['view dd_analytics', 'view dd_review']), 403);
 
         $user = auth()->user();
 
-        if ($user->hasRole('deputy_director')) {
-            $draftIdeas = Idea::where('status', 'draft')
+        if ($user->hasPermissionTo('view dd_analytics')) {
+            $draftIdeas = Idea::where('status_id', 1) // DRAFT
                 ->with('user', 'thematicArea')
                 ->get();
 
-            $inReviewIdeas = Idea::where('status', 'stage 2 review')
+            $inReviewIdeas = Idea::where('status_id', 11) // PENDING_BOARD_REVIEW
                 ->with('user', 'thematicArea', 'ddReview')
                 ->get();
 
-            $allDdIdeas = Idea::whereIn('status', ['draft', 'stage 2 review', 'dd_approved', 'dd_rejected'])
+            $allDdIdeas = Idea::whereIn('status_id', [1, 11, 17, 18]) // DRAFT, PENDING_BOARD_REVIEW, REJECTED, BOARD_APPROVED
                 ->with('thematicArea', 'ddReview')
                 ->get();
 
-            $approvedCount = $allDdIdeas->where('status', 'dd_approved')->count();
-            $rejectedCount = $allDdIdeas->where('status', 'dd_rejected')->count();
-            $pendingCount = $allDdIdeas->whereIn('status', ['draft', 'stage 2 review'])->count();
+            $approvedCount = $allDdIdeas->where('status_id', 18)->count(); // BOARD_APPROVED
+            $rejectedCount = $allDdIdeas->where('status_id', 17)->count(); // REJECTED
+            $pendingCount = $allDdIdeas->whereIn('status_id', [1, 11])->count(); // DRAFT, PENDING_BOARD_REVIEW
             $totalCount = $allDdIdeas->count();
 
             $thematicDistribution = $allDdIdeas
@@ -312,8 +402,8 @@ class DdReviewController extends Controller
             ]);
         }
 
-        if ($user->hasRole('idea_reviewer')) {
-            $assignedReviews = Idea::where('status', 'stage 2 review')
+        if ($user->hasPermissionTo('view dd_review')) {
+            $assignedReviews = Idea::where('status_id', 11) // PENDING_BOARD_REVIEW
                 ->with('user', 'thematicArea', 'ddReview')
                 ->get();
 

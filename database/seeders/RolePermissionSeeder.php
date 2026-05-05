@@ -62,6 +62,18 @@ class RolePermissionSeeder extends Seeder
             'approve ideas',
             'reject ideas',
 
+            // DD Review
+            'view dd_review',
+            'unlock dd_review',
+            'compile sme_feedback',
+            'compile board_feedback',
+            'decide sme',
+            'decide board',
+            'view dd_analytics',
+            'send dd_feedback',
+            'approve dd_review',
+            'reject dd_review',
+
             // Challenges
             'view challenges',
             'create challenges',
@@ -130,9 +142,16 @@ class RolePermissionSeeder extends Seeder
             'approve ideas',
             'reject ideas',
             'view challenges',
+            'view dd_review',
+            'unlock dd_review',
+            'compile sme_feedback',
+            'decide sme',
+            'send dd_feedback',
+            'approve dd_review',
+            'reject dd_review',
         ]);
 
-        // 3. Deputy Director
+        // 4. Deputy Director
         $deputyDirectorRole = Role::firstOrCreate(['name' => 'deputy_director', 'guard_name' => 'web']);
         $deputyDirectorRole->syncPermissions([
             'view users',
@@ -156,6 +175,16 @@ class RolePermissionSeeder extends Seeder
             'review challenges',
             'view reports',
             'view analytics',
+            'view dd_review',
+            'unlock dd_review',
+            'compile sme_feedback',
+            'compile board_feedback',
+            'decide sme',
+            'decide board',
+            'view dd_analytics',
+            'send dd_feedback',
+            'approve dd_review',
+            'reject dd_review',
         ]);
 
         // 4. Challenge Reviewer
