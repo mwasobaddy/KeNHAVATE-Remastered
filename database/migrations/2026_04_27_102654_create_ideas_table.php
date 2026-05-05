@@ -30,14 +30,12 @@ return new class extends Migration
             $table->unsignedInteger('current_revision_number')->default(1);
             $table->date('collaboration_deadline')->nullable();
 
-            // Idea status: draft or submitted
-            $table->enum('status', ['draft', 'stage 1 review', 'stage 2 review', 'stage 1 revise', 'stage 2 revise', 'approved', 'rejected'])->default('draft');
-
-            // Attachment stored in public/ideas/attachments (Storage::disk('public'))
-            // Path stored in attachment_path column
-
-            // Path to PDF attachment in public/ideas/attachments
+            // Attachment path (binary columns were removed in 2026_04_27_163940)
             $table->string('attachment_path')->nullable();
+
+            // Stage and Status (added in 2026_05_05_114620)
+            $table->foreignId('stage_id')->nullable()->constrained('idea_stages')->onDelete('set null');
+            $table->foreignId('status_id')->nullable()->constrained('idea_statuses')->onDelete('set null');
 
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
 
@@ -45,8 +43,6 @@ return new class extends Migration
             $table->softDeletes();
 
             // Indexes for performance
-            $table->index(['status']);
-            $table->index(['user_id', 'status']);
             $table->index(['collaboration_enabled']);
             $table->index(['collaboration_deadline']);
             $table->index(['thematic_area_id']);

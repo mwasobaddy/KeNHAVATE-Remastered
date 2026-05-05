@@ -34,6 +34,9 @@ class IdeaDataSeeder extends Seeder
             $numIdeas = rand(1, 5); // Random number of ideas per user (1-5)
 
             for ($i = 0; $i < $numIdeas; $i++) {
+                $statusId = $this->generateStatus();
+                $stageId = $this->generateStageId($statusId);
+
                 $idea = Idea::create([
                     'idea_title' => $this->generateTitle(),
                     'slug' => Idea::generateUniqueSlug($this->generateTitle()),
@@ -49,7 +52,8 @@ class IdeaDataSeeder extends Seeder
                     'comments_enabled' => $this->generateCommentsEnabled(),
                     'current_revision_number' => rand(1, 10),
                     'collaboration_deadline' => $this->generateDeadline(),
-                    'status' => $this->generateStatus(),
+                    'status_id' => $statusId,
+                    'stage_id' => $stageId,
                     'user_id' => $user->id,
                     'attachment_path' => $this->generateAttachmentPath(),
                 ]);
@@ -136,9 +140,29 @@ class IdeaDataSeeder extends Seeder
 
     private function generateStatus()
     {
-        $statuses = ['draft', 'stage 1 review', 'stage 2 review', 'stage 1 revise', 'stage 2 revise', 'approved', 'rejected'];
+        // Map old status names to status_id
+        $statusMap = [
+            'draft' => 1,           // DRAFT
+            'stage 1 review' => 4,  // SME_REVIEW_IN_PROGRESS
+            'stage 2 review' => 11, // PENDING_BOARD_REVIEW
+            'stage 1 revise' => 6,  // REVISION_REQUIRED_SME
+            'stage 2 revise' => 14, // BOARD_REVISION_REQUIRED
+            'approved' => 18,       // BOARD_APPROVED
+            'rejected' => 17,       // REJECTED
+        ];
 
-        return $statuses[rand(0, 6)];
+        $oldStatuses = ['draft', 'stage 1 review', 'stage 2 review', 'stage 1 revise', 'stage 2 revise', 'approved', 'rejected'];
+        $oldStatus = $oldStatuses[rand(0, 6)];
+
+        return $statusMap[$oldStatus];
+    }
+
+    private function generateStageId($statusId)
+    {
+        // Get stage_id from the status
+        $status = DB::table('idea_statuses')->find($statusId);
+
+        return $status ? $status->stage_id : null;
     }
 
     private function generateAttachmentPath()

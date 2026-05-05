@@ -22,7 +22,8 @@ class Idea extends Model
         'comments_enabled',
         'current_revision_number',
         'collaboration_deadline',
-        'status',
+        'stage_id',
+        'status_id',
         'user_id',
         'attachment_path',
     ];
@@ -34,6 +35,18 @@ class Idea extends Model
         'comments_enabled' => 'boolean',
         'collaboration_deadline' => 'date',
     ];
+
+    protected $appends = ['status_name', 'stage_name'];
+
+    public function getStatusNameAttribute(): ?string
+    {
+        return $this->status?->name;
+    }
+
+    public function getStageNameAttribute(): ?string
+    {
+        return $this->stage?->name;
+    }
 
     public function getRouteKeyName(): string
     {
@@ -68,6 +81,16 @@ class Idea extends Model
     public function thematicArea()
     {
         return $this->belongsTo(ThematicArea::class);
+    }
+
+    public function stage()
+    {
+        return $this->belongsTo(IdeaStage::class);
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(IdeaStatus::class);
     }
 
     public function user()

@@ -27,6 +27,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             ThematicAreaSeeder::class,
             UserSeeder::class,
+            IdeaStageSeeder::class,
+            IdeaStatusSeeder::class,
             IdeaDataSeeder::class,
         ]);
     }
