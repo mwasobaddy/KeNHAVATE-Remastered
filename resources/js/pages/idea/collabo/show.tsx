@@ -19,16 +19,13 @@ import {
     CheckCircle,
     TrendingUp,
     ChevronLeft,
-    Bell,
-    Settings,
-    Activity,
+    HelpCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import idea, { default as ideaRoutes } from '@/routes/idea';
+import { Textarea } from '@/components/ui/textarea';
+import ideaRoutes from '@/routes/idea';
 import comments from '@/routes/idea/comments';
 
 interface User {
@@ -41,13 +38,14 @@ interface User {
     avatar?: string | null;
 }
 
-interface TeamMember {
+interface Collaborator {
     id: number;
-    user: User | null;
-    role: string | null;
-    permissions: string;
+    user_id: number;
+    name: string;
     email: string;
-    name?: string;
+    role: string;
+    permissions: string;
+    user?: User | null;
 }
 
 interface CollaborationRequest {
@@ -88,7 +86,7 @@ interface Idea {
     collaboration_deadline: string | null;
     slug: string;
     user: User | null;
-    team_members: TeamMember[];
+    collaborators: Collaborator[];
     thematic_area?: ThematicArea | null;
     likes_count: number;
     comments_count: number;
@@ -107,7 +105,7 @@ interface CollaboShowProps {
 type TabType = 'suggestions' | 'document' | 'collaborators';
 type FilterType = 'all' | 'pending' | 'accepted';
 
-const getDisplayName = (user: User | null): string => {
+const getDisplayName = (user: User | null | undefined): string => {
     if (!user) {
         return 'Unknown';
     }
@@ -121,14 +119,6 @@ const getAvatarLabel = (displayName: string) => {
     return label.charAt(0).toUpperCase();
 };
 
-const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-};
-
 const getTimeAgo = (dateStr: string): string => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -138,21 +128,33 @@ const getTimeAgo = (dateStr: string): string => {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 60) return `${minutes} minutes ago`;
-    if (hours < 24) return `${hours} hours ago`;
+    if (minutes < 60) {
+return `${minutes} minutes ago`;
+}
+
+    if (hours < 24) {
+return `${hours} hours ago`;
+}
+
     return `${days} days ago`;
 };
 
 const sectionIcons: Record<string, any> = {
+    abstract: FileText,
     problem_statement: AlertCircle,
     proposed_solution: Lightbulb,
     cost_benefit: TrendingUp,
+    general: MessageSquare,
+    other: HelpCircle,
 };
 
 const sectionLabels: Record<string, string> = {
+    abstract: 'Abstract',
     problem_statement: 'Problem Statement',
     proposed_solution: 'Proposed Solution',
     cost_benefit: 'Cost-Benefit Analysis',
+    general: 'General',
+    other: 'Other',
 };
 
 export default function CollaboShow({ idea, isOwner, isCollaborator, userCollaborationRequest }: CollaboShowProps) {
@@ -184,15 +186,12 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
         setSubmitting(true);
 
         try {
-            await axios.post(`/idea/${idea.slug}/suggestions`, {
-                section: suggestionSection,
-                content: suggestionContent,
-            });
             setShowSuggestionForm(false);
             setSuggestionContent('');
             router.reload();
-        } catch (error) {
-            console.error('Failed to submit suggestion:', error);
+        } catch (error: any) {
+            console.error('Failed to submit suggestion:', error.response?.data || error);
+            alert(error.response?.data?.message || error.response?.data?.errors || 'Failed to submit suggestion');
         } finally {
             setSubmitting(false);
         }
@@ -262,7 +261,10 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
 
     const suggestions = idea.suggestions || [];
     const filteredSuggestions = suggestions.filter((s) => {
-        if (filterType === 'all') return true;
+        if (filterType === 'all') {
+return true;
+}
+
         return s.status === filterType;
     });
 
@@ -298,8 +300,8 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
                                 </div>
                                 <p className="mt-2 text-sm text-muted-foreground">
                                     By <span className="font-medium text-foreground">{getDisplayName(idea.user)}</span>
-                                    {idea.team_members && idea.team_members.length > 0 && (
-                                        <span> • {idea.team_members.length + 1} team members</span>
+                                    {idea.collaborators && idea.collaborators.length > 0 && (
+                                        <span> • {idea.collaborators.length + 1} team members</span>
                                     )}
                                 </p>
                             </div>
@@ -340,7 +342,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
                                 }`}
                             >
                                 <Users className="h-4 w-4" />
-                                Collaborators ({idea.team_members.length + 1})
+                                Collaborators ({idea.collaborators.length + 1})
                             </button>
                         </div>
                     </div>
@@ -400,9 +402,12 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
                                                     onChange={(e) => setSuggestionSection(e.target.value)}
                                                     className="w-full rounded-md border border-input bg-background px-3 py-2"
                                                 >
+                                                    <option value="abstract">Abstract</option>
                                                     <option value="problem_statement">Problem Statement</option>
                                                     <option value="proposed_solution">Proposed Solution</option>
                                                     <option value="cost_benefit">Cost-Benefit Analysis</option>
+                                                    <option value="general">General</option>
+                                                    <option value="other">Other</option>
                                                 </select>
                                             </div>
                                             <Textarea
@@ -440,6 +445,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
                                         <div className="space-y-4">
                                             {filteredSuggestions.map((suggestion) => {
                                                 const SectionIcon = sectionIcons[suggestion.section] || FileText;
+
                                                 return (
                                                     <div
                                                         key={suggestion.id}
@@ -634,7 +640,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
                                     </div>
 
                                     {/* Team Members */}
-                                    {idea.team_members.map((member) => (
+                                    {idea.collaborators.map((member) => (
                                         <div
                                             key={member.id}
                                             className="flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50"
@@ -678,7 +684,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
                                         </div>
                                     ))}
 
-                                    {idea.team_members.length === 0 && (
+                                    {idea.collaborators.length === 0 && (
                                         <div className="rounded-xl border border-dashed border-border p-8 text-center">
                                             <Users className="mx-auto h-8 w-8 text-muted-foreground" />
                                             <p className="mt-2 text-muted-foreground">No collaborators yet</p>
@@ -708,7 +714,7 @@ export default function CollaboShow({ idea, isOwner, isCollaborator, userCollabo
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm text-muted-foreground">Team Members</span>
-                                        <span className="font-bold">{idea.team_members.length + 1}</span>
+                                        <span className="font-bold">{idea.collaborators.length + 1}</span>
                                     </div>
                                 </div>
                             </div>

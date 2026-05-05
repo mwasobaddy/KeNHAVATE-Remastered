@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import idea from '@/routes/idea';
 
-export default function TeamMembersShow({ member }) {
+export default function TeamMembersShow({ member }: { member: { name: string; email: string; role?: string | null; permissions?: string[] } }) {
     return (
         <>
             <Head title="Team Member Details" />
@@ -40,7 +40,7 @@ TeamMembersShow.layout = {
         },
         {
             title: 'Team Members',
-            href: idea.teamMembers.index({ idea: 0 }),
+            href: idea.teamMembers.index({ idea: '' }),
         },
         {
             title: 'Member Details',

@@ -105,7 +105,7 @@ const formatTimeAgo = (date: string) => {
 interface CommentItemProps {
     comment: Comment;
     depth: number;
-    onReply: (user: { email?: string; work_email?: string; name: string } | null, commentId: number) => void;
+    onReply: (user: { email?: string; work_email?: string; name?: string; first_name?: string; other_names?: string } | null, commentId: number) => void;
     onLike: (commentId: number) => void;
     commentLikes: Record<number, number>;
     commentLiked: Record<number, boolean>;
@@ -256,7 +256,7 @@ export default function CommentsShow({ idea, comments }: CommentsShowProps) {
         }
     };
 
-const handleReplyToComment = (user: { email?: string; work_email?: string; name: string } | null, commentId: number) => {
+const handleReplyToComment = (user: { email?: string; work_email?: string; name?: string; first_name?: string; other_names?: string } | null, commentId: number) => {
     if (!user) {
         return;
     }

@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
+import type { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal } from 'react';
 
 export default function TeamMembersIndex({ idea, members }: { idea: { id: number; slug: string; idea_title: string }; members: any }) {
     return (
@@ -26,7 +27,7 @@ export default function TeamMembersIndex({ idea, members }: { idea: { id: number
                                 <p className="text-muted-foreground">No team members yet.</p>
                             ) : (
                                 <div className="space-y-4">
-                                    {members.data.map((member) => (
+                                    {members.data.map((member: { id: Key | null | undefined; name: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; email: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; role: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }) => (
                                         <div key={member.id} className="rounded-lg border p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>

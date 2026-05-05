@@ -5,7 +5,7 @@ type ThematicArea = {
     name: string;
 };
 
-type TeamMember = {
+type Collaborator = {
     id: number;
     name: string;
     email: string;
@@ -28,7 +28,7 @@ type Idea = {
     comments_enabled?: boolean;
     attachment_filename?: string;
     attachment?: string;
-    team_members?: TeamMember[];
+    collaborators?: Collaborator[];
 };
 
 interface IdeaShowProps {
@@ -118,11 +118,11 @@ export default function IdeaShow({ idea }: IdeaShowProps) {
                             )}
 
                             {/* Team Members */}
-                            {idea.team_members && idea.team_members.length > 0 && (
+                            {idea.collaborators && idea.collaborators.length > 0 && (
                                 <div>
                                     <h3 className="text-sm font-medium text-muted-foreground">Team Members</h3>
                                     <div className="mt-2 space-y-2">
-                                        {idea.team_members.map((member: TeamMember) => (
+                                        {idea.collaborators.map((member: TeamMember) => (
                                             <div key={member.id} className="rounded-md bg-muted p-3">
                                                 <p className="font-medium">{member.name}</p>
                                                 <p className="text-sm text-muted-foreground">{member.email}</p>

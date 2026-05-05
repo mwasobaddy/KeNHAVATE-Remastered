@@ -60,9 +60,15 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'first_name' => $user->first_name,
+                    'other_names' => $user->other_names,
+                    'roles' => $user->getRoleNames()->toArray(),
+                ],
+                'roles' => $user->getRoleNames()->toArray(),
                 'unread_notifications' => $user->unreadNotifications()->count(),
             ];
         });

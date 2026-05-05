@@ -1,7 +1,13 @@
 import { Head } from '@inertiajs/react';
 import idea from '@/routes/idea';
 
-export default function TeamMembersCreate({ idea }) {
+type TeamMembersCreateProps = {
+    idea: {
+        idea_title: string;
+    };
+};
+
+export default function TeamMembersCreate({ idea }: TeamMembersCreateProps) {
     return (
         <>
             <Head title="Add Team Member" />
@@ -30,11 +36,11 @@ TeamMembersCreate.layout = {
         },
         {
             title: 'Team Members',
-            href: idea.teamMembers.index({ idea: 0 }),
+            href: idea.teamMembers.index({ idea: '' }),
         },
         {
             title: 'Add Member',
-            href: idea.teamMembers.create({ idea: 0 }),
+            href: idea.teamMembers.create({ idea: '' }),
         },
     ],
 };
