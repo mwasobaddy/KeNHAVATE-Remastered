@@ -85,14 +85,19 @@ class Idea extends Model
         return $this->hasMany(SmeReview::class);
     }
 
-    public function ddReviews()
+    public function ddReview()
     {
-        return $this->hasMany(DdReview::class);
+        return $this->hasOne(DdReview::class);
     }
 
     public function teamMembers()
     {
         return $this->hasMany(TeamMember::class);
+    }
+
+    public function collaborators()
+    {
+        return $this->hasMany(Collaborator::class);
     }
 
     public function collaborationRequests()

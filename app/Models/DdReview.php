@@ -14,6 +14,16 @@ class DdReview extends Model
         'decision',
         'implementation_timeline',
         'budget_implications',
+        'is_unlocked',
+        'review_deadline',
+        'feedback',
+        'feedback_sent_at',
+    ];
+
+    protected $casts = [
+        'is_unlocked' => 'boolean',
+        'review_deadline' => 'datetime',
+        'feedback_sent_at' => 'datetime',
     ];
 
     public function idea()

@@ -274,7 +274,7 @@ class IdeaService
 
     public function findById(int $id): ?Idea
     {
-        return Idea::with(['thematicArea', 'user', 'comments.user', 'smeReviews', 'ddReviews', 'teamMembers'])->find($id);
+        return Idea::with(['thematicArea', 'user', 'comments.user', 'smeReviews', 'ddReview', 'teamMembers'])->find($id);
     }
 
     protected function storeAttachment($file): string

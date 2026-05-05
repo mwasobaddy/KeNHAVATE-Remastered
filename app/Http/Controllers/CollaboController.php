@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\CollaborationRequest;
+use App\Models\Collaborator;
 use App\Models\Idea;
-use App\Models\TeamMember;
 use App\Notifications\CollaborationRequestApproved;
 use App\Notifications\CollaborationRequestReceived;
 use Illuminate\Http\JsonResponse;
@@ -21,12 +21,12 @@ class CollaboController extends Controller
         $collaborations = Idea::where('collaboration_enabled', true)
             ->where(function ($query) use ($userId) {
                 $query->where('user_id', $userId)
-                    ->orWhereHas('teamMembers', function ($q) use ($userId) {
+                    ->orWhereHas('collaborators', function ($q) use ($userId) {
                         $q->where('user_id', $userId);
                     });
             })
             ->with('user')
-            ->withCount(['teamMembers', 'likes'])
+            ->withCount(['collaborators', 'likes'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -41,7 +41,7 @@ class CollaboController extends Controller
 
         $idea->load([
             'user',
-            'teamMembers.user',
+            'collaborators.user',
             'thematicArea',
             'pendingCollaborationRequests.user',
             'suggestions.user',
@@ -50,7 +50,7 @@ class CollaboController extends Controller
         $idea->loadCount('suggestions');
 
         $isOwner = $idea->user_id === $userId;
-        $isCollaborator = $isOwner || $idea->teamMembers()->where('user_id', $userId)->exists();
+        $isCollaborator = $isOwner || $idea->collaborators()->where('user_id', $userId)->exists();
 
         abort_unless($isCollaborator || $idea->collaboration_enabled, 403);
 
@@ -127,18 +127,21 @@ class CollaboController extends Controller
         abort_unless($idea->user_id === auth()->id(), 403);
         abort_unless($collaborationRequest->idea_id === $idea->id, 400);
 
+        $collaborationRequest->load('user');
+        $requestingUser = $collaborationRequest->user;
+
         $collaborationRequest->update(['status' => 'approved']);
 
-        TeamMember::create([
+        Collaborator::create([
             'idea_id' => $idea->id,
-            'user_id' => $collaborationRequest->user_id,
-            'name' => $collaborationRequest->user->name ?? $collaborationRequest->user->name,
-            'email' => $collaborationRequest->user->email,
+            'user_id' => $requestingUser->id,
+            'name' => $requestingUser->getFullName() ?: $requestingUser->email ?: 'Collaborator',
+            'email' => $requestingUser->email,
             'role' => 'Collaborator',
             'permissions' => 'view',
         ]);
 
-        $collaborationRequest->user->notify(new CollaborationRequestApproved($collaborationRequest, auth()->user()));
+        $requestingUser->notify(new CollaborationRequestApproved($collaborationRequest, auth()->user()));
 
         return response()->json(['success' => true, 'message' => 'Collaborator added']);
     }
@@ -153,12 +156,12 @@ class CollaboController extends Controller
         return response()->json(['success' => true, 'message' => 'Request declined']);
     }
 
-    public function removeCollaborator(Request $request, Idea $idea, TeamMember $teamMember): JsonResponse
+    public function removeCollaborator(Request $request, Idea $idea, Collaborator $collaborator): JsonResponse
     {
         abort_unless($idea->user_id === auth()->id(), 403);
-        abort_unless($teamMember->idea_id === $idea->id, 400);
+        abort_unless($collaborator->idea_id === $idea->id, 400);
 
-        $teamMember->delete();
+        $collaborator->delete();
 
         return response()->json(['success' => true, 'message' => 'Collaborator removed']);
     }

@@ -6,9 +6,12 @@ use App\Http\Requests\Idea\StoreIdeaRequest;
 use App\Http\Requests\Idea\UpdateIdeaRequest;
 use App\Models\Idea;
 use App\Models\ThematicArea;
+use App\Models\User;
+use App\Notifications\NewIdeaSubmitted;
 use App\Services\IdeaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -91,6 +94,9 @@ class IdeaController extends Controller
                 $request->validated(),
                 auth()->id()
             );
+
+            $deputyDirectors = User::role('deputy_director')->get();
+            Notification::send($deputyDirectors, new NewIdeaSubmitted($idea));
 
             return redirect()->route('idea.show', $idea)
                 ->with('success', 'Idea created successfully!');

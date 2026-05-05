@@ -14,13 +14,13 @@ class SuggestionController extends Controller
         $userId = auth()->id();
 
         $isCollaborator = $idea->user_id === $userId
-            || $idea->teamMembers()->where('user_id', $userId)->exists();
+            || $idea->collaborators()->where('user_id', $userId)->exists();
 
         abort_unless($isCollaborator, 403);
 
         $request->validate([
-            'section' => 'required|string|in:problem_statement,proposed_solution,cost_benefit',
-            'content' => 'required|string|min:10',
+            'section' => 'required|string|in:abstract,problem_statement,proposed_solution,cost_benefit,general,other',
+            'content' => 'required|string|min:1',
         ]);
 
         $suggestion = Suggestion::create([

@@ -2,15 +2,14 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
+use App\Models\Comment;
 use App\Models\Idea;
 use App\Models\Like;
-use App\Models\Comment;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class IdeaDataSeeder extends Seeder
 {
@@ -26,13 +25,14 @@ class IdeaDataSeeder extends Seeder
 
         if ($users->isEmpty()) {
             $this->command->warn('No users found. Please run UserSeeder first.');
+
             return;
         }
 
         // For each user, create random ideas with likes and comments
         foreach ($users as $user) {
             $numIdeas = rand(1, 5); // Random number of ideas per user (1-5)
-            
+
             for ($i = 0; $i < $numIdeas; $i++) {
                 $idea = Idea::create([
                     'idea_title' => $this->generateTitle(),
@@ -81,7 +81,7 @@ class IdeaDataSeeder extends Seeder
 
     private function generateTitle()
     {
-        return 'Innovative Idea ' . rand(100, 999);
+        return 'Innovative Idea '.rand(100, 999);
     }
 
     private function generateAbstract()
@@ -137,12 +137,13 @@ class IdeaDataSeeder extends Seeder
     private function generateStatus()
     {
         $statuses = ['draft', 'stage 1 review', 'stage 2 review', 'stage 1 revise', 'stage 2 revise', 'approved', 'rejected'];
+
         return $statuses[rand(0, 6)];
     }
 
     private function generateAttachmentPath()
     {
-        return 'attachments/' . Str::uuid() . '.pdf';
+        return 'attachments/'.Str::uuid().'.pdf';
     }
 
     private function getThematicAreaId()
@@ -167,8 +168,9 @@ class IdeaDataSeeder extends Seeder
             'I would like to collaborate on this.',
             'Need to see more data on this.',
             'Well thought out.',
-            'This aligns with our strategic goals.'
+            'This aligns with our strategic goals.',
         ];
+
         return $comments[array_rand($comments)];
     }
 }

@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Broadcast;
-use App\Models\Idea;
 use App\Models\Comment;
+use App\Models\Idea;
+use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
@@ -25,8 +25,8 @@ Broadcast::channel('idea.{ideaSlug}', function ($user, $ideaSlug) {
         return true;
     }
 
-    // Check if user is a team member
-    return $idea->teamMembers()->where('user_id', $user->id)->exists();
+    // Check if user is a collaborator
+    return $idea->collaborators()->where('user_id', $user->id)->exists();
 });
 
 // Comment channel for nested replies
@@ -48,5 +48,5 @@ Broadcast::channel('comment.{commentId}', function ($user, $commentId) {
         return true;
     }
 
-    return $idea->teamMembers()->where('user_id', $user->id)->exists();
+    return $idea->collaborators()->where('user_id', $user->id)->exists();
 });
