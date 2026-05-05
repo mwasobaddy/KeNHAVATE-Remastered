@@ -1,6 +1,6 @@
 'use client';
 
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     FileText,
     AlertCircle,
@@ -201,14 +201,29 @@ export default function DdReviewIndex({
     stage1RevisedIdeas,
     stage2RevisedIdeas,
 }: DdReviewIndexProps) {
+    const { props } = usePage();
+    const queryParams = props.query as Record<string, string>;
+
     const [showUnlockModal, setShowUnlockModal] = useState(false);
     const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
     const [deadline, setDeadline] = useState('');
     const [unlocking, setUnlocking] = useState(false);
 
-    const [activeMainTab, setActiveMainTab] = useState('locked');
-    const [activeReviewedSubTab, setActiveReviewedSubTab] = useState('dd');
-    const [activeRevisedSubTab, setActiveRevisedSubTab] = useState('stage2');
+    const activeMainTab = queryParams.tab || 'locked';
+    const activeReviewedSubTab = queryParams.reviewed_tab || 'dd';
+    const activeRevisedSubTab = queryParams.revised_tab || 'stage2';
+
+    const handleMainTabChange = (tab: string) => {
+        router.get(ideaRoutes.ddReview.index().url, { tab, reviewed_tab: 'dd', revised_tab: 'stage2' }, { preserveState: true });
+    };
+
+    const handleReviewedSubTabChange = (tab: string) => {
+        router.get(ideaRoutes.ddReview.index().url, { ...queryParams, reviewed_tab: tab }, { preserveState: true });
+    };
+
+    const handleRevisedSubTabChange = (tab: string) => {
+        router.get(ideaRoutes.ddReview.index().url, { ...queryParams, revised_tab: tab }, { preserveState: true });
+    };
 
     const handleUnlock = () => {
         if (!selectedIdea || !deadline) {
@@ -321,7 +336,7 @@ export default function DdReviewIndex({
                             return (
                                 <button
                                     key={tab.key}
-                                    onClick={() => setActiveMainTab(tab.key)}
+                                    onClick={() => handleMainTabChange(tab.key)}
                                     className={`flex items-center gap-2 border-b-2 px-2 py-3 text-sm font-medium ${
                                         activeMainTab === tab.key
                                             ? 'border-primary text-primary'
@@ -362,7 +377,7 @@ export default function DdReviewIndex({
                                     {reviewedSubTabs.map((tab) => (
                                         <button
                                             key={tab.key}
-                                            onClick={() => setActiveReviewedSubTab(tab.key)}
+                                            onClick={() => handleReviewedSubTabChange(tab.key)}
                                             className={`border-b-2 px-2 py-2 text-sm font-medium ${
                                                 activeReviewedSubTab === tab.key
                                                     ? 'border-primary text-primary'
@@ -482,7 +497,7 @@ export default function DdReviewIndex({
                                     {revisedSubTabs.map((tab) => (
                                         <button
                                             key={tab.key}
-                                            onClick={() => setActiveRevisedSubTab(tab.key)}
+                                            onClick={() => handleRevisedSubTabChange(tab.key)}
                                             className={`border-b-2 px-2 py-2 text-sm font-medium ${
                                                 activeRevisedSubTab === tab.key
                                                     ? 'border-primary text-primary'
