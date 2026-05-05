@@ -1,600 +1,915 @@
-# KeNHAVATE Platform Documentation
+# KeNHAVATE System Documentation
+
+## Overview
+
+KeNHAVATE is a Laravel-based innovation management platform that enables employees to submit, collaborate on, and review ideas within the Kenya National Highways Authority (KeNHA). The system implements a multi-stage review workflow involving Deputy Directors and Subject Matter Experts (SMEs).
 
 ---
 
-## 1. Login & Authentication Module
+## Table of Contents
 
-### Overview
-The authentication system uses **Laravel Fortify** as the headless backend, with **Laravel Socialite** for Google OAuth, and a custom **OTP (One-Time Password)** system for email verification. The platform supports dual email system: `email` (personal) and `work_email` (@kenha.co.ke domain).
-
----
-
-### Architecture
-
-#### Backend Components
-
-**Config:**
-- `config/fortify.php` - Fortify features: reset passwords, email verification, profile updates, 2FA
-- `config/auth.php` - Guards, providers, passwords configuration
-
-**Service Provider:**
-- `app/Providers/FortifyServiceProvider.php`
-  - Registers custom actions: `CreateNewUser`, `UpdateUserProfileInformation`, `UpdateUserPasswords`, `ResetUserPasswords`
-  - Configures Inertia views for login, password confirmation, 2FA challenge, email verification
-  - Rate limiting: 5 attempts/minute for login, 2FA
-
-**Actions (Fortify):**
-- `app/Actions/Fortify/CreateNewUser.php`
-  - Validates email and password
-  - Creates user with `onboarding_completed = false`
-  - Auto-assigns role: `staff` for @kenha.co.ke emails, `user` for others
-
-- `app/Actions/Fortify/UpdateUserProfileInformation.php`
-  - Validates and updates name and email
-  - Handles email verification re-sending for verified users
-
-**Controllers:**
-- `app/Http/Controllers/Auth/SocialiteController.php`
-  - `redirectToGoogle()` - Redirects to Google OAuth
-  - `handleGoogleCallback()` - JIT (Just-In-Time) provisioning:
-    - Links Google account to existing user by email
-    - Creates new user with Google data (name, avatar, provider_id)
-    - Auto-verifies email (Google verified)
-    - Assigns role based on email domain
-
-- `app/Http/Controllers/Auth/WorkEmailVerificationController.php`
-  - `show()` - Shows work email verification page
-  - `verify()` - Verifies work email via signed URL (accessed from email link)
-  - `resend()` - Resends work email verification notification
-
-- `app/Http/Controllers/Auth/OtpController.php`
-  - `showVerifyForm()` - Shows OTP input form
-  - `send()` - Generates and sends OTP via email
-  - `verify()` - Verifies OTP and logs user in
-  - `resend()` - Resends OTP if not expired
-
-**Services:**
-- `app/Services/Auth/OtpService.php`
-  - `sendOtp()` - Finds/creates user, generates 6-digit OTP, sends via email
-  - `verifyOtp()` - Validates OTP, marks email as verified
-  - `resendOtp()` - Resends existing valid OTP or generates new one
-  - `checkGoogleOAuth()` - Checks if user is Google OAuth user (skips OTP)
-  - `findOrCreateUser()` - Creates user based on email type (KenHA vs external)
-  - `markEmailAsVerified()` - Marks appropriate email field as verified
-
-**Notifications:**
-- `app/Notifications/VerifyWorkEmail.php`
-  - Sent when user needs to verify their work email
-  - Contains signed verification URL
-
-- `app/Mail/Auth/SendOtpMail.php`
-  - Mailable for sending OTP via email
-
-**Models:**
-- `app/Models/User.php`
-  - Fields: `first_name`, `other_names`, `mobile_number`, `gender`, `email`, `work_email`, `password`, `provider`, `provider_id`, `avatar`, `onboarding_completed`, `email_verified_at`, `work_email_verified_at`
-  - Relationships: `department()`, `directorate()`, `region()`, `likes()`, `notifications()`
-  - Methods: `getFullName()`, `getLoginEmail()`, `getEmailForVerification()`, `usesGoogleOAuth()`, `hasVerifiedWorkEmail()`, `needsOnboarding()`, `isStaffApplicant()`
-  - Uses `HasRoles` (Spatie Permission) for role management
+1. [Architecture Overview](#architecture-overview)
+2. [Models](#models)
+3. [Controllers](#controllers)
+4. [Services](#services)
+5. [Notifications](#notifications)
+6. [Frontend Pages](#frontend-pages)
+7. [Authentication System](#authentication-system)
+8. [Review Workflows](#review-workflows)
+9. [Enhancements & Gaps](#enhancements--gaps)
+10. [Unused Code](#unused-code)
 
 ---
 
-### Frontend Components
+## Architecture Overview
 
-#### Pages
+### Technology Stack
 
-**Login (`resources/js/pages/auth/login.tsx`)**
-- Email input with OTP sending
-- Google OAuth button (`/auth/google/redirect`)
-- Shows success status after OTP sent
+- **Backend**: Laravel 13 + Inertia.js v3
+- **Frontend**: React 19 + TypeScript
+- **Styling**: TailwindCSS v4
+- **Authentication**: Laravel Fortify + OTP-based login
+- **Authorization**: Spatie Laravel Permission
+- **Database**: MySQL (assumed from conventions)
 
-**Verify Work Email (`resources/js/pages/auth/verify-work-email.tsx`)**
-- Displays work email being verified
-- Resend button with 60-second cooldown countdown
-- Shows success message when link is sent
+### Core Modules
 
-**OTP Verification (`resources/js/pages/auth/verify-otp.tsx`)**
-- 6-digit OTP input
-- Auto-submits when all digits entered
-- Resend functionality
-
-**Onboarding (`resources/js/pages/onboarding/`)**
-- Step 1: Complete profile (department, mobile, gender)
-- Step 2: Accept terms and conditions
-- Step 3: Final confirmation
-
-#### Routes
-- `routes/web.php` - Defines auth routes, Google OAuth, OTP, work email verification, onboarding
+| Module | Description |
+|--------|-------------|
+| Ideas | Core innovation submission and management |
+| DD Review | Deputy Director review workflow |
+| SME Review | Subject Matter Expert evaluation |
+| Collaboration | Multi-user idea collaboration |
+| Team Members | Internal team invitations |
+| Comments & Likes | Social engagement features |
+| Onboarding | Multi-step user registration |
+| Settings | Profile and security management |
 
 ---
 
-### Authentication Flow
+## Models
 
-#### Standard Email Login:
+### User (`app/Models/User.php`)
+
+**Purpose**: Main user model with authentication, roles, and organizational hierarchy
+
+**Key Features**:
+- Spatie `HasRoles` trait for RBAC
+- TwoFactorAuthenticatable for 2FA
+- Work email verification system
+- Onboarding flow tracking
+- Department-Directorate-Region hierarchy via `hasOneThrough`
+- OAuth provider tracking (Google)
+
+**Relationships**:
+- `department()` → BelongsTo Department
+- `directorate()` → HasOneThrough Directorate
+- `region()` → HasOneThrough Region
+- `likes()` → MorphMany Like
+
+**Key Methods**:
+- `getFullName()` - Returns first_name + other_names
+- `getEmailForPasswordReset()` - Smart email selection for password resets
+- `needsOnboarding()` - Checks onboarding status
+- `isStaffApplicant()` - Identifies staff roles needing onboarding
+
+---
+
+### Idea (`app/Models/Idea.php`)
+
+**Purpose**: Core innovation idea model
+
+**Fields**:
+- `idea_title`, `slug`, `thematic_area_id`
+- `abstract`, `problem_statement`, `proposed_solution`
+- `cost_benefit_analysis`
+- `declaration_of_interests`
+- `original_idea_disclaimer`
+- `collaboration_enabled`, `team_effort`, `comments_enabled`
+- `collaboration_deadline`
+- `status` (draft → stage 1 review → stage 2 review → dd_approved/rejected)
+- `attachment_path`
+- `current_revision_number`
+
+**Relationships**:
+- `user()` → BelongsTo User
+- `thematicArea()` → BelongsTo ThematicArea
+- `comments()` → HasMany Comment
+- `smeReviews()` → HasMany SmeReview
+- `ddReview()` → HasOne DdReview
+- `teamMembers()` → HasMany TeamMember
+- `collaborators()` → HasMany Collaborator
+- `collaborationRequests()` → HasMany CollaborationRequest
+- `suggestions()` → HasMany Suggestion
+- `likes()` → MorphMany Like
+
+---
+
+### DdReview (`app/Models/DdReview.php`)
+
+**Purpose**: Deputy Director review for ideas
+
+**Fields**:
+- `idea_id`, `reviewer_id`
+- `status` (pending, approved, rejected, revise)
+- `review_comments`
+- `decision` (approve, reject)
+- `implementation_timeline`
+- `budget_implications`
+- `is_unlocked` - Whether review is active
+- `review_deadline`
+- `feedback`, `feedback_sent_at`
+
+**Status Flow**: Idea status synced with DD review decisions
+
+---
+
+### SmeReview (`app/Models/SmeReview.php`)
+
+**Purpose**: Subject Matter Expert evaluation
+
+**Fields**:
+- `idea_id`, `reviewer_id`
+- `status` (pending, approved, rejected, revise)
+- `review_comments`
+- `recommendation` (approve, reject, revise)
+- `rating` (1-5 scale)
+
+---
+
+### Comment (`app/Models/Comment.php`)
+
+**Purpose**: Nested comments on ideas
+
+**Fields**:
+- `idea_id`, `user_id`, `parent_id`
+- `content`
+- `is_internal` - Private comments between collaborators
+
+**Key Features**:
+- Recursive relationship (`parent` / `replies`)
+- Broadcasting via Laravel Echo on private channel `idea.{slug}`
+- Auto-notification on creation to idea owner and parent comment owner
+
+---
+
+### Like (`app/Like.php`)
+
+**Purpose**: Polymorphic likes for ideas and comments
+
+**Fields**:
+- `user_id`, `likeable_id`, `likeable_type`
+
+**Key Features**:
+- Polymorphic relationship (`likeable()`)
+- Broadcasting like/unlike events
+- Auto-notification when liked
+
+---
+
+### TeamMember (`app/Models/TeamMember.php`)
+
+**Purpose**: Internal team collaboration (email-based invitations)
+
+**Fields**:
+- `idea_id`, `user_id`, `invitation_id`
+- `name`, `email`, `role`
+- `permissions` (view, edit)
+
+**Permissions**:
+- `view` - Can view the idea
+- `edit` - Can edit the idea
+
+---
+
+### Collaborator (`app/Models/Collaborator.php`)
+
+**Purpose**: External collaboration requests
+
+**Fields**:
+- `idea_id`, `user_id`
+- `name`, `email`, `role`
+- `permissions`
+
+---
+
+### CollaborationRequest (`app/Models/CollaborationRequest.php`)
+
+**Purpose**: Pending collaboration requests
+
+**Fields**:
+- `user_id`, `idea_id`
+- `status` (pending, approved, declined)
+- `message`
+
+---
+
+### Suggestion (`app/Models/Suggestion.php`)
+
+**Purpose**: Improvement suggestions on ideas (from collaborators)
+
+**Fields**:
+- `idea_id`, `user_id`
+- `section` (abstract, problem_statement, proposed_solution, cost_benefit, general, other)
+- `content`
+- `status` (pending, accepted, rejected)
+
+---
+
+### ThematicArea (`app/Models/ThematicArea.php`)
+
+**Purpose**: Categories for ideas
+
+**Fields**:
+- `name`, `slug`, `description`
+- `is_active`, `sort_order`
+
+---
+
+### Organization Models
+
+| Model | Purpose |
+|-------|---------|
+| `Department` | Organizational department |
+| `Directorate` | Directorate within region |
+| `Region` | Geographic region |
+
+**Hierarchy**: Region → Directorate → Department → User
+
+---
+
+### OTP (`app/Models/Otp.php`)
+
+**Purpose**: One-time password for login
+
+**Fields**:
+- `user_id`, `otp`, `type`
+- `expires_at`, `used_at`
+
+**Key Methods**:
+- `isValid()` - Checks if not expired and not used
+- `markAsUsed()` - Marks OTP as used
+
+---
+
+### Supporting Models
+
+| Model | Purpose |
+|-------|---------|
+| `IdeaRevision` | Tracks field changes to ideas |
+| `IdeaVersion` | Stores idea data snapshots |
+| `TeamMemberInvitation` | Invitation records with expiry |
+
+---
+
+## Controllers
+
+### IdeaController (`app/Http/Controllers/IdeaController.php`)
+
+**Routes**: `/idea`, `/idea/create`, `/idea/{slug}`, `/idea/{slug}/edit`
+
+**Methods**:
+- `index()` - List ideas with tab filtering (mine/team/public/collabo)
+- `create()` - Show create form
+- `store()` - Create idea + notify Deputy Directors
+- `show()` - Display idea details
+- `edit()` - Show edit form
+- `update()` - Update idea
+- `destroy()` - Delete idea
+
+**Features**:
+- Tab-based filtering with counts
+- Team member management during create/update
+- File attachment support
+
+---
+
+### DdReviewController (`app/Http/Controllers/DdReviewController.php`)
+
+**Routes**: `/idea/dd-review/*`
+
+**Methods**:
+- `index()` - List DD reviews
+- `create()` - Create DD review assignment
+- `store()` - Store review
+- `show()` - Display review
+- `unlock()` - Deputy Director unlocks idea for review
+- `addComment()` - Add review comments
+- `sendFeedback()` - Send feedback to author
+- `approve()` - Approve idea
+- `reject()` - Reject idea
+- `dashboard()` - Deputy Director/Reviewer dashboard
+
+**Authorization**: Role-based (`deputy_director`, `idea_reviewer`)
+
+---
+
+### SmeReviewController (`app/Http/Controllers/SmeReviewController.php`)
+
+**Routes**: `/idea/sme-review/*`
+
+**Methods**:
+- `index()`, `create()`, `store()`, `show()`, `edit()`, `update()`
+
+**Status Flow**: Ideas in `stage 1 review` or `stage 1 revise`
+
+---
+
+### CollaboController (`app/Http/Controllers/CollaboController.php`)
+
+**Routes**: `/idea/{slug}/collabo/*`
+
+**Methods**:
+- `index()` - List user's collaborations
+- `show()` - Show collaboration page
+- `requestCollaboration()` - Request to collaborate
+- `cancelRequest()` - Cancel request
+- `approveRequest()` - Approve collaborator
+- `declineRequest()` - Decline request
+- `removeCollaborator()` - Remove collaborator
+
+---
+
+### TeamMemberController (`app/Http/Controllers/TeamMemberController.php`)
+
+**Routes**: `/idea/{idea}/team-members/*`
+
+**Methods**:
+- `index()`, `create()`, `store()`, `accept()`
+
+**Purpose**: Internal team invitations via email
+
+---
+
+### CommentController (`app/Http/Controllers/CommentController.php`)
+
+**Routes**: `/idea/{slug}/comments`
+
+**Methods**:
+- `index()` - Paginated comments with replies
+- `store()` - Create comment/reply
+
+---
+
+### LikeController (`app/Http/Controllers/LikeController.php`)
+
+**Routes**: `/likes`
+
+**Methods**:
+- `store()` - Toggle like on idea/comment
+
+---
+
+### SuggestionController (`app/Http/Controllers/SuggestionController.php`)
+
+**Routes**: `/idea/{slug}/suggestions`
+
+**Methods**:
+- `store()` - Create suggestion
+- `approve()` - Accept suggestion
+- `decline()` - Reject suggestion
+
+---
+
+### NotificationController (`app/Http/Controllers/NotificationController.php`)
+
+**Routes**: `/notifications`
+
+**Methods**:
+- `index()` - List notifications
+- `count()` - Unread count
+- `markAsRead()` - Mark single as read
+- `markAllAsRead()` - Mark all as read
+
+---
+
+## Controllers - Authentication
+
+### OtpController (`app/Http/Controllers/Auth/OtpController.php`)
+
+**Routes**: `/otp/*`
+
+**Methods**:
+- `showVerifyForm()` - Show OTP entry page
+- `send()` - Send OTP to email
+- `verify()` - Verify OTP and login
+- `resend()` - Resend OTP
+
+**Key Features**:
+- Google OAuth bypass
+- Session-based flow
+
+---
+
+### SocialiteController (`app/Http/Controllers/Auth/SocialiteController.php`)
+
+**Routes**: `/auth/google`, `/auth/google/callback`
+
+**Methods**:
+- `redirectToGoogle()` - OAuth redirect
+- `handleGoogleCallback()` - JIT user provisioning
+
+---
+
+### WorkEmailVerificationController (`app/Http/Controllers/Auth/WorkEmailVerificationController.php`)
+
+**Routes**: `/work-email/verify/*`
+
+**Methods**:
+- `show()` - Verification page
+- `verify()` - Verify via signed URL
+- `resend()` - Resend verification
+
+---
+
+### OnboardingController (`app/Http/Controllers/Onboarding/OnboardingController.php`)
+
+**Routes**: `/onboarding/*`
+
+**Methods**:
+- `start()` - Start page
+- `step1()` - Personal info form
+- `updateStep1()` - Process step 1
+- `step2()` - Security setup form
+- `updateStep2()` - Process step 2
+- `step3()` - Staff details form
+- `updateStep3()` - Process step 3
+
+**Flow**: Step 1 → Step 2 → (optional Step 3)
+
+---
+
+## Controllers - Settings
+
+### ProfileController (`app/Http/Controllers/Settings/ProfileController.php`)
+
+**Routes**: `/profile`, `/profile/edit`
+
+**Methods**:
+- `edit()` - Profile settings page
+- `update()` - Update profile
+- `destroy()` - Delete account
+
+### SecurityController (`app/Http/Controllers/Settings/SecurityController.php`)
+
+**Routes**: `/security`
+
+**Methods**:
+- `edit()` - Security settings (2FA)
+- `update()` - Update password
+
+---
+
+## Services
+
+### IdeaService (`app/Services/IdeaService.php`)
+
+**Purpose**: Core business logic for ideas
+
+**Methods**:
+- `getPaginatedForUser()` - User's ideas
+- `getForTeamMember()` - Team member's ideas
+- `getPublicIndex()` - Public collaboration ideas
+- `create()` - Create with transaction
+- `update()` - Update with team sync
+- `delete()` - Delete with cleanup
+- `findById()` - Find with relations
+- `processTeamMembers()` - Handle team invitations
+- `storeAttachment()` - File storage
+
+---
+
+### DdReviewService (`app/Services/DdReviewService.php`)
+
+**Purpose**: DD review CRUD operations
+
+---
+
+### SmeReviewService (`app/Services/SmeReviewService.php`)
+
+**Purpose**: SME review CRUD operations
+
+---
+
+### OtpService (`app/Services/Auth/OtpService.php`)
+
+**Purpose**: OTP generation and verification
+
+**Methods**:
+- `sendOtp()` - Find/create user, send OTP
+- `verifyOtp()` - Verify and login
+- `resendOtp()` - Resend if needed
+- `checkGoogleOAuth()` - Check OAuth bypass
+- `findUserByEmail()` - Find by email or work_email
+
+---
+
+### OnboardingService (`app/Services/Onboarding/OnboardingService.php`)
+
+**Purpose**: Onboarding step handling
+
+**Methods**:
+- `updateStep1()` - Profile data
+- `updateStep2()` - Security data
+- `updateStep3()` - Staff data
+- `completeOnboarding()` - Mark complete
+- `getStep3Data()` - Region/directorate/department tree
+- `sendVerificationNotification()` - Email verification
+
+---
+
+### CommentService (`app/Services/CommentService.php`)
+
+**Purpose**: Comment CRUD
+
+---
+
+### TeamMemberService (`app/Services/TeamMemberService.php`)
+
+**Purpose**: Team member management
+
+---
+
+## Notifications
+
+| Notification | Purpose |
+|---------------|---------|
+| `NewIdeaSubmitted` | Notify DD of new idea |
+| `DdReviewUnlocked` | Notify reviewers of unlocked idea |
+| `FeedbackSent` | Send DD feedback to author |
+| `IdeaApproved` | Idea approved notification |
+| `IdeaRejected` | Idea rejected notification |
+| `CollaborationRequestReceived` | New collaboration request |
+| `CollaborationRequestApproved` | Request approved |
+| `TeamMemberInvitation` | Team invitation |
+| `CommentPosted` | New comment notification |
+| `CommentLiked` | Like on comment |
+| `IdeaLiked` | Like on idea |
+| `VerifyWorkEmail` | Work email verification |
+
+---
+
+## Frontend Pages
+
+### Ideas (`resources/js/pages/idea/`)
+
+| Page | Default Export | Purpose |
+|------|---------------|----------|
+| `index.tsx` | `IdeaIndex` | Ideas list with tabs |
+| `create.tsx` | `IdeaCreate` | Create idea form |
+| `show.tsx` | `IdeaShow` | Idea details |
+| `edit.tsx` | `IdeaEdit` | Edit idea form |
+| `comments/show.tsx` | `CommentsShow` | Comments view |
+| `comments/index.tsx` | `CommentsIndex` | Comments list |
+
+### DD Review (`resources/js/pages/idea/ddReview/`)
+
+| Page | Purpose |
+|------|---------|
+| `index.tsx` | Reviews list |
+| `create.tsx` | Create review |
+| `show.tsx` | Review details |
+| `dashboard.tsx` | DD dashboard |
+| `reviewer.tsx` | Reviewer view |
+
+### SME Review (`resources/js/pages/idea/smeReview/`)
+
+| Page | Purpose |
+|------|---------|
+| `index.tsx` | Reviews list |
+| `create.tsx` | Create review |
+| `show.tsx` | Review details |
+| `edit.tsx` | Edit review |
+
+### Collaboration (`resources/js/pages/idea/collabo/`)
+
+| Page | Purpose |
+|------|---------|
+| `index.tsx` | Collaborations list |
+| `show.tsx` | Collaboration page |
+
+### Team Members (`resources/js/pages/idea/team-members/`)
+
+| Page | Purpose |
+|------|---------|
+| `index.tsx` | Team list |
+| `create.tsx` | Add member |
+| `show.tsx` | Member details |
+| `edit.tsx` | Edit member |
+
+### Authentication (`resources/js/pages/auth/`)
+
+| Page | Purpose |
+|------|---------|
+| `login.tsx` | Login form |
+| `verify-otp.tsx` | OTP verification |
+| `verify-email.tsx` | Email verification |
+| `verify-work-email.tsx` | Work email verification |
+| `two-factor-challenge.tsx` | 2FA challenge |
+| `confirm-password.tsx` | Password confirmation |
+| `forgot-password.tsx` | Password reset request |
+| `reset-password.tsx` | Password reset form |
+| `terms.tsx` | Terms acceptance |
+
+### Onboarding (`resources/js/pages/auth/onboarding/`)
+
+| Page | Step |
+|------|------|
+| `Start.tsx` | Start |
+| `Step1.tsx` | Step 1 - Personal info |
+| `Step2.tsx` | Step 2 - Security |
+| `Step3.tsx` | Step 3 - Staff details |
+
+### Settings (`resources/js/pages/settings/`)
+
+| Page | Purpose |
+|------|---------|
+| `profile.tsx` | Profile settings |
+| `security.tsx` | Security settings |
+| `appearance.tsx` | Theme/appearance |
+
+### Other Pages
+
+| Page | Purpose |
+|------|---------|
+| `dashboard.tsx` | Main dashboard |
+| `notifications/index.tsx` | Notifications list |
+| `welcome.tsx` | Landing page |
+
+---
+
+## Authentication System
+
+### Login Flow
+
 1. User enters email on login page
-2. System sends OTP via `OtpService::sendOtp()`
-3. User receives 6-digit code via email
-4. User enters OTP on verification page
-5. System verifies via `OtpService::verifyOtp()`
-6. User logged in, redirected to dashboard
+2. OTP sent to email via `OtpController::send()`
+3. User enters OTP on verification page
+4. `OtpService::verifyOtp()` validates and logins user
+5. If new user, redirect to onboarding
 
-#### Google OAuth Login:
-1. User clicks "Continue with Google"
-2. Redirected to Google for authentication
-3. Google callback handled by `SocialiteController::handleGoogleCallback()`
-4. JIT provisioning:
-   - If existing user with Google provider_id → log them in
-   - If email exists but no Google → link accounts
-   - New user → create with Google data, auto-verify email
-5. Role assigned based on email domain (@kenha.co.ke = staff)
-6. Redirected to dashboard/onboarding
+### Onboarding Flow
 
-#### Work Email Verification:
-1. User registers with @kenha.co.ke email
-2. `work_email_verified_at` is null initially
-3. `VerifyWorkEmail` notification sent with signed URL
-4. User clicks link in email
-5. `WorkEmailVerificationController::verify()` marks as verified
-6. User logged in, redirected to dashboard
+1. **Step 1**: Personal info (name, mobile, gender, avatar)
+2. **Step 2**: Security (password, is_staff flag)
+3. **Step 3** (optional): Staff details (department, work_email, employment_type)
+4. Email verification sent based on email type provided
+
+### OAuth
+
+- Google OAuth via Socialite
+- JIT user provisioning on first login
+- Role assignment based on email domain (@kenha.co.ke → staff)
 
 ---
 
-### Security Features
+## Review Workflows
 
-- **OTP Rate Limiting**: 5 attempts/minute per email+IP
-- **2FA Support**: Fortify's TOTP with QR code, recovery codes, confirmation
-- **Google OAuth**: Secure JIT provisioning with account linking
-- **Signed URLs**: Work email verification uses signed URLs (expires)
-- **OTP Expiration**: 30-minute expiry, single-use
-- **Role Assignment**: Automatic based on email domain (@kenha.co.ke = staff)
-- **Onboarding Guard**: Users with `onboarding_completed = false` redirected to onboarding
-
----
-
-### Key Workflows
-
-#### First-Time Staff User (@kenha.co.ke email):
-1. Register with work email → auto-assigned `staff` role
-2. Work email verification sent (signed URL)
-3. Click email link → verified → redirected to onboarding
-4. Complete onboarding steps (profile, terms)
-5. Access dashboard
-
-#### External User (non-@kenha.co.ke email):
-1. Register with personal email → auto-assigned `user` role
-2. Email auto-verified by OTP
-3. Complete onboarding
-4. Access dashboard
-
-#### Google User:
-1. Click "Continue with Google"
-2. JIT provisioning creates account
-3. Email auto-verified (Google verified)
-4. Complete onboarding (if first time)
-5. Access dashboard
-
----
-
-## 2. Idea Module
-
-### Overview
-The Idea module is the core feature of the KeNHAVATE platform, enabling users to submit, manage, and collaborate on innovative ideas. It supports team collaboration, real-time interactions (likes/comments), and a multi-stage review process.
-
----
-
-### Architecture
-
-#### Models
-
-- **Idea** (`app/Models/Idea.php`)
-  - Core model with fields: `idea_title`, `slug`, `abstract`, `problem_statement`, `proposed_solution`, `cost_benefit_analysis`, `declaration_of_interests`, `status`, `collaboration_enabled`, `team_effort`, `comments_enabled`
-  - Supports polymorphic likes via `likes()` relationship
-  - Has relationships: `thematicArea()`, `user()`, `comments()`, `teamMembers()`, `smeReviews()`, `ddReviews()`
-  - Auto-generates unique slug from title on creation
-
-- **Comment** (`app/Models/Comment.php`)
-  - Nested comments support via `parent_id` (self-referential relationship)
-  - Fields: `idea_id`, `user_id`, `parent_id`, `content`, `is_internal`
-  - Relationships: `idea()`, `user()`, `parent()`, `replies()`, `likes()`
-  - Broadcasts real-time events on creation/deletion
-
-- **Like** (`app/Models/Like.php`)
-  - Polymorphic model working with Ideas and Comments
-  - Fields: `user_id`, `likeable_id`, `likeable_type`
-  - Broadcasts `like.added` and `like.removed` events
-  - Notifies content owner (except when liking own content)
-
-- **TeamMember** (`app/Models/TeamMember.php`)
-  - Links users to ideas with specific roles and permissions
-  - Fields: `idea_id`, `user_id`, `name`, `email`, `role`, `permissions`
-  - Permissions: `view` or `edit`
-
-#### Services
-
-- **IdeaService** (`app/Services/IdeaService.php`)
-  - `getPaginatedForUser()` - Paginated ideas for a user with likes/comments counts
-  - `getForTeamMember()` - Ideas where user is a team member
-  - `getPublicIndex()` - Public ideas with `collaboration_enabled=true`
-  - `create()` - Creates idea with team members in a transaction
-  - `update()` - Updates idea and syncs team members
-  - `delete()` - Deletes idea and attachment
-
-#### Controllers
-
-- **IdeaController** (`app/Http/Controllers/IdeaController.php`)
-  - `index()` - Lists ideas with tab filtering (mine/team/public)
-  - `create()` - Shows idea creation form with thematic areas
-  - `store()` - Creates new idea (validates via `StoreIdeaRequest`)
-  - `show()` - Displays single idea with team members
-  - `edit()` - Shows edit form for idea
-  - `update()` - Updates idea (validates via `UpdateIdeaRequest`)
-  - `destroy()` - Deletes idea
-
-- **CommentController** (`app/Http/Controllers/CommentController.php`)
-  - `index()` - Shows comments page for an idea
-  - `store()` - Creates new comment/reply, broadcasts events, sends notifications
-
-- **LikeController** (`app/Http/Controllers/LikeController.php`)
-  - `store()` - Toggles like/unlike on ideas or comments (returns JSON)
-
-- **NotificationController** (`app/Http/Controllers/NotificationController.php`)
-  - `index()` - Lists user's notifications
-  - `markAsRead()` - Marks a notification as read
-  - `markAllAsRead()` - Marks all notifications as read
-
-#### Requests (Validation)
-
-- **StoreIdeaRequest** (`app/Http/Requests/Idea/StoreIdeaRequest.php`)
-  - Validates: `idea_title`, `thematic_area_id`, `abstract`, `problem_statement`, etc.
-  - Custom validation: Ensures user adds themselves as team member with correct name/permission
-  - Validates team_members array and individual member data
-
-- **UpdateIdeaRequest** (`app/Http/Requests/Idea/UpdateIdeaRequest.php`)
-  - Similar to store, but with `sometimes` for partial updates
-  - Same team member validation logic
-
-- **StoreCommentRequest** (`app/Http/Requests/StoreCommentRequest.php`)
-  - Validates: `idea_id`, `parent_id` (nullable), `content`, `is_internal`
-
-- **StoreLikeRequest** (`app/Http/Requests/StoreLikeRequest.php`)
-  - Validates: `likeable_type` (idea/comment), `likeable_id`
-
-#### Notifications
-
-- **IdeaLiked** (`app/Notifications/IdeaLiked.php`)
-  - Sent when someone likes an idea (except owner liking own idea)
-  - Broadcast via `database` and `broadcast` channels
-  - Payload: `idea_id`, `idea_slug`, `user_name`, `message`
-
-- **CommentPosted** (`app/Notifications/CommentPosted.php`)
-  - Sent when someone comments on an idea or replys to a comment
-  - Notifies idea owner and parent comment owner (if reply)
-
-- **CommentLiked** (`app/Notifications/CommentLiked.php`)
-  - Sent when someone likes a comment (except owner)
-
----
-
-### Frontend Components
-
-#### Pages
-
-**Idea Index (`resources/js/pages/idea/index.tsx`)**
-- **Tabs**: Mine (user's ideas), Team (ideas where user is team member), Public (collaboration-enabled ideas)
-- **Features**:
-  - Like button with heart icon (toggles without page refresh via axios)
-  - Comment button with counter
-  - Real-time like count updates
-  - Tab-specific idea counts
-
-**Idea Create (`resources/js/pages/idea/create.tsx`)**
-- **Features**:
-  - Auto-adds current user as "Author" with "edit" permission when "team effort" is checked
-  - Validates team member details (name must match user's full name)
-  - Prevents removing current user from team
-  - Drag-and-drop file attachment
-  - Real-time validation errors per team member
-
-**Idea Edit (`resources/js/pages/idea/edit.tsx`)**
-- Similar to create with pre-filled data
-- Same auto-add and validation logic for team members
-
-**Idea Show (`resources/js/pages/idea/show.tsx`)**
-- Displays full idea details
-- Shows team members with roles/permissions
-- Comment section with real-time updates
-
-**Comments Show (`resources/js/pages/idea/comments/show.tsx`)**
-- Lists comments and replies for an idea
-- Supports nested replies
-- Real-time comment/reply additions
-
-**Notifications Index (`resources/js/pages/notifications/index.tsx`)**
-- Lists all notifications for the user
-- "Mark as read" functionality
-- Filters by notification type (idea_liked, comment_posted, etc.)
-
----
-
-### Real-Time Features (Laravel Reverb)
-
-#### Configuration
-- **Package**: `laravel/reverb` (v1.10.0)
-- **Config**: `config/reverb.php`
-- **Broadcasting**: Configured via `config/broadcasting.php`
-- **Channels**:
-  - `idea.{slug}` - Private channel for idea-related updates
-  - `comment.{id}` - Private channel for comment-related updates
-
-#### Events Broadcasted
-1. **Like Events**:
-   - `like.added` - When someone likes content
-   - Payload: `type`, `likeable_id`, `likeable_type`, `user_id`, `user_name`
-   - `like.removed` - When someone unlikes content
-
-2. **Comment Events**:
-   - `comment.added` - When a comment/reply is posted
-   - `comment.removed` - When a comment is deleted
-
-#### Notifications (App-Based)
-- Stored in `notifications` table (not sent via email)
-- Broadcast via Reverb for real-time updates
-- Types: `idea_liked`, `comment_posted`, `comment_liked`
-
----
-
-### Database Schema
-
-#### Tables
-
-**`ideas`**
-- `id`, `idea_title`, `slug`, `thematic_area_id`, `abstract`, `problem_statement`, `proposed_solution`, `cost_benefit_analysis`, `declaration_of_interests`
-- `original_idea_disclaimer`, `collaboration_enabled`, `team_effort`, `comments_enabled`
-- `current_revision_number`, `collaboration_deadline`, `status`
-- `attachment` (binary), `attachment_filename`, `attachment_mime`, `attachment_size`
-- `path`, `user_id`, timestamps, `deleted_at`
-
-**`comments`**
-- `id`, `idea_id`, `user_id`, `parent_id` (self-referential), `content`, `is_internal`
-- timestamps, `deleted_at`
-
-**`likes` (Polymorphic)**
-- `id`, `user_id`, `likeable_id`, `likeable_type`, timestamps
-- Unique constraint: `[user_id, likeable_id, likeable_type]`
-
-**`team_members`**
-- `id`, `idea_id`, `user_id`, `name`, `email`, `role`, `permissions`
-- timestamps
-
-**`notifications`**
-- `id` (UUID), `type`, `notifiable_type`, `notifiable_id`, `data` (JSON), `read_at`
-- timestamps
-
-**`users`**
-- `id`, `first_name`, `other_names`, `mobile_number`, `gender`
-- `email`, `work_email`, `password`
-- `provider`, `provider_id`, `avatar`
-- `department_id`, `employment_type`
-- `onboarding_completed`, `email_verified_at`, `work_email_verified_at`
-- `remember_token`, timestamps
-
----
-
-### Key Workflows
-
-#### Submitting an Idea
-1. User clicks "Create Idea"
-2. Fills in title, thematic area, abstract, problem statement, solution, cost-benefit analysis
-3. If team effort: Checks "This is a team effort" → auto-adds user as "Author" with "edit" permission
-4. Adds additional team members (validates email/name/permission)
-5. Uploads attachment (PDF, max 10MB)
-6. Submits → validated by `StoreIdeaRequest` → created via `IdeaService`
-
-#### Liking Content
-1. User clicks heart icon on idea in index page
-2. Frontend sends axios POST to `/likes` with `likeable_type` and `likeable_id`
-3. Backend toggles like (creates or deletes `Like` record)
-4. Broadcasts `like.added` or `like.removed` via Reverb
-5. Notifies content owner (if not own content)
-6. UI updates like count without page refresh
-
-#### Commenting
-1. User clicks comment icon on idea index
-2. Redirected to `/idea/{slug}/comments`
-3. Types comment and submits
-4. Backend creates `Comment` record
-5. Broadcasts `comment.added` event
-6. Notifies idea owner and parent comment owner (if reply)
-7. Real-time update via Reverb
-
----
-
-### Security & Validation
-
-#### Team Member Validation
-- User must add themselves as a team member when "team effort" is checked
-- Name must match user's full name when using their email
-- User cannot have "view" permission on their own idea (must be "edit")
-- Prevents removing current user from team members list
-
-#### Idea Visibility
-- **Mine tab**: Ideas where `user_id = auth()->id()`
-- **Team tab**: Ideas where user is a team member
-- **Public tab**: Ideas with `collaboration_enabled = true` (regardless of status)
-
-#### Permissions
-- Team members with "edit" permission can edit the idea
-- Team members with "view" permission can only view
-- Idea owner always has full access
-
-#### Authentication Security
-- OTP Rate Limiting: 5 attempts/minute per email+IP
-- 2FA Support: Fortify's TOTP with QR code, recovery codes
-- Google OAuth: Secure JIT provisioning with account linking
-- Signed URLs: Work email verification uses signed URLs (expires)
-- OTP Expiration: 30-minute expiry, single-use
-
----
-
-### Testing
-
-#### Test Coverage
-- Idea creation with team members
-- Idea update with team member sync
-- Like/unlike toggle
-- Comment creation with notifications
-- Real-time event broadcasting
-- Tab filtering (mine/team/public)
-- OTP sending and verification
-- Google OAuth JIT provisioning
-- Work email verification
-
-#### Running Tests
-```bash
-php artisan test --compact --filter=Idea
-php artisan test --compact --filter=Auth
-```
-
----
-
-### Deployment Notes
-
-#### Environment Variables (.env)
-```bash
-BROADCAST_CONNECTION=reverb
-REVERB_APP_ID=your_app_id
-REVERB_APP_KEY=your_app_key
-REVERB_APP_SECRET=your_app_secret
-REVERB_HOST=localhost
-REVERB_PORT=8080
-REVERB_SCHEME=http
-```
-
-#### Starting Reverb Server
-```bash
-php artisan reverb:start
-```
-
-#### Production Considerations
-- Use SSL/TLS in production (`REVERB_SCHEME=https`, `REVERB_PORT=443`)
-- Configure Redis for Reverb scaling if needed
-- Run `npm run build` for frontend assets
-- Ensure notifications table is migrated
-- Set `BROADCAST_CONNECTION=reverb` in production
-- Configure proper email provider for OTP and work email verification
-
----
-
-### File Structure
+### Stage 1: Initial Submission
 
 ```
-app/
-├── Http/Controllers/
-│   ├── Auth/
-│   │   ├── SocialiteController.php
-│   │   ├── WorkEmailVerificationController.php
-│   │   └── OtpController.php
-│   ├── IdeaController.php
-│   ├── CommentController.php
-│   ├── LikeController.php
-│   └── NotificationController.php
-├── Http/Requests/
-│   ├── Auth/
-│   │   ├── SendOtpRequest.php
-│   │   └── VerifyOtpRequest.php
-│   └── Idea/
-│       ├── StoreIdeaRequest.php
-│       └── UpdateIdeaRequest.php
-├── Actions/Fortify/
-│   ├── CreateNewUser.php
-│   ├── UpdateUserProfileInformation.php
-│   ├── UpdateUserPasswords.php
-│   └── ResetUserPasswords.php
-├── Services/
-│   ├── Auth/
-│   │   └── OtpService.php
-│   └── IdeaService.php
-├── Models/
-│   ├── User.php
-│   ├── Idea.php
-│   ├── Comment.php
-│   ├── Like.php
-│   └── TeamMember.php
-└── Notifications/
-    ├── VerifyWorkEmail.php
-    ├── IdeaLiked.php
-    ├── CommentPosted.php
-    └── CommentLiked.php
-
-resources/js/pages/
-├── auth/
-│   ├── login.tsx
-│   ├── verify-otp.tsx
-│   └── verify-work-email.tsx
-├── onboarding/
-│   ├── step1.tsx
-│   ├── step2.tsx
-│   └── step3.tsx
-├── idea/
-│   ├── index.tsx
-│   ├── create.tsx
-│   ├── edit.tsx
-│   ├── show.tsx
-│   └── comments/
-│       └── show.tsx
-└── notifications/
-    └── index.tsx
-
-routes/
-├── web.php
-├── idea.php
-└── settings.php
-
-config/
-├── fortify.php
-├── broadcasting.php
-└── reverb.php
+Draft → Deputy Director Review
 ```
+
+1. User submits idea (status: draft)
+2. Deputy Directors notified via `NewIdeaSubmitted`
+3. DD can unlock for review or reject
+
+### Stage 2: SME Review
+
+```
+DD Unlocks → Idea Reviewers Review → DD Decision
+```
+
+1. Deputy Director unlocks idea (status: stage 2 review)
+2. Idea reviewers submit comments
+3. DD sends feedback or approves/rejects
+
+### Stage 3: Final Decision
+
+```
+Approved → Rejected
+```
+
+1. DD approves → status: dd_approved
+2. DD rejects → status: dd_rejected
 
 ---
 
-### Recent Updates (April 2026)
+## Enhancements & Gaps
 
-#### Authentication Module
-1. **OTP-Based Login System**
-   - Custom OTP service with 6-digit codes
-   - Email verification via OTP (not Laravel's default)
-   - Google OAuth with JIT provisioning
-   - Work email verification with signed URLs
+### 1. Missing Policy Classes
 
-2. **Role-Based Access Control**
-   - Auto-assigns role based on email domain
-   - @kenha.co.ke emails → `staff` role
-   - Other emails → `user` role
-   - Uses Spatie Laravel Permission
+**Issue**: No Laravel Policy classes found (`app/Policies/`)
 
-3. **Onboarding Flow**
-   - Three-step onboarding process
-   - Profile completion, terms acceptance
-   - Guards routes for incomplete onboarding
+**Impact**: Authorization checks rely on inline role checks in controllers
 
-#### Idea Module
-1. **Hardened Idea Submission**
-   - Validated team effort requires at least one member
-   - Auto-added current user as "Author" with "edit" permission
-   - Prevented self-notifications for likes/comments
+**Recommendation**: Create Policy classes for each model:
+- `IdeaPolicy` - Authorization for idea operations
+- `DdReviewPolicy` - DD review operations
+- `SmeReviewPolicy` - SME review operations
+- `TeamMemberPolicy` - Team member operations
+- `CommentPolicy` - Comment operations
 
-2. **Real-Time Features**
-   - Installed Laravel Reverb for WebSocket connections
-   - Added polymorphic likes system (works with ideas, comments)
-   - Created notification classes for real-time alerts
-   - Added like/comment icons with counters on idea index
+---
 
-3. **Frontend Improvements**
-   - Like toggle without page refresh (axios + Inertia reload)
-   - Proper route generation using Wayfinder
-   - ESLint/TypeScript fixes for cleaner code
+### 2. Incomplete Review Status Flow
 
-4. **Documentation**
-   - Created comprehensive module documentation
-   - Added inline code comments for complex logic
+**Issue**: SME Review status seems disconnected from main workflow
+
+**Current**: SME reviews exist but status (`stage 1 review`, `stage 1 revise`) isn't clearly integrated with DD review flow
+
+**Recommendation**: Define clear status transitions and implement state machine or status helpers
+
+---
+
+### 3. Duplicate Collaboration Models
+
+**Issue**: Both `TeamMember` and `Collaborator` serve similar purposes
+
+| Model | Purpose |
+|-------|---------|
+| TeamMember | Internal (email-based) |
+| Collaborator | External requests |
+
+**Gap**: No clear differentiation in UI or consistent handling
+
+**Recommendation**: Consolidate or document the distinction clearly
+
+---
+
+### 4. Missing Version Control
+
+**Issue**: `IdeaRevision` and `IdeaVersion` models exist but not actively used
+
+**Gap**: No version history UI, no diff viewing, no rollback
+
+**Recommendation**:
+- Create version on each significant update
+- Add revision history page
+- Implement diff viewing
+
+---
+
+### 5. Missing File Validation Rule
+
+**Issue**: `SafePdf` rule exists but not used in requests
+
+**Gap**: PDF upload validation not enforced
+
+---
+
+### 6. Incomplete SME Review Controller
+
+**Issue**: No `destroy()` method in SmeReviewController
+
+**Gap**: Cannot delete SME reviews
+
+---
+
+### 7. Notification Preferences
+
+**Issue**: No user notification preferences (database, email, in-app)
+
+**Gap**: No way to toggle notification channels
+
+---
+
+### 8. Missing API Endpoints
+
+**Issue**: No API routes for mobile apps
+
+**Gap**: REST/GraphQL API needed for mobile, third-party integrations
+
+---
+
+### 9. Missing Activity/audit Log
+
+**Issue**: No comprehensive activity logging
+
+**Gap**: Cannot audit who did what and when
+
+---
+
+### 10. Incomplete 2FA Implementation
+
+**Issue**: SecurityController has 2FA but QR code display not visible in frontend
+
+**Gap**: 2FA enable/disable flow incomplete in UI
+
+---
+
+## Unused Code
+
+### Models
+
+| Model | Status |
+|-------|--------|
+| `IdeaRevision` | **Unused** - No CRUD, no UI |
+| `IdeaVersion` | **Unused** - No CRUD, no UI |
+| `TeamMemberInvitation` | **Partially used** - Accept method uses but no full CRUD |
+
+### Services
+
+| Service | Status |
+|---------|--------|
+| `CommentService` | **Unused** - Controller doesn't use |
+| `TeamMemberService` | **Unused** - Controller doesn't use |
+
+### Rules
+
+| Class | Status |
+|-------|--------|
+| `SafePdf` | **Unused** - Not applied in requests |
+
+### Request Classes
+
+| Class | Status |
+|-------|--------|
+| `StoreLikeRequest` | **Unused** - Controller uses basic validation |
+| `StoreCommentRequest` | **Partially used** - Only uses some fields |
+| `UpdateIdeaRequest` | **Unused** - Direct validation in controller |
+
+### Middleware
+
+| Middleware | Status |
+|-----------|--------|
+| `EnsureEmailsVerified` | **Not registered** - Found but not in Kernel |
+| `EnsureOnboardingCompleted` | **Not registered** - Found but not in Kernel |
+| `CheckTermsAccepted` | **Not registered** - Found but not in Kernel |
+
+### Actions
+
+| Action | Status |
+|--------|--------|
+| `UpdateUserPassword` | **Unused** - SecurityController uses direct update |
+| `UpdateUserProfileInformation` | **Unused** - ProfileController uses direct update |
+| `ResetUserPassword` | **Unused** - Fortify handles |
+| `PasswordValidationRules` | **Unused** - Concerns not used |
+| `CompleteOnboardingAfterEmailVerification` | **Probably unused** |
+
+### Notifications
+
+All notifications present but may have untested flows
+
+### Frontend Pages
+
+| Page | Status |
+|------|--------|
+| `welcome.tsx` | **Likely unused** - For unauthenticated users |
+| `appearance.tsx` | **Likely incomplete** - Theme handling not evident |
+
+### Mail
+
+| Class | Status |
+|-------|--------|
+| `SendOtpMail` | Only used in OtpService |
+
+---
+
+## Recommendations Summary
+
+1. **High Priority**:
+   - Implement Policy classes for authorization
+   - Add API routes for mobile
+   - Complete 2FA UI flow
+
+2. **Medium Priority**:
+   - Implement version history for ideas
+   - Clean up unused code/services
+   - Add activity logging
+   - Define clear SME → DD workflow integration
+
+3. **Low Priority**:
+   - Notification preferences
+   - Appearance/theme options
+   - Comprehensive test coverage
+
+---
+
+## Database Tables (Inferred)
+
+| Table | Model |
+|-------|-------|
+| `users` | User |
+| `ideas` | Idea |
+| `dd_reviews` | DdReview |
+| `sme_reviews` | SmeReview |
+| `comments` | Comment |
+| `likes` | Like |
+| `team_members` | TeamMember |
+| `collaborators` | Collaborator |
+| `collaboration_requests` | CollaborationRequest |
+| `suggestions` | Suggestion |
+| `thematic_areas` | ThematicArea |
+| `departments` | Department |
+| `directorates` | Directorate |
+| `regions` | Region |
+| `otps` | Otp |
+| `idea_revisions` | IdeaRevision |
+| `idea_versions` | IdeaVersion |
+| `team_member_invitations` | TeamMemberInvitation |
+
+---
+
+*Document generated from code review. Some assumptions may need verification against actual database schema.*
