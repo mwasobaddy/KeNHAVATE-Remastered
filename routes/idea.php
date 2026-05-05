@@ -67,8 +67,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // DD Review routes
     Route::get('idea/dd-review', [DdReviewController::class, 'index'])->name('idea.ddReview.index');
+    Route::get('idea/dd-review/pending-unlock', [DdReviewController::class, 'pendingUnlock'])->name('idea.ddReview.pendingUnlock');
+    Route::get('idea/dd-review/pending-sme-compilation', [DdReviewController::class, 'pendingSmeCompilation'])->name('idea.ddReview.pendingSmeCompilation');
+    Route::get('idea/dd-review/pending-board-compilation', [DdReviewController::class, 'pendingBoardCompilation'])->name('idea.ddReview.pendingBoardCompilation');
+    Route::get('idea/dd-review/pending-sme-decision', [DdReviewController::class, 'pendingSmeDecision'])->name('idea.ddReview.pendingSmeDecision');
+    Route::get('idea/dd-review/pending-board-decision', [DdReviewController::class, 'pendingBoardDecision'])->name('idea.ddReview.pendingBoardDecision');
+    Route::get('idea/dd-review/active', [DdReviewController::class, 'allActive'])->name('idea.ddReview.active');
     Route::get('idea/dd-review/dashboard', [DdReviewController::class, 'dashboard'])->name('idea.ddReview.dashboard');
-    Route::get('idea/dd-review/reviewer', [DdReviewController::class, 'dashboard'])->name('idea.ddReview.reviewer');
     Route::get('idea/dd-review/create', [DdReviewController::class, 'create'])->name('idea.ddReview.create');
     Route::post('idea/dd-review', [DdReviewController::class, 'store'])->name('idea.ddReview.store');
     Route::get('idea/dd-review/{ddReview}', [DdReviewController::class, 'show'])->name('idea.ddReview.show');
