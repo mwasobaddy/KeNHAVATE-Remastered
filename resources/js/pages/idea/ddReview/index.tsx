@@ -202,7 +202,7 @@ export default function DdReviewIndex({
     stage2RevisedIdeas,
 }: DdReviewIndexProps) {
     const { props } = usePage();
-    const queryParams = props.query as Record<string, string>;
+    const queryParams = (props.query || {}) as Record<string, string>;
 
     const [showUnlockModal, setShowUnlockModal] = useState(false);
     const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
