@@ -117,30 +117,31 @@ class OtpService
      */
     private function findOrCreateUser(string $email, bool $isKenhaEmail): User
     {
-        if ($isKenhaEmail) {
-            return User::firstOrCreate(
-                ['work_email' => $email],
-                [
-                    'first_name' => explode('@', $email)[0],
-                    'work_email' => $email,
-                    'password' => null,
-                    'email_verified_at' => null,
-                    'work_email_verified_at' => now(),
-                    'onboarding_completed' => false,
-                ]
-            );
+        // First try to find existing user by email OR work_email (consistent with findUserByEmail)
+        $existingUser = $this->findUserByEmail($email);
+
+        if ($existingUser) {
+            return $existingUser;
         }
 
-        return User::firstOrCreate(
-            ['email' => $email],
-            [
+        if ($isKenhaEmail) {
+            return User::create([
                 'first_name' => explode('@', $email)[0],
-                'email' => $email,
+                'work_email' => $email,
                 'password' => null,
-                'email_verified_at' => now(),
+                'email_verified_at' => null,
+                'work_email_verified_at' => now(),
                 'onboarding_completed' => false,
-            ]
-        );
+            ]);
+        }
+
+        return User::create([
+            'first_name' => explode('@', $email)[0],
+            'email' => $email,
+            'password' => null,
+            'email_verified_at' => now(),
+            'onboarding_completed' => false,
+        ]);
     }
 
     /**

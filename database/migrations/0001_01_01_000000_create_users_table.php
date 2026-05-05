@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('provider_id')->nullable();
             $table->string('avatar')->nullable();
             $table->boolean('onboarding_completed')->default(false);
+            $table->boolean('is_staff')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

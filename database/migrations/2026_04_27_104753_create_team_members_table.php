@@ -19,10 +19,15 @@ return new class extends Migration
             $table->string('email');
             $table->string('role')->nullable();
             $table->enum('permissions', ['view', 'edit'])->nullable()->comment('Permission: view or edit');
+
+            // Added in 2026_04_29_010806
+            $table->foreignId('invitation_id')->nullable()->constrained('team_member_invitations')->nullOnDelete();
+
             $table->timestamps();
 
             $table->index(['idea_id', 'user_id']);
             $table->index(['user_id']);
+            $table->index(['invitation_id']);
         });
     }
 

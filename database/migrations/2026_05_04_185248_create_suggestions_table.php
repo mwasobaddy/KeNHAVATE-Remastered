@@ -18,6 +18,11 @@ return new class extends Migration
             $table->string('section'); // problem_statement, proposed_solution, cost_benefit
             $table->text('content');
             $table->string('status')->default('pending'); // pending, accepted, rejected
+
+            // Added in 2026_05_04_185304
+            $table->unsignedInteger('likes_count')->default(0);
+            $table->unsignedInteger('replies_count')->default(0);
+
             $table->timestamps();
 
             $table->index(['idea_id', 'status']);

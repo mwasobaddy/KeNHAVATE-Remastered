@@ -31,7 +31,7 @@ class UpdateIdeaRequest extends FormRequest
             'comments_enabled' => ['sometimes', 'boolean'],
             'collaboration_deadline' => ['sometimes', 'nullable', 'date', 'after:today'],
             'attachment' => ['sometimes', 'nullable', new SafePdf],
-            'status' => ['sometimes', 'in:draft,stage 1 review,stage 2 review,stage 1 revise,stage 2 revise,approved,rejected'],
+            'status_id' => ['sometimes', 'nullable', 'exists:idea_statuses,id'],
             'team_members' => ['sometimes', 'array'],
             'team_members.*.id' => ['nullable', 'exists:team_members,id'],
             'team_members.*.name' => ['required_with:team_members', 'string', 'max:255'],

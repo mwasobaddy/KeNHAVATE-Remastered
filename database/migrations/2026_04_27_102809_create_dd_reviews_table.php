@@ -16,10 +16,20 @@ return new class extends Migration
             $table->foreignId('idea_id')->constrained()->cascadeOnDelete();
             $table->foreignId('reviewer_id')->nullable()->constrained('users')->nullOnDelete();
             $table->enum('status', ['pending', 'approved', 'rejected', 'revise'])->default('pending');
+
+            // Added in 2026_05_04_201413
+            $table->boolean('is_unlocked')->default(false);
+            $table->dateTime('review_deadline')->nullable();
+
             $table->text('review_comments')->nullable();
             $table->enum('decision', ['approve', 'reject'])->nullable();
             $table->text('implementation_timeline')->nullable();
             $table->text('budget_implications')->nullable();
+
+            // Added in 2026_05_04_201413
+            $table->text('feedback')->nullable();
+            $table->dateTime('feedback_sent_at')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 
