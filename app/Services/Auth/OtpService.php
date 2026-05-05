@@ -122,7 +122,6 @@ class OtpService
                 ['work_email' => $email],
                 [
                     'first_name' => explode('@', $email)[0],
-                    'email' => $email,
                     'work_email' => $email,
                     'password' => null,
                     'email_verified_at' => null,
