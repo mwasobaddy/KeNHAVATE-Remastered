@@ -44,7 +44,6 @@ export function AppSidebar() {
     const ddReviewItems: NavItem[] = [
         { title: 'Overview', href: idea.ddReview.index(), icon: FileCheck, group: 'DD Review' },
         ...(userPermissions.includes('unlock dd_review') ? [{ title: 'Pending Unlock', href: idea.ddReview.pendingUnlock().url, icon: Lock, group: 'DD Review' }] : []),
-        ...(userPermissions.includes('compile sme_feedback') ? [{ title: 'Pending SME Compilation', href: idea.ddReview.pendingSmeCompilation().url, icon: ClipboardList, group: 'DD Review' }] : []),
         ...(userPermissions.includes('compile board_feedback') ? [{ title: 'Pending Board Compilation', href: idea.ddReview.pendingBoardCompilation().url, icon: ClipboardList, group: 'DD Review' }] : []),
         ...(userPermissions.includes('decide sme') ? [{ title: 'Pending SME Decision', href: idea.ddReview.pendingSmeDecision().url, icon: Users, group: 'DD Review' }] : []),
         ...(userPermissions.includes('decide board') ? [{ title: 'Pending Board Decision', href: idea.ddReview.pendingBoardDecision().url, icon: CheckCircle, group: 'DD Review' }] : []),
