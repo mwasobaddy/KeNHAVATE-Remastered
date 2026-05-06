@@ -140,21 +140,32 @@ class IdeaDataSeeder extends Seeder
 
     private function generateStatus()
     {
-        // Map old status names to status_id
-        $statusMap = [
-            'draft' => 1,           // DRAFT
-            'stage 1 review' => 4,  // SME_REVIEW_IN_PROGRESS
-            'stage 2 review' => 11, // PENDING_BOARD_REVIEW
-            'stage 1 revise' => 6,  // REVISION_REQUIRED_SME
-            'stage 2 revise' => 14, // BOARD_REVISION_REQUIRED
-            'approved' => 18,       // BOARD_APPROVED
-            'rejected' => 17,       // REJECTED
+        // All statuses with their IDs for DD Review workflow
+        $statuses = [
+            1 => 'DRAFT',                          // Pending Unlock
+            3 => 'OPEN_FOR_SME_REVIEW',
+            4 => 'SME_REVIEW_IN_PROGRESS',
+            5 => 'PENDING_DD_COMPILATION_SME',     // Pending SME Compilation
+            6 => 'REVISION_REQUIRED_SME',
+            7 => 'UNDER_REVISION',
+            8 => 'REVISION_SUBMITTED',             // Pending SME Decision
+            9 => 'DELEGATED_SME_REVIEW',
+            10 => 'PENDING_DD_DECISION',
+            11 => 'PENDING_BOARD_REVIEW',
+            12 => 'BOARD_REVIEW_IN_PROGRESS',
+            13 => 'PENDING_DD_COMPILATION_BOARD', // Pending Board Compilation
+            14 => 'BOARD_REVISION_REQUIRED',
+            15 => 'UNDER_BOARD_REVISION',
+            16 => 'BOARD_REVISION_SUBMITTED',       // Pending Board Decision
+            17 => 'REJECTED',
+            18 => 'BOARD_APPROVED',
+            19 => 'IMPLEMENTATION_IN_PROGRESS',
+            20 => 'CLOSED',
         ];
 
-        $oldStatuses = ['draft', 'stage 1 review', 'stage 2 review', 'stage 1 revise', 'stage 2 revise', 'approved', 'rejected'];
-        $oldStatus = $oldStatuses[rand(0, 6)];
+        $statusIds = array_keys($statuses);
 
-        return $statusMap[$oldStatus];
+        return $statusIds[array_rand($statusIds)];
     }
 
     private function generateStageId($statusId)
