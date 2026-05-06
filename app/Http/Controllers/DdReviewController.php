@@ -30,11 +30,11 @@ class DdReviewController extends Controller
 
         // Get counts for each category
         $counts = [
-            'pendingUnlock' => Idea::where('status_id', 2)->count(), // SUBMITTED
+            'pendingUnlock' => Idea::where('status_id', 1)->count(), // DRAFT (stage null)
             'pendingSmeCompilation' => Idea::where('status_id', 5)->count(), // PENDING_DD_COMPILATION_SME
             'pendingBoardCompilation' => Idea::where('status_id', 13)->count(), // PENDING_DD_COMPILATION_BOARD
-            'pendingSmeDecision' => Idea::where('status_id', 10)->count(), // PENDING_DD_DECISION
-            'pendingBoardDecision' => Idea::where('status_id', 11)->count(), // PENDING_BOARD_REVIEW
+            'pendingSmeDecision' => Idea::where('status_id', 8)->count(), // REVISION_SUBMITTED (SME)
+            'pendingBoardDecision' => Idea::where('status_id', 16)->count(), // BOARD_REVISION_SUBMITTED (Board)
             'allActive' => Idea::whereNotIn('status_id', [17, 18, 19, 20])->count(), // All non-terminal
         ];
 
@@ -80,16 +80,24 @@ class DdReviewController extends Controller
         return Inertia::render('idea/ddReview/index', [
             'counts' => $counts,
             'stats' => $stats,
-            'pendingUnlockIdeas' => Idea::where('status_id', 2)
+            'pendingUnlockIdeas' => Idea::where('status_id', 1)
                 ->with('user', 'thematicArea', 'status')
                 ->latest()
                 ->get(),
-            'pendingCompilationIdeas' => Idea::whereIn('status_id', [5, 13])
-                ->with('user', 'thematicArea', 'status')
+            'pendingSmeCompilationIdeas' => Idea::where('status_id', 5)
+                ->with('user', 'thematicArea', 'status', 'stage')
                 ->latest()
                 ->get(),
-            'pendingDecisionIdeas' => Idea::whereIn('status_id', [10, 11])
-                ->with('user', 'thematicArea', 'ddReview', 'status')
+            'pendingBoardCompilationIdeas' => Idea::where('status_id', 13)
+                ->with('user', 'thematicArea', 'status', 'stage')
+                ->latest()
+                ->get(),
+            'pendingSmeDecisionIdeas' => Idea::where('status_id', 8)
+                ->with('user', 'thematicArea', 'ddReview', 'status', 'stage')
+                ->latest()
+                ->get(),
+            'pendingBoardDecisionIdeas' => Idea::where('status_id', 16)
+                ->with('user', 'thematicArea', 'ddReview', 'status', 'stage')
                 ->latest()
                 ->get(),
             'allActiveIdeas' => Idea::whereNotIn('status_id', [17, 18, 19, 20])
@@ -101,7 +109,7 @@ class DdReviewController extends Controller
 
     public function pendingUnlock(): Response
     {
-        $ideas = Idea::where('status_id', 2) // SUBMITTED
+        $ideas = Idea::where('status_id', 1) // DRAFT (stage null)
             ->with('user', 'thematicArea', 'ddReview', 'status', 'stage')
             ->latest()
             ->get();
@@ -111,15 +119,12 @@ class DdReviewController extends Controller
         ]);
     }
 
-    public function pendingSmeCompilation(): Response
+    public function pendingSmeCompilationShow(Idea $idea): Response
     {
-        $ideas = Idea::where('status_id', 5) // PENDING_DD_COMPILATION_SME
-            ->with('user', 'thematicArea', 'ddReview', 'smeReviews', 'status', 'stage')
-            ->latest()
-            ->get();
+        $idea->load('user', 'thematicArea', 'ddReview', 'smeReviews.reviewer', 'status', 'stage');
 
-        return Inertia::render('idea/ddReview/pendingSmeCompilation', [
-            'ideas' => $ideas,
+        return Inertia::render('idea/ddReview/pendingSmeCompilationShow', [
+            'idea' => $idea,
         ]);
     }
 
@@ -248,7 +253,7 @@ class DdReviewController extends Controller
         Notification::send($ideaReviewers, new DdReviewUnlocked($ddReview, $deputyDirector));
         Notification::send($author, new DdReviewUnlocked($ddReview, $deputyDirector));
 
-        return redirect()->route('idea.ddReview.dashboard')
+        return redirect()->route('idea.ddReview.index')
             ->with('success', 'Idea unlocked for review');
     }
 
@@ -265,14 +270,25 @@ class DdReviewController extends Controller
             'review_comments' => ['required', 'string'],
         ]);
 
+        $deputyDirector = auth()->user();
+
         $ddReview->update([
-            'reviewer_id' => auth()->id(),
+            'reviewer_id' => $deputyDirector->id,
             'review_comments' => $ddReview->review_comments
-                ? $ddReview->review_comments."\n\n".auth()->user()->getFullName().': '.$request->review_comments
-                : auth()->user()->getFullName().': '.$request->review_comments,
+                ? $ddReview->review_comments."\n\n".$deputyDirector->getFullName().': '.$request->review_comments
+                : $deputyDirector->getFullName().': '.$request->review_comments,
         ]);
 
-        return back()->with('success', 'Comment added');
+        // Notify author
+        $idea->user->notify(new DdCompilationSubmitted($ddReview, $deputyDirector));
+
+        // Notify team members (excluding collaborators)
+        $teamMembers = $idea->teamMembers()->where('role', '!=', 'collaborator')->get();
+        foreach ($teamMembers as $member) {
+            $member->user->notify(new DdCompilationSubmitted($ddReview, $deputyDirector));
+        }
+
+        return back()->with('success', 'Compilation submitted successfully');
     }
 
     public function sendFeedback(Request $request, Idea $idea): JsonResponse
