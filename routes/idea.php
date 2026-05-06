@@ -68,7 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // DD Review routes
     Route::get('idea/dd-review', [DdReviewController::class, 'index'])->name('idea.ddReview.index');
     Route::get('idea/dd-review/pending-unlock', [DdReviewController::class, 'pendingUnlock'])->name('idea.ddReview.pendingUnlock');
-    Route::get('idea/dd-review/pending-sme-compilation', [DdReviewController::class, 'pendingSmeCompilation'])->name('idea.ddReview.pendingSmeCompilation');
+    Route::get('idea/{idea:slug}/dd-review/pending-sme-compilation', [DdReviewController::class, 'pendingSmeCompilationShow'])->name('idea.ddReview.pendingSmeCompilation.show');
     Route::get('idea/dd-review/pending-board-compilation', [DdReviewController::class, 'pendingBoardCompilation'])->name('idea.ddReview.pendingBoardCompilation');
     Route::get('idea/dd-review/pending-sme-decision', [DdReviewController::class, 'pendingSmeDecision'])->name('idea.ddReview.pendingSmeDecision');
     Route::get('idea/dd-review/pending-board-decision', [DdReviewController::class, 'pendingBoardDecision'])->name('idea.ddReview.pendingBoardDecision');
