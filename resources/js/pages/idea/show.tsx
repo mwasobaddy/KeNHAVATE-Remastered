@@ -46,7 +46,7 @@ export default function IdeaShow({ idea }: IdeaShowProps) {
                             <div>
                                 <h1 className="text-2xl font-bold">{idea.idea_title}</h1>
                                 <p className="mt-2 text-muted-foreground">
-                                    Status: {idea.status}
+                                    Status: {idea.status_name ?? idea.status?.name ?? idea.status}
                                 </p>
                             </div>
                             <Link href={ideaRoute.edit(idea.slug).url}>

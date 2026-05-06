@@ -18,6 +18,7 @@ type TeamMember = {
 };
 
 type IdeaItem = {
+    status_name: any;
     id: number;
     idea_title: string;
     status: string;
@@ -152,7 +153,7 @@ export default function IdeaIndex({ ideas, activeTab, tabCounts }: IdeaIndexProp
                                                             )}
                                                         </div>
                                                         <p className="text-sm text-muted-foreground">
-                                                            Status: {ideaItem.status}
+                                                            Status: {ideaItem.status_name ?? ideaItem.status?.name ?? ideaItem.status}
                                                         </p>
                                                         {ideaItem.thematic_area && (
                                                             <p className="text-sm text-muted-foreground">

@@ -1,18 +1,35 @@
 'use client';
 
-import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Lock, ClipboardList, Users, Lightbulb, Search } from 'lucide-react';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
+    CardDescription,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import ideaRoutes from '@/routes/idea';
-import { Badge } from '@/components/ui/badge';
 
 interface User {
     id: number;
@@ -58,28 +75,56 @@ interface Counts {
 interface Props {
     counts: Counts;
     pendingUnlockIdeas: Idea[];
-    pendingCompilationIdeas: Idea[];
-    pendingDecisionIdeas: Idea[];
+    pendingSmeCompilationIdeas: Idea[];
+    pendingBoardCompilationIdeas: Idea[];
+    pendingSmeDecisionIdeas: Idea[];
+    pendingBoardDecisionIdeas: Idea[];
     allActiveIdeas: Idea[];
 }
 
 const tabs = [
     { id: 'unlock', label: 'Pending Unlock', icon: Lock, getCount: (c: Counts) => c.pendingUnlock },
-    { id: 'compilation', label: 'Pending Compilation', icon: ClipboardList, getCount: (c: Counts) => c.pendingSmeCompilation + c.pendingBoardCompilation },
-    { id: 'decision', label: 'Pending Decision', icon: Users, getCount: (c: Counts) => c.pendingSmeDecision + c.pendingBoardDecision },
+    { id: 'sme-compilation', label: 'Pending SME Compilation', icon: ClipboardList, getCount: (c: Counts) => c.pendingSmeCompilation },
+    { id: 'board-compilation', label: 'Pending Board Compilation', icon: ClipboardList, getCount: (c: Counts) => c.pendingBoardCompilation },
+    { id: 'sme-decision', label: 'Pending SME Decision', icon: Users, getCount: (c: Counts) => c.pendingSmeDecision },
+    { id: 'board-decision', label: 'Pending Board Decision', icon: Users, getCount: (c: Counts) => c.pendingBoardDecision },
     { id: 'active', label: 'All Active', icon: Lightbulb, getCount: (c: Counts) => c.allActive },
 ];
 
-export default function DdReviewIndex({ counts, pendingUnlockIdeas, pendingCompilationIdeas, pendingDecisionIdeas, allActiveIdeas }: Props) {
+function getDeadlineOptions() {
+    const options = [];
+    const today = new Date();
+
+    for (let i = 1; i <= 30; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() + i);
+
+        if (date.getDay() !== 0 && date.getDay() !== 6) {
+            options.push(date.toISOString().split('T')[0]);
+        }
+    }
+
+    return options.slice(0, 14);
+}
+
+export default function DdReviewIndex({ counts, pendingUnlockIdeas, pendingSmeCompilationIdeas, pendingBoardCompilationIdeas, pendingSmeDecisionIdeas, pendingBoardDecisionIdeas, allActiveIdeas }: Props) {
     const [activeTab, setActiveTab] = useState('unlock');
     const [searchQuery, setSearchQuery] = useState('');
+    const [unlockingId, setUnlockingId] = useState<number | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
+    const [reviewDeadline, setReviewDeadline] = useState('');
 
     const ideasMap: Record<string, Idea[]> = {
         unlock: pendingUnlockIdeas,
-        compilation: pendingCompilationIdeas,
-        decision: pendingDecisionIdeas,
+        'sme-compilation': pendingSmeCompilationIdeas,
+        'board-compilation': pendingBoardCompilationIdeas,
+        'sme-decision': pendingSmeDecisionIdeas,
+        'board-decision': pendingBoardDecisionIdeas,
         active: allActiveIdeas,
     };
+
+    const deadlineOptions = getDeadlineOptions();
 
     const currentIdeas = ideasMap[activeTab]?.filter((idea) =>
         idea.idea_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -87,7 +132,33 @@ export default function DdReviewIndex({ counts, pendingUnlockIdeas, pendingCompi
         idea.thematic_area?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     ) || [];
 
-    const activeTabData = tabs.find((t) => t.id === activeTab);
+    const handleUnlock = () => {
+        if (!selectedIdea || !reviewDeadline) {
+            return;
+        }
+
+        setUnlockingId(selectedIdea.id);
+        
+        router.post(ideaRoutes.ddReview.unlock(selectedIdea.slug), {
+            review_deadline: reviewDeadline,
+        }, {
+            onSuccess: () => {
+                setDialogOpen(false);
+                setSelectedIdea(null);
+                setReviewDeadline('');
+                setUnlockingId(null);
+                router.reload();
+            },
+            onError: () => {
+                setUnlockingId(null);
+            },
+        });
+    };
+
+    const openUnlockDialog = (idea: Idea) => {
+        setSelectedIdea(idea);
+        setDialogOpen(true);
+    };
 
     return (
         <>
@@ -103,11 +174,12 @@ export default function DdReviewIndex({ counts, pendingUnlockIdeas, pendingCompi
 
                 {/* Tabs */}
                 <div className="border-b">
-                    <nav className="flex gap-4">
+                    <nav className="flex gap-4 overflow-x-auto">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const count = tab.getCount(counts);
                             const isActive = activeTab === tab.id;
+
                             return (
                                 <button
                                     key={tab.id}
@@ -162,53 +234,118 @@ export default function DdReviewIndex({ counts, pendingUnlockIdeas, pendingCompi
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {currentIdeas.map((idea) => (
-                            <Card key={idea.id} className="hover:shadow-md transition-shadow">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
+                            <Card key={idea.id} className="hover:shadow-md transition-shadow flex flex-col">
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-start justify-between">
+                                        <CardTitle className="text-lg line-clamp-2">
                                             <Link
-                                                href={ideaRoutes.ddReview.show(idea.slug)}
-                                                className="text-lg font-medium hover:text-primary truncate block"
+                                                href={ideaRoutes.ddReview.show(idea.id)}
+                                                className="hover:text-primary"
                                             >
                                                 {idea.idea_title}
                                             </Link>
-                                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                                <span>{idea.user?.first_name} {idea.user?.other_names}</span>
-                                                {idea.thematic_area && (
-                                                    <>
-                                                        <span>•</span>
-                                                        <span>{idea.thematic_area.name}</span>
-                                                    </>
-                                                )}
-                                                {idea.status && (
-                                                    <>
-                                                        <span>•</span>
-                                                        <Badge variant="outline">{idea.status.name}</Badge>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            {idea.dd_review?.review_deadline && (
-                                                <span className="text-sm text-muted-foreground">
-                                                    Due: {new Date(idea.dd_review.review_deadline).toLocaleDateString()}
-                                                </span>
-                                            )}
-                                            <Link href={ideaRoutes.ddReview.show(idea.slug)}>
-                                                <Button variant="outline" size="sm">
-                                                    View
-                                                </Button>
-                                            </Link>
-                                        </div>
+                                        </CardTitle>
                                     </div>
+                                    <CardDescription className="line-clamp-1">
+                                        {idea.user?.first_name} {idea.user?.other_names}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-1 pt-0">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                                        {idea.thematic_area && (
+                                            <Badge variant="secondary">{idea.thematic_area.name}</Badge>
+                                        )}
+                                        {idea.status && (
+                                            <Badge variant="outline">{idea.status.name}</Badge>
+                                        )}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mb-3">
+                                        Created {new Date(idea.created_at).toLocaleDateString()}
+                                    </div>
+                                    
+                                    {activeTab === 'unlock' ? (
+                                        <Button 
+                                            className="w-full" 
+                                            size="sm"
+                                            onClick={() => openUnlockDialog(idea)}
+                                            disabled={unlockingId === idea.id}
+                                        >
+                                            {unlockingId === idea.id ? (
+                                                <>Unlocking...</>
+                                            ) : (
+                                                <>
+                                                    <Lock className="mr-2 h-4 w-4" />
+                                                    Unlock for Review
+                                                </>
+                                            )}
+                                        </Button>
+                                    ) : (
+                                        <Link 
+                                            href={
+                                                activeTab === 'sme-compilation' ? ideaRoutes.ddReview.pendingSmeCompilation.show({ slug: idea.slug }).url :
+                                                activeTab === 'board-compilation' ? ideaRoutes.ddReview.pendingBoardCompilation().url :
+                                                activeTab === 'sme-decision' ? ideaRoutes.ddReview.pendingSmeDecision().url :
+                                                activeTab === 'board-decision' ? ideaRoutes.ddReview.pendingBoardDecision().url :
+                                                activeTab === 'active' ? ideaRoutes.ddReview.active().url :
+                                                ideaRoutes.ddReview.show(idea.id)
+                                            } 
+                                            className="block"
+                                        >
+                                            <Button variant="outline" size="sm" className="w-full">
+                                                View Details
+                                            </Button>
+                                        </Link>
+                                    )}
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* Unlock Dialog */}
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Unlock Idea for Review</DialogTitle>
+                        <DialogDescription>
+                            Set a review deadline for {selectedIdea?.idea_title}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="deadline">Review Deadline</Label>
+                        <Select value={reviewDeadline} onValueChange={setReviewDeadline}>
+                            <SelectTrigger className="mt-2">
+                                <SelectValue placeholder="Select a deadline" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {deadlineOptions.map((date) => (
+                                    <SelectItem key={date} value={date}>
+                                        {new Date(date).toLocaleDateString('en-US', { 
+                                            weekday: 'short', 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        })}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={handleUnlock} 
+                            disabled={!reviewDeadline || unlockingId !== null}
+                        >
+                            {unlockingId ? 'Unlocking...' : 'Unlock'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

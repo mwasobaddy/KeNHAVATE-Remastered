@@ -39,7 +39,7 @@ export default function CollaboIndex({ ideas }: CollaboIndexProps) {
                                     {ideas.data.map((ideaItem) => (
                                         <div key={ideaItem.id} className="rounded-lg border p-4">
                                             <h3 className="font-medium">{ideaItem.idea_title}</h3>
-                                            <p className="text-sm text-muted-foreground">Status: {ideaItem.status}</p>
+                                            <p className="text-sm text-muted-foreground">Status: {ideaItem.status_name ?? ideaItem.status?.name ?? ideaItem.status}</p>
                                         </div>
                                     ))}
                                 </div>
