@@ -1,112 +1,103 @@
-import { Form } from '@inertiajs/react';
-import { useRef } from 'react';
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import { Form, usePage } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function DeleteUser() {
+    const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
     const passwordInput = useRef<HTMLInputElement>(null);
+    const { auth } = usePage().props as { auth: { user: { name: string; email: string } } };
 
     return (
         <div className="space-y-6">
             <Heading
                 variant="small"
                 title="Delete account"
-                description="Delete your account and all of its resources"
+                description="Permanently delete your account"
             />
-            <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
-                <div className="relative space-y-0.5 text-red-600 dark:text-red-100">
-                    <p className="font-medium">Warning</p>
-                    <p className="text-sm">
-                        Please proceed with caution, this cannot be undone.
-                    </p>
-                </div>
 
-                <Dialog>
+            <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/10">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                    Once your account is deleted, all of its resources and data
+                    will be permanently deleted. Please enter your password to
+                    confirm.
+                </p>
+
+                <Dialog
+                    open={confirmingUserDeletion}
+                    onOpenChange={(open) => {
+                        setConfirmingUserDeletion(open);
+                        if (!open) passwordInput.current?.focus();
+                    }}
+                >
                     <DialogTrigger asChild>
-                        <Button
-                            variant="destructive"
-                            data-test="delete-user-button"
-                        >
-                            Delete account
-                        </Button>
+                        <Button variant="destructive">Delete account</Button>
                     </DialogTrigger>
+
                     <DialogContent>
-                        <DialogTitle>
-                            Are you sure you want to delete your account?
-                        </DialogTitle>
-                        <DialogDescription>
-                            Once your account is deleted, all of its resources
-                            and data will also be permanently deleted. Please
-                            enter your password to confirm you would like to
-                            permanently delete your account.
-                        </DialogDescription>
+                        <DialogHeader>
+                            <DialogTitle>
+                                Are you sure you want to delete your account?
+                            </DialogTitle>
+                            <DialogDescription>
+                                Once your account is deleted, all of its
+                                resources and data will be permanently deleted.
+                                Please enter your password to confirm you would
+                                like to permanently delete your account.
+                            </DialogDescription>
+                        </DialogHeader>
 
                         <Form
-                            {...ProfileController.destroy.form()}
-                            options={{
-                                preserveScroll: true,
-                            }}
+                            method="delete"
+                            action="/settings/profile"
+                            onSuccess={() =>
+                                setConfirmingUserDeletion(false)
+                            }
                             onError={() => passwordInput.current?.focus()}
-                            resetOnSuccess
-                            className="space-y-6"
+                            className="space-y-4"
                         >
-                            {({ resetAndClearErrors, processing, errors }) => (
+                            {({ errors, processing }) => (
                                 <>
                                     <div className="grid gap-2">
                                         <Label
-                                            htmlFor="password"
+                                            htmlFor="delete-password"
                                             className="sr-only"
                                         >
                                             Password
                                         </Label>
-
-                                        <PasswordInput
-                                            id="password"
-                                            name="password"
+                                        <Input
+                                            id="delete-password"
                                             ref={passwordInput}
+                                            type="password"
+                                            name="password"
                                             placeholder="Password"
-                                            autoComplete="current-password"
+                                            autoFocus
                                         />
-
-                                        <InputError message={errors.password} />
+                                        <InputError
+                                            message={errors.password}
+                                        />
                                     </div>
 
-                                    <DialogFooter className="gap-2">
-                                        <DialogClose asChild>
-                                            <Button
-                                                variant="secondary"
-                                                onClick={() =>
-                                                    resetAndClearErrors()
-                                                }
-                                            >
-                                                Cancel
-                                            </Button>
-                                        </DialogClose>
-
+                                    <DialogFooter>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() =>
+                                                setConfirmingUserDeletion(false)
+                                            }
+                                        >
+                                            Cancel
+                                        </Button>
                                         <Button
                                             variant="destructive"
+                                            type="submit"
                                             disabled={processing}
-                                            asChild
                                         >
-                                            <button
-                                                type="submit"
-                                                data-test="confirm-delete-user-button"
-                                            >
-                                                Delete account
-                                            </button>
+                                            Delete account
                                         </Button>
                                     </DialogFooter>
                                 </>

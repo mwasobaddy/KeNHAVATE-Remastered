@@ -4,14 +4,13 @@ import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { store } from '@/routes/password/confirm';
 
 export default function ConfirmPassword() {
     return (
         <>
             <Head title="Confirm password" />
 
-            <Form {...store.form()} resetOnSuccess={['password']}>
+            <Form method="post" action="/user/confirm-password" resetOnSuccess={['password']}>
                 {({ processing, errors }) => (
                     <div className="space-y-6">
                         <div className="grid gap-2">
@@ -23,7 +22,6 @@ export default function ConfirmPassword() {
                                 autoComplete="current-password"
                                 autoFocus
                             />
-
                             <InputError message={errors.password} />
                         </div>
 
@@ -31,7 +29,6 @@ export default function ConfirmPassword() {
                             <Button
                                 className="w-full"
                                 disabled={processing}
-                                data-test="confirm-password-button"
                             >
                                 {processing && <Spinner />}
                                 Confirm password

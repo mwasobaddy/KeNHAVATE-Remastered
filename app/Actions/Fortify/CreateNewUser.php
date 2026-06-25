@@ -7,35 +7,21 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Fortify;
-use Spatie\Permission\Models\Role;
 
 class CreateNewUser implements CreatesNewUsers
 {
-    use PasswordValidationRules;
-
-    /**
-     * Validate and create a newly registered user.
-     *
-     * @param  array<string, string>  $input
-     */
     public function create(array $input): User
     {
         Validator::make($input, [
+            'name' => ['required', 'string', 'max:255'],
             Fortify::username() => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => $this->passwordRules(),
+            'password' => PasswordValidationRules::rules(),
         ])->validate();
 
-        $user = User::create([
-            'first_name' => '',
+        return User::create([
+            'name' => $input['name'],
             'email' => $input['email'],
             'password' => Hash::make($input['password']),
-            'onboarding_completed' => false,
         ]);
-
-        // Assign role based on email domain
-        $role = (str_ends_with($input['email'], '@kenha.co.ke')) ? 'staff' : 'user';
-        $user->assignRole($role);
-
-        return $user;
     }
 }

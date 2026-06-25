@@ -1,21 +1,9 @@
-import type { ReactNode } from 'react';
-import type { BreadcrumbItem } from '@/types/navigation';
+import type { LucideIcon } from 'lucide-react';
 
-export type AppLayoutProps = {
-    children: ReactNode;
-    breadcrumbs?: BreadcrumbItem[];
-};
-
-export type AppVariant = 'header' | 'sidebar';
-
-export type FlashToast = {
-    type: 'success' | 'info' | 'warning' | 'error';
-    message: string;
-};
-
-export type AuthLayoutProps = {
-    children?: ReactNode;
-    name?: string;
-    title?: string;
-    description?: string;
+export type NavItem = {
+    title: string;
+    href: string;
+    icon: LucideIcon | null;
+    badge?: number;
+    group?: string;
 };

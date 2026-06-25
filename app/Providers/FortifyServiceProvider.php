@@ -12,30 +12,22 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
         $this->configureViews();
 
@@ -50,9 +42,6 @@ class FortifyServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Configure Fortify Inertia views.
-     */
     private function configureViews(): void
     {
         Fortify::loginView(fn () => Inertia::render('auth/login', [
@@ -74,11 +63,8 @@ class FortifyServiceProvider extends ServiceProvider
         ]));
 
         Fortify::verifyEmailView(function ($request) {
-            $user = $request->user();
-            $email = $user->getEmailForVerification();
-
             return Inertia::render('auth/verify-email', [
-                'email' => $email,
+                'email' => $request->user()->email,
                 'status' => $request->session()->get('status'),
             ]);
         });

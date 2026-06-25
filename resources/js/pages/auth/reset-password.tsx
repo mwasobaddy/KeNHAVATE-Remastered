@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { update } from '@/routes/password';
 
 type Props = {
     token: string;
@@ -18,7 +17,8 @@ export default function ResetPassword({ token, email }: Props) {
             <Head title="Reset password" />
 
             <Form
-                {...update.form()}
+                method="post"
+                action="/reset-password"
                 transform={(data) => ({ ...data, token, email })}
                 resetOnSuccess={['password', 'password_confirmation']}
             >
@@ -75,7 +75,6 @@ export default function ResetPassword({ token, email }: Props) {
                             type="submit"
                             className="mt-4 w-full"
                             disabled={processing}
-                            data-test="reset-password-button"
                         >
                             {processing && <Spinner />}
                             Reset password

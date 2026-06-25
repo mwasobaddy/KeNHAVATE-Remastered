@@ -4,8 +4,6 @@ import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
-import { logout } from '@/routes';
-import { send } from '@/routes/verification';
 
 export default function VerifyEmail({
     email,
@@ -18,7 +16,6 @@ export default function VerifyEmail({
 
     useEffect(() => {
         if (status === 'verification-link-sent') {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCooldown(60);
         }
     }, [status]);
@@ -26,7 +23,6 @@ export default function VerifyEmail({
     useEffect(() => {
         if (cooldown > 0) {
             const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
-
             return () => clearTimeout(timer);
         }
     }, [cooldown]);
@@ -40,19 +36,11 @@ export default function VerifyEmail({
 
             {status === 'verification-link-sent' && (
                 <p className="mx-auto mb-6 max-w-md text-sm text-green-600">
-                    A new verification link has been sent to <strong>{email}</strong>. Please
-                    check your inbox and click the link.
+                    A new verification link has been sent to <strong>{email}</strong>.
                 </p>
             )}
 
-            {status !== 'verification-link-sent' && (
-                <p className="mx-auto mb-6 max-w-md text-sm text-green-600">
-                    We sent a verification link to <strong>{email}</strong>. Please
-                    check your inbox and click the link.
-                </p>
-            )}
-
-            <Form {...send.form()} className="space-y-6 text-center">
+            <Form method="post" action="/email/verification-notification" className="space-y-6 text-center">
                 {({ processing }) => (
                     <>
                         <Button
@@ -68,7 +56,7 @@ export default function VerifyEmail({
                         </Button>
 
                         <TextLink
-                            href={logout()}
+                            href="/logout"
                             className="mx-auto block text-sm text-red-600 hover:text-red-800"
                         >
                             Log out

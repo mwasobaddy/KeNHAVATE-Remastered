@@ -1,41 +1,31 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { usePage } from '@inertiajs/react';
 import { useInitials } from '@/hooks/use-initials';
-import type { User } from '@/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-export function UserInfo({
-    user,
-    showEmail = false,
-}: {
-    user: User;
-    showEmail?: boolean;
-}) {
-    const getInitials = useInitials();
-    
-    const fullName = user.other_names 
-        ? `${user.first_name} ${user.other_names}`
-        : user.first_name;
+type User = {
+    name: string;
+    email: string;
+    avatar?: string;
+};
 
-    const avatarUrl = user.avatar 
-        ? user.avatar.startsWith('http') 
-            ? user.avatar 
-            : `/storage/${user.avatar}`
-        : undefined;
+export function UserInfo({ user }: { user?: User }) {
+    const { auth } = usePage().props as { auth: { user: User } };
+    const currentUser = user || auth.user;
+    const { getInitials } = useInitials();
 
     return (
-        <div data-slot="user-info" className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8 overflow-hidden rounded-full">
-                <AvatarImage src={avatarUrl} alt={fullName} />
-                <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                    {getInitials(fullName)}
+                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+                <AvatarFallback className="rounded-lg bg-neutral-200 font-medium text-neutral-700 text-xs dark:bg-neutral-700 dark:text-neutral-200">
+                    {getInitials(currentUser.name)}
                 </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{fullName}</span>
-                {showEmail && (
-                    <span className="truncate text-xs text-muted-foreground">
-                        {user.email}
-                    </span>
-                )}
+                <span className="truncate font-medium">{currentUser.name}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                    {currentUser.email}
+                </span>
             </div>
         </div>
     );
