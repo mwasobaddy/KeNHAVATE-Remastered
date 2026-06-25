@@ -13,24 +13,19 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name');
-            $table->string('other_names')->nullable();
-            $table->string('mobile_number')->nullable();
-            $table->enum('gender', ['male', 'female'])->nullable();
+            $table->string('name');
             $table->string('email')->unique()->nullable();
+            $table->timestamp('email_verified_at')->nullable();
             $table->string('work_email')->unique()->nullable();
             $table->timestamp('work_email_verified_at')->nullable();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password')->nullable();
-            $table->boolean('read_terms')->default(false);
-            $table->foreignId('department_id')->nullable()->constrained()->setNullOnDelete();
-            $table->string('employment_type')->nullable();
-            $table->string('provider')->nullable();
-            $table->string('provider_id')->nullable();
-            $table->string('avatar')->nullable();
-            $table->boolean('onboarding_completed')->default(false);
-            $table->boolean('is_staff')->default(false);
+            $table->string('mobile_number')->unique()->nullable();
+            $table->string('gender')->nullable();
+            $table->index(['email', 'work_email'], 'users_email_work_email_index');
+            $table->string('password');
             $table->rememberToken();
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->timestamp('two_factor_confirmed_at')->nullable();
             $table->timestamps();
         });
 
