@@ -7,19 +7,18 @@ import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 
 type Props = {
     status?: string;
-    canResetPassword: boolean;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({ status }: Props) {
     return (
         <AuthSplitLayout
-            title="Log in to your account"
-            description="Enter your email and password to sign in"
+            title="Sign in to get started"
+            description="Enter your email to receive a one-time password"
         >
-            <Head title="Log in" />
+            <Head title="Sign in" />
 
-            <Form method="post" action="/login" className="flex flex-col gap-6">
-                {({ processing, errors, reset }) => (
+            <Form method="post" action="/auth/email" className="flex flex-col gap-6">
+                {({ processing, errors }) => (
                     <div className="grid gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email address</Label>
@@ -35,36 +34,12 @@ export default function Login({ status, canResetPassword }: Props) {
                             <InputError message={errors.email} />
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                name="password"
-                                required
-                                autoComplete="current-password"
-                                placeholder="Password"
-                            />
-                            <InputError message={errors.password} />
-                        </div>
-
-                        {canResetPassword && (
-                            <div className="text-sm">
-                                <a
-                                    href="/forgot-password"
-                                    className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                                >
-                                    Forgot your password?
-                                </a>
-                            </div>
-                        )}
-
                         <Button
                             type="submit"
                             className="w-full"
                             disabled={processing}
                         >
-                            Log in
+                            {processing ? 'Sending OTP...' : 'Continue'}
                         </Button>
                     </div>
                 )}

@@ -11,7 +11,7 @@ type User = {
 export function UserInfo({ user }: { user?: User }) {
     const { auth } = usePage().props as { auth: { user: User } };
     const currentUser = user || auth.user;
-    const { getInitials } = useInitials();
+    const getInitials = useInitials();
 
     return (
         <div className="flex items-center gap-3">
