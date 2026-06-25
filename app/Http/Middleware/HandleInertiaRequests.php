@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Laravel\Fortify\Features;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -45,17 +46,13 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'first_name' => $user->first_name,
-                    'other_names' => $user->other_names,
-                    'avatar' => $user->avatar,
-                    'roles' => $user->getRoleNames()->toArray(),
-                    'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
                 ] : null,
-                'roles' => $user ? $user->getRoleNames()->toArray() : [],
-                'permissions' => $user ? $user->getAllPermissions()->pluck('name')->toArray() : [],
-                'unread_notifications' => $user ? $user->unreadNotifications()->count() : 0,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'canManageTwoFactor' => Features::enabled(Features::twoFactorAuthentication()),
+            'twoFactorEnabled' => $user?->two_factor_confirmed_at !== null,
+            'requiresConfirmation' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
+            'twoFactorConfirmsPassword' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirmPassword'),
         ];
     }
 }
