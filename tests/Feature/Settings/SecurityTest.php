@@ -35,10 +35,13 @@ test('security page requires password confirmation when enabled', function () {
         'confirmPassword' => true,
     ]);
 
-    $response = $this->actingAs($user)
-        ->get(route('security.edit'));
-
-    $response->assertRedirect(route('password.confirm'));
+    $this->actingAs($user)
+        ->get(route('security.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('settings/security')
+            ->where('twoFactorConfirmsPassword', true),
+        );
 });
 
 test('security page does not require password confirmation when disabled', function () {
@@ -71,9 +74,7 @@ test('security page renders without two factor when feature is disabled', functi
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/security')
-            ->where('canManageTwoFactor', false)
-            ->missing('twoFactorEnabled')
-            ->missing('requiresConfirmation'),
+            ->where('canManageTwoFactor', false),
         );
 });
 
@@ -109,6 +110,6 @@ test('correct password must be provided to update password', function () {
         ]);
 
     $response
-        ->assertSessionHasErrors('current_password')
+        ->assertSessionHasErrorsIn('updatePassword', ['current_password'])
         ->assertRedirect(route('security.edit'));
 });

@@ -17,14 +17,14 @@ test('profile information can be updated', function () {
 
     $response = $this
         ->actingAs($user)
-        ->patch(route('profile.update'), [
+        ->put(route('user-profile-information.update'), [
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertRedirect('/');
 
     $user->refresh();
 
@@ -38,14 +38,14 @@ test('email verification status is unchanged when the email address is unchanged
 
     $response = $this
         ->actingAs($user)
-        ->patch(route('profile.update'), [
+        ->put(route('user-profile-information.update'), [
             'name' => 'Test User',
             'email' => $user->email,
         ]);
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertRedirect('/');
 
     expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
