@@ -22,6 +22,9 @@ return new class extends Migration
             $table->string('gender')->nullable();
             $table->index(['email', 'work_email'], 'users_email_work_email_index');
             $table->string('password');
+            $table->timestamp('onboarding_completed_at')->nullable();
+            $table->boolean('terms_accepted')->default(false);
+            $table->string('google_id')->unique()->nullable();
             $table->rememberToken();
             $table->text('two_factor_secret')->nullable();
             $table->text('two_factor_recovery_codes')->nullable();
