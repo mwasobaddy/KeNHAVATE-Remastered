@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             DirectorateSeeder::class,
             DepartmentSeeder::class,
             ContractTypeSeeder::class,
+            PointSeeder::class,
         ]);
     }
 }

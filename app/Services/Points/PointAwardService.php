@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Services\Points;
+
+use App\Models\Point;
+use App\Models\PointTransaction;
+use App\Models\User;
+use Illuminate\Support\Collection;
+
+class PointAwardService
+{
+    public function award(User $user, Point $point): PointTransaction
+    {
+        $transaction = PointTransaction::create([
+            'user_id' => $user->id,
+            'point_id' => $point->id,
+            'points' => $point->points,
+        ]);
+
+        $user->increment('points_balance', $point->points);
+
+        return $transaction;
+    }
+
+    public function getBalance(User $user): int
+    {
+        return $user->points_balance ?? 0;
+    }
+
+    public function getRecentTransactions(User $user, int $limit = 5): Collection
+    {
+        return $user->pointTransactions()
+            ->with('point')
+            ->latest('created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function hasBeenAwardedToday(User $user, Point $point): bool
+    {
+        return PointTransaction::where('user_id', $user->id)
+            ->where('point_id', $point->id)
+            ->whereDate('created_at', today())
+            ->exists();
+    }
+
+    public function getLeaderboard(int $limit = 20): Collection
+    {
+        return User::where('points_balance', '>', 0)
+            ->orderBy('points_balance', 'desc')
+            ->limit($limit)
+            ->get(['id', 'name', 'points_balance']);
+    }
+
+    public function getSystemStats(): array
+    {
+        return [
+            'total_points_awarded' => PointTransaction::sum('points'),
+            'total_transactions' => PointTransaction::count(),
+            'users_with_points' => User::where('points_balance', '>', 0)->count(),
+            'active_actions' => Point::where('is_active', true)->count(),
+        ];
+    }
+}

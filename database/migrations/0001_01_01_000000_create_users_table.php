@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('password');
             $table->timestamp('onboarding_completed_at')->nullable();
             $table->boolean('terms_accepted')->default(false);
+            $table->integer('points_balance')->default(0);
             $table->string('google_id')->unique()->nullable();
             $table->rememberToken();
             $table->text('two_factor_secret')->nullable();

@@ -62,6 +62,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ContractType::class, 'created_by');
     }
 
+    public function pointTransactions()
+    {
+        return $this->hasMany(PointTransaction::class);
+    }
+
     protected $fillable = [
         'name',
         'email',
@@ -72,6 +77,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'onboarding_completed_at',
         'terms_accepted',
+        'points_balance',
     ];
 
     protected $hidden = [
@@ -88,6 +94,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'work_email_verified_at' => 'datetime',
             'onboarding_completed_at' => 'datetime',
             'terms_accepted' => 'boolean',
+            'points_balance' => 'integer',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
