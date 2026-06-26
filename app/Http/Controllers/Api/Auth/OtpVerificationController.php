@@ -38,6 +38,7 @@ class OtpVerificationController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'terms_accepted' => (bool) $user->terms_accepted,
             ],
         ]);
     }
@@ -80,6 +81,7 @@ class OtpVerificationController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'terms_accepted' => (bool) $user->terms_accepted,
                 'roles' => $user->roles->pluck('name'),
             ],
         ]);

@@ -19,6 +19,11 @@ class AuthService
 
         $user = User::where('email', $email)->orWhere('work_email', $email)->first();
 
+        // nullify the terms_accepted column
+        if ($user) {
+            $user->forceFill(['terms_accepted' => false])->save();
+        }
+
         if (! $user) {
             $user = User::create([
                 'name' => Str::before($email, '@'),

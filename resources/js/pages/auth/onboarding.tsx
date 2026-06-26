@@ -39,10 +39,11 @@ type ContractType = {
 type Props = {
     regions: Region[];
     contractTypes: ContractType[];
+    login_email: string | null;
     auto_staff: boolean;
 };
 
-export default function Onboarding({ regions, contractTypes, auto_staff }: Props) {
+export default function Onboarding({ regions, contractTypes, login_email, auto_staff }: Props) {
     const [showDialog, setShowDialog] = useState(true);
     const [isStaff, setIsStaff] = useState<boolean | null>(auto_staff ? true : null);
 
@@ -150,9 +151,21 @@ export default function Onboarding({ regions, contractTypes, auto_staff }: Props
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="email">Personal Email</Label>
-                                    <Input id="email" name="email" type="email" placeholder="personal@example.com" />
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        placeholder={login_email ? 'personal@example.com' : 'personal@example.com'}
+                                        defaultValue={login_email ?? ''}
+                                        disabled={!!login_email}
+                                    />
                                     <InputError message={errors.email} />
+                                    {login_email && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Signed in with this email — it cannot be changed here.
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="grid gap-2">

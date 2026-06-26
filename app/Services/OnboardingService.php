@@ -14,6 +14,7 @@ class OnboardingService
         return [
             'regions' => Region::with('directorates.departments')->get(),
             'contractTypes' => ContractType::all(),
+            'login_email' => $user->email,
             'auto_staff' => ! is_null($user->work_email),
         ];
     }
