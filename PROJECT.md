@@ -19,7 +19,7 @@ Laravel 13 + PHP 8.5   (Backend API + Inertia server)
 The application follows a **service-oriented architecture**:
 
 - **Controllers** — Thin HTTP handlers that delegate to services
-- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService)
+- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService, PointService, PointAwardService)
 - **Form Requests** — Validation logic extracted from controllers
 - **Models** — Eloquent models with relationships and Spatie permission traits
 - **Shared frontend/backend** — Same backend serves both web (Inertia SPA) and mobile (Sanctum API)
@@ -122,6 +122,31 @@ GET    /settings/profile
 GET    /settings/security
 GET    /settings/appearance
 DELETE /settings/profile
+```
+
+**Gamification routes (web)** `[auth, verified, onboarding.complete, terms, permission]`:
+```
+GET    /points                 → PointController@index        (permission: points.view)
+GET    /points/create          → PointController@create       (permission: points.create)
+POST   /points                 → PointController@store        (permission: points.create)
+GET    /points/{point}/edit    → PointController@edit         (permission: points.edit)
+PUT    /points/{point}         → PointController@update       (permission: points.edit)
+DELETE /points/{point}         → PointController@destroy      (permission: points.delete)
+POST   /points/{point}/toggle  → PointController@toggle       (permission: points.edit)
+GET    /points/transactions    → TransactionController@index  (permission: points.view)
+GET    /leaderboard            → LeaderboardController@index
+```
+
+**Gamification routes (API)** under `auth:sanctum`:
+```
+GET    api/points                 → Api\Points\PointController@index
+POST   api/points                 → Api\Points\PointController@store
+GET    api/points/{point}         → Api\Points\PointController@show
+PUT    api/points/{point}         → Api\Points\PointController@update
+DELETE api/points/{point}         → Api\Points\PointController@destroy
+POST   api/points/{point}/toggle  → Api\Points\PointController@toggle
+GET    api/points/transactions    → Api\Points\TransactionController@index
+GET    api/leaderboard            → Api\Points\LeaderboardController@index
 ```
 
 **Guest routes (api):**
@@ -290,8 +315,8 @@ Uses `spatie/laravel-permission` v6 with **teams enabled**. Each idea is a Spati
 
 | Role | Permissions | Assigned To |
 |------|-------------|-------------|
-| `admin` | All permissions | Super administrators (seeded: `kelvinramsiel@gmail.com`) |
-| `board` | `idea.view`, `idea.approve_changes` | Board members who review and approve |
+| `admin` | All permissions + `points.create`, `points.edit`, `points.delete`, `points.view` | Super administrators (seeded: `kelvinramsiel@gmail.com`) |
+| `board` | `idea.view`, `idea.approve_changes`, `points.view` | Board members who review and approve |
 | `user` | `idea.create` | All registered users (assigned during onboarding) |
 
 ### Per-Idea Roles (team_id = idea.id)
@@ -445,6 +470,8 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 | `departments` | Departments within directorates |
 | `contract_types` | Employment contract types |
 | `staff` | Staff information linked to users |
+| `points` | Point/action definitions (name, description, point value, is_active, soft deletes) |
+| `point_transactions` | Audit log of point awards (user, point, points, timestamp) |
 
 ### Key Indexes
 
@@ -466,12 +493,18 @@ resources/js/pages/
 │   ├── otp.tsx            → 6-digit OTP input with countdown timer
 │   ├── onboarding.tsx     → Personal info + staff hierarchy form
 │   └── terms.tsx          → Scrollable terms text + accept button
-├── dashboard.tsx
+├── dashboard.tsx          → Points balance, stats, recent transactions, leaderboard link
+├── leaderboard.tsx        → Ranked user leaderboard with avatar + stats sidebar
 ├── welcome.tsx
-└── settings/
-    ├── profile.tsx
-    ├── security.tsx       → 2FA management
-    └── appearance.tsx
+├── settings/
+│   ├── profile.tsx
+│   ├── security.tsx       → 2FA management
+│   └── appearance.tsx
+└── points/
+    ├── index.tsx          → Table of point actions with status/toggle/edit/delete
+    ├── create.tsx         → Form to define a new point action
+    ├── edit.tsx           → Edit an existing point action
+    └── transactions.tsx   → Paginated audit log of all point awards
 ```
 
 ### Auth Flow Components
@@ -526,6 +559,128 @@ router.on('navigate', () => {
 
 ---
 
+## Gamification / Points Module
+
+### Overview
+
+A gamification system that awards points to users for completing actions. Point actions are configurable via a management UI, and all awards are recorded in an audit-trail transaction log.
+
+### Architecture
+
+```
+Points/
+├── Models
+│   ├── Point             → Immutable action definition (name, description, points, is_active)
+│   └── PointTransaction  → Audit log (user_id, point_id, points, created_at)
+├── Services
+│   ├── PointService      → CRUD for Point definitions (create, update, delete, toggle, restore)
+│   └── PointAwardService → Awarding, balance, leaderboard, daily login check, system stats
+├── Controllers
+│   ├── Points/
+│   │   ├── PointController      → Web CRUD + toggle for point actions
+│   │   ├── TransactionController → Web paginated transaction log
+│   │   └── LeaderboardController → Web ranked leaderboard
+│   └── Api/Points/
+│       ├── PointController      → API JSON CRUD + toggle
+│       ├── TransactionController → API JSON paginated transactions
+│       └── LeaderboardController → API JSON leaderboard
+├── Requests/Points/
+│   ├── StorePointRequest   → validates name (unique), description, points (min:1); auth: points.create
+│   └── UpdatePointRequest → same but name unique ignoring self; auth: points.edit
+└── Listener/
+    └── AwardDailyLoginPoints → Login event listener, awards "Daily Login" once per day
+```
+
+### Models
+
+**`Point`** — `app/Models/Point.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Unique action name (e.g. "New Account") |
+| description | text (nullable) | Human-readable description |
+| points | integer | Point value awarded |
+| is_active | boolean | Whether this action is currently awardable |
+| created_by | FK→users (nullable) | Admin who created this action |
+| deleted_at | timestamp (nullable) | Soft delete support |
+
+**`PointTransaction`** — `app/Models/PointTransaction.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| user_id | FK→users (cascade) | Recipient |
+| point_id | FK→points (nullable, nullOnDelete) | Source action definition |
+| points | integer | Denormalized point value at time of award |
+| created_at | timestamp | Award time (no updated_at — immutable after award) |
+
+### User Model Addition
+
+The `users` table has a `points_balance` column (integer, default 0) shared globally via `HandleInertiaRequests.php` for seamless frontend access.
+
+### Services
+
+**`PointService`** — `app/Services/Points/PointService.php`
+- `list(bool $withTrashed = false)` — All active points (or including soft-deleted)
+- `create(array $data)` — Create a new point action
+- `update(Point $point, array $data)` — Update with name uniqueness check
+- `delete(Point $point)` — Soft delete
+- `toggleActive(Point $point)` — Toggle is_active
+- `restore(Point $point)` — Restore soft-deleted point
+
+**`PointAwardService`** — `app/Services/Points/PointAwardService.php`
+- `award(User $user, Point $point)` — Creates transaction, increments user balance
+- `getBalance(User $user)` — Returns `points_balance` (null-safe fallback to 0)
+- `getRecentTransactions(User $user, int $limit = 5)` — User's recent awards
+- `hasBeenAwardedToday(User $user, Point $point)` — Checks `point_transactions` for today
+- `getLeaderboard(int $perPage = 10)` — Users ranked by points balance
+- `getSystemStats()` — Total awarded, active actions, users with ≥1 point
+
+### Dashboard Integration
+
+The dashboard has three permission tiers for progressive disclosure:
+
+1. **Normal user** — Own `points_balance`, recent 5 transactions
+2. **Has `points.view`** — Also sees system-wide stats (total awarded, active actions, users with points) and leaderboard link
+3. **Has `points.create`/`edit`/`delete`** — Also sees management quick-links to point actions and transaction log
+
+### Points Seeded Actions
+
+| Action | Point Value | Awarded When |
+|--------|-------------|-------------|
+| New Account | 100 | Onboarding completion (via `OnboardingService`) |
+| Daily Login | 10 | First login each day (via `AwardDailyLoginPoints` listener) |
+
+### Listener: AwardDailyLoginPoints
+
+Registered in `AppServiceProvider::registerEventListeners()`:
+```php
+Event::listen(Login::class, AwardDailyLoginPoints::class);
+```
+
+On each login event, it:
+1. Looks up the "Daily Login" `Point` by name
+2. Checks `PointAwardService::hasBeenAwardedToday()` against `point_transactions`
+3. If not yet awarded today, calls `award()` to credit the user
+
+### Wayfinder Integration
+
+Points routes generate a separate barrel file at `resources/js/routes/points/index.ts`:
+```ts
+import points from '@/routes/points';
+
+// Usage:
+points.index()       // GET /points
+points.create()      // GET /points/create
+points.edit(id)      // GET /points/{id}/edit
+points.store()       // POST /points
+points.update(id)    // PUT /points/{id}
+points.destroy(id)   // DELETE /points/{id}
+points.toggle(id)    // POST /points/{id}/toggle
+points.transactions() // GET /points/transactions
+```
+
+This follows the Wayfinder v0.1.16 barrel pattern — each route group gets its own file, not re-exported from the main `routes/index.ts`.
+
+---
+
 ## Key Decisions & Patterns
 
 ### Why OTP Instead of Password?
@@ -566,3 +721,33 @@ router.on('navigate', () => {
 - Both web and API Google controllers share identical find-or-create logic
 - Extracting to `GoogleAuthService` eliminates duplication
 - Follows the project's service-oriented pattern (AuthService, OtpService, OnboardingService)
+
+### Why Points Folder Structure Instead of Admin?
+
+- All gamification code lives under `Points/` subdirectories (Controllers, Api/Points, Services/Points, Requests/Points)
+- Avoids the `admin` word entirely — this is a management concern, not an admin panel
+- Consistent naming: `Point` model → `PointService` → `PointController` → `Points/` routes prefix
+
+### Why Two Services Instead of One?
+
+- `PointService` handles CRUD for point action definitions (admin tasks)
+- `PointAwardService` handles runtime awarding, balance, and leaderboard (user-facing tasks)
+- Separation of concerns: one manages the catalog, the other manages the economy
+
+### Why Denormalized `points` on Transactions?
+
+- `PointTransaction.points` stores the numeric value at award time (not a FK to `Point.points`)
+- If a point action's value is later changed, historical awards retain their original value
+- The `point_id` FK is nullable with `nullOnDelete` so deleting a point definition doesn't destroy history
+
+### Why Daily Login Check on Transactions Table?
+
+- No extra column needed on the `users` table
+- Single source of truth: `point_transactions` records everything
+- Query: `where('user_id', $user->id)->where('point_id', $point->id)->whereDate('created_at', today())->exists()`
+
+### Why Dashboard Has Three Permission Tiers?
+
+- Progressive disclosure: normal users see their own data, authorized users see system stats, managers see admin links
+- Avoids an empty dashboard for users without gamification permissions
+- Uses a single controller with conditional prop passing instead of separate endpoints
