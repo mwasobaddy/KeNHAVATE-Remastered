@@ -33,4 +33,12 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    public function onboarded(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'onboarding_completed_at' => now(),
+            'terms_accepted' => true,
+        ]);
+    }
 }
