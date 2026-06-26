@@ -9,6 +9,10 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 
 class GoogleAuthService
 {
+    public function __construct(
+        private AuditService $auditService,
+    ) {}
+
     public function findOrCreateUser(SocialiteUser $googleUser): User
     {
         $isKenha = str_ends_with($googleUser->getEmail(), '@kenha.co.ke');
@@ -32,12 +36,16 @@ class GoogleAuthService
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(32)),
             ]);
+
+            $this->auditService->log($user, 'account_created', "Account created via Google for {$googleUser->getEmail()}");
         }
 
         // nullify the terms_accepted column
         if ($user) {
             $user->forceFill(['terms_accepted' => false])->save();
         }
+
+        $this->auditService->log($user, 'login', "Logged in via Google ({$googleUser->getEmail()})");
 
         return $user;
     }

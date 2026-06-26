@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 
 class TermsController extends Controller
 {
+    public function __construct(
+        private AuditService $auditService,
+    ) {}
+
     public function show(): JsonResponse
     {
         $user = auth()->user();
@@ -20,7 +25,10 @@ class TermsController extends Controller
 
     public function store(): JsonResponse
     {
-        auth()->user()->forceFill(['terms_accepted' => true])->save();
+        $user = auth()->user();
+        $user->forceFill(['terms_accepted' => true])->save();
+
+        $this->auditService->log($user, 'terms_accepted', 'Accepted terms and conditions');
 
         return response()->json([
             'message' => 'Terms and conditions accepted.',

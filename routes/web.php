@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\Auth\EmailLoginController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\OnboardingController;
@@ -91,4 +92,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
     });
 
     Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard');
+
+    Route::get('audit', [AuditController::class, 'index'])
+        ->name('audit.index')
+        ->middleware('permission:audit.view');
 });

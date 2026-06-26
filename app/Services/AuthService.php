@@ -11,6 +11,7 @@ class AuthService
 {
     public function __construct(
         private OtpService $otpService,
+        private AuditService $auditService,
     ) {}
 
     public function initiateOtpLogin(string $email): User
@@ -31,6 +32,8 @@ class AuthService
                 'work_email' => $isKenha ? $email : null,
                 'password' => Hash::make(Str::random(32)),
             ]);
+
+            $this->auditService->log($user, 'account_created', "Account created via OTP for {$email}");
         }
 
         if ($isKenha) {
@@ -39,6 +42,8 @@ class AuthService
 
         $otp = $this->otpService->generate($email, $user);
         $user->notify(new SendOtp($otp));
+
+        $this->auditService->log($user, 'otp_requested', "OTP sent to {$email}");
 
         return $user;
     }
@@ -59,6 +64,8 @@ class AuthService
             $user->forceFill(['work_email_verified_at' => now()])->save();
         }
 
+        $this->auditService->log($user, 'login', "Logged in via OTP ({$email})");
+
         return $user;
     }
 
@@ -68,6 +75,8 @@ class AuthService
 
         $otp = $this->otpService->getCurrentOtp($email) ?? $this->otpService->generate($email, $user);
         $user->notify(new SendOtp($otp));
+
+        $this->auditService->log($user, 'otp_requested', "OTP resent to {$email}");
 
         return $user;
     }

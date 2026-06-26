@@ -25,6 +25,7 @@ class PermissionSeeder extends Seeder
             'points.edit',
             'points.delete',
             'points.view',
+            'audit.view',
         ];
 
         foreach ($permissions as $permission) {
@@ -35,7 +36,7 @@ class PermissionSeeder extends Seeder
         $admin->givePermissionTo(Permission::all());
 
         $board = Role::firstOrCreate(['name' => 'board', 'guard_name' => 'web']);
-        $board->givePermissionTo(['idea.view', 'idea.approve_changes']);
+        $board->givePermissionTo(['idea.view', 'idea.approve_changes', 'points.view', 'audit.view']);
 
         $user = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
         $user->givePermissionTo(['idea.create']);

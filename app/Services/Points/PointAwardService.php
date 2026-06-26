@@ -5,10 +5,15 @@ namespace App\Services\Points;
 use App\Models\Point;
 use App\Models\PointTransaction;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Support\Collection;
 
 class PointAwardService
 {
+    public function __construct(
+        private AuditService $auditService,
+    ) {}
+
     public function award(User $user, Point $point): PointTransaction
     {
         $transaction = PointTransaction::create([
@@ -18,6 +23,12 @@ class PointAwardService
         ]);
 
         $user->increment('points_balance', $point->points);
+
+        $this->auditService->log(
+            $user,
+            'point_awarded',
+            "Awarded {$point->points} points for {$point->name}",
+        );
 
         return $transaction;
     }

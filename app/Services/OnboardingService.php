@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Hash;
 
 class OnboardingService
 {
+    public function __construct(
+        private AuditService $auditService,
+    ) {}
+
     public function getFormData(User $user): array
     {
         return [
@@ -62,5 +66,7 @@ class OnboardingService
         if ($newAccount) {
             app(PointAwardService::class)->award($user, $newAccount);
         }
+
+        $this->auditService->log($user, 'onboarding_completed', 'Completed onboarding profile');
     }
 }
