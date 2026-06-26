@@ -66,10 +66,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'work_email',
+        'google_id',
         'mobile_number',
         'gender',
         'password',
         'onboarding_completed_at',
+        'terms_accepted',
     ];
 
     protected $hidden = [
@@ -85,6 +87,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'work_email_verified_at' => 'datetime',
             'onboarding_completed_at' => 'datetime',
+            'terms_accepted' => 'boolean',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
