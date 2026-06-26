@@ -5,6 +5,10 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\TermsController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Points\LeaderboardController;
+use App\Http\Controllers\Points\PointController;
+use App\Http\Controllers\Points\TransactionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,7 +34,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::inertia('settings/profile', 'settings/profile')->name('profile.edit');
     Route::inertia('settings/security', 'settings/security')->name('security.edit');
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
@@ -51,4 +55,40 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
 
         return redirect()->route('home');
     })->name('profile.destroy');
+
+    Route::prefix('points')->name('points.')->group(function () {
+        Route::get('/', [PointController::class, 'index'])
+            ->name('index')
+            ->middleware('permission:points.view|points.create|points.edit|points.delete');
+
+        Route::get('/create', [PointController::class, 'create'])
+            ->name('create')
+            ->middleware('permission:points.create');
+
+        Route::post('/', [PointController::class, 'store'])
+            ->name('store')
+            ->middleware('permission:points.create');
+
+        Route::get('/{point}/edit', [PointController::class, 'edit'])
+            ->name('edit')
+            ->middleware('permission:points.edit');
+
+        Route::put('/{point}', [PointController::class, 'update'])
+            ->name('update')
+            ->middleware('permission:points.edit');
+
+        Route::delete('/{point}', [PointController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('permission:points.delete');
+
+        Route::patch('/{point}/toggle', [PointController::class, 'toggle'])
+            ->name('toggle')
+            ->middleware('permission:points.edit');
+
+        Route::get('/transactions', [TransactionController::class, 'index'])
+            ->name('transactions')
+            ->middleware('permission:points.view');
+    });
+
+    Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard');
 });

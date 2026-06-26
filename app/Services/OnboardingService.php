@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\ContractType;
+use App\Models\Point;
 use App\Models\Region;
 use App\Models\User;
+use App\Services\Points\PointAwardService;
 use Illuminate\Support\Facades\Hash;
 
 class OnboardingService
@@ -52,5 +54,13 @@ class OnboardingService
 
         setPermissionsTeamId(null);
         $user->assignRole('user');
+
+        $newAccount = Point::where('name', 'New Account')
+            ->where('is_active', true)
+            ->first();
+
+        if ($newAccount) {
+            app(PointAwardService::class)->award($user, $newAccount);
+        }
     }
 }

@@ -21,6 +21,10 @@ class PermissionSeeder extends Seeder
             'idea.propose_changes',
             'idea.approve_changes',
             'idea.manage_contributors',
+            'points.create',
+            'points.edit',
+            'points.delete',
+            'points.view',
         ];
 
         foreach ($permissions as $permission) {

@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Listeners\AwardDailyLoginPoints;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -26,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->shareAuthData();
+        $this->registerEventListeners();
     }
 
     /**
@@ -50,6 +54,11 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 
+    protected function registerEventListeners(): void
+    {
+        Event::listen(Login::class, AwardDailyLoginPoints::class);
+    }
+
     protected function shareAuthData(): void
     {
         Inertia::share('auth', function () {
@@ -67,6 +76,7 @@ class AppServiceProvider extends ServiceProvider
                     'first_name' => $user->first_name,
                     'other_names' => $user->other_names,
                     'roles' => $user->getRoleNames()->toArray(),
+                    'points_balance' => $user->points_balance,
                 ],
                 'roles' => $user->getRoleNames()->toArray(),
                 'unread_notifications' => $user->unreadNotifications()->count(),
