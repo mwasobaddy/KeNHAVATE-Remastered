@@ -12,13 +12,14 @@ Laravel 13 + PHP 8.5   (Backend API + Inertia server)
 ├── SQLite              (Database)
 ├── Spatie Permission   (Roles & permissions with teams)
 ├── Laravel Sanctum     (Mobile API tokens)
-└── Laravel Fortify     (2FA, password confirmation)
+├── Laravel Fortify     (2FA, password confirmation)
+└── Laravel Socialite   (Google OAuth)
 ```
 
 The application follows a **service-oriented architecture**:
 
 - **Controllers** — Thin HTTP handlers that delegate to services
-- **Services** — Business logic layer (AuthService, OtpService, OnboardingService)
+- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService)
 - **Form Requests** — Validation logic extracted from controllers
 - **Models** — Eloquent models with relationships and Spatie permission traits
 - **Shared frontend/backend** — Same backend serves both web (Inertia SPA) and mobile (Sanctum API)
@@ -31,9 +32,13 @@ Web controllers live under `App\Http\Controllers\Auth\`, API controllers mirror 
 
 ### Overview
 
-Passwordless OTP-based authentication. Users enter their email, receive a 6-digit code, and verify. No password is needed to log in — passwords are set during onboarding only.
+Two authentication methods:
+1. **OTP-based** — Users enter their email, receive a 6-digit code, and verify. No password needed to log in.
+2. **Google OAuth** — Users sign in with their Google account, skipping OTP entirely.
 
-### Flow
+Both flows end at the same post-login pipeline: onboarding → terms → dashboard.
+
+### OTP Flow
 
 ```
 [Email Input] → POST /auth/email → [OTP Sent] → GET /auth/otp
@@ -41,13 +46,29 @@ Passwordless OTP-based authentication. Users enter their email, receive a 6-digi
     → [Verified] → [Onboarding?] → /onboarding or /dashboard
 ```
 
+### Google OAuth Flow
+
+```
+[Click "Sign in with Google"] → GET /auth/google → [Google OAuth]
+    → GET /auth/google/callback → [User found/created] → [Logged in]
+    → [Onboarding?] → /onboarding or /dashboard
+```
+
+Google users skip OTP entirely. The callback:
+1. Looks up user by `google_id`, then by `email`, then by `work_email`
+2. If found, links `google_id` to the existing account
+3. If not found, creates a new user with `email_verified_at = now()`
+4. Kenha email detection (`@kenha.co.ke`) applies the same as OTP flow
+
 ### Key Components
 
 | Layer | Web | API |
 |-------|-----|-----|
-| **Initiate** | `Auth\EmailLoginController::__invoke` → `POST /auth/email` | `Api\Auth\EmailLoginController::__invoke` → `POST api/auth/email` |
-| **Verify** | `Auth\OtpVerificationController::store` → `POST /auth/otp/verify` | `Api\Auth\OtpVerificationController::store` → `POST api/auth/otp/verify` |
-| **Resend** | `Auth\OtpVerificationController::resend` → `POST /auth/otp/resend` | `Api\Auth\OtpVerificationController::resend` → `POST api/auth/otp/resend` |
+| **OTP Initiate** | `Auth\EmailLoginController::__invoke` → `POST /auth/email` | `Api\Auth\EmailLoginController::__invoke` → `POST api/auth/email` |
+| **OTP Verify** | `Auth\OtpVerificationController::store` → `POST /auth/otp/verify` | `Api\Auth\OtpVerificationController::store` → `POST api/auth/otp/verify` |
+| **OTP Resend** | `Auth\OtpVerificationController::resend` → `POST /auth/otp/resend` | `Api\Auth\OtpVerificationController::resend` → `POST api/auth/otp/resend` |
+| **Google Redirect** | `Auth\GoogleAuthController::redirect` → `GET /auth/google` | `Api\Auth\GoogleAuthController::redirect` → `GET api/auth/google` |
+| **Google Callback** | `Auth\GoogleAuthController::callback` → `GET /auth/google/callback` | `Api\Auth\GoogleAuthController::callback` → `GET api/auth/google/callback` |
 
 ### Services
 
@@ -62,35 +83,64 @@ Passwordless OTP-based authentication. Users enter their email, receive a 6-digi
 - **60s cooldown** between resend requests per email, with live countdown timer on frontend
 - OTP codes logged to `otp_codes` table for audit trail
 
+**`GoogleAuthService`** — `app/Services/GoogleAuthService.php`
+- `findOrCreateUser(SocialiteUser)` — Shared logic for both web and API controllers
+- Finds user by google_id → email → work_email, then links or creates
+
 ### Kenha Email Detection
 
 Emails ending in `@kenha.co.ke` are automatically detected:
 - Stored in `work_email` field instead of `email`
 - `email` field stays null
-- `work_email_verified_at` is set on OTP verification
+- `work_email_verified_at` is set on OTP verification (and email_verified_at for Google)
 - Login lookup searches both `email` and `work_email` columns via composite index
 
 ### Routes
 
 **Guest routes (web):**
 ```
-POST   /auth/email        → EmailLoginController
-GET    /auth/otp          → OtpVerificationController@create
-POST   /auth/otp/verify   → OtpVerificationController@store
-POST   /auth/otp/resend   → OtpVerificationController@resend
+GET    /auth/google           → GoogleAuthController@redirect
+GET    /auth/google/callback  → GoogleAuthController@callback
+POST   /auth/email            → EmailLoginController
+GET    /auth/otp              → OtpVerificationController@create
+POST   /auth/otp/verify       → OtpVerificationController@store
+POST   /auth/otp/resend       → OtpVerificationController@resend
+```
+
+**Auth routes (web):**
+```
+GET    /auth/terms            → TermsController@create
+POST   /auth/terms            → TermsController@store
+GET    /onboarding            → OnboardingController@create
+POST   /onboarding            → OnboardingController@store
+```
+
+**Protected routes (web)** `[auth, verified, onboarding.complete, terms]`:
+```
+GET    /dashboard
+GET    /settings/profile
+GET    /settings/security
+GET    /settings/appearance
+DELETE /settings/profile
 ```
 
 **Guest routes (api):**
 ```
-POST   api/auth/email        → Api\Auth\EmailLoginController
-POST   api/auth/otp/verify   → Api\Auth\OtpVerificationController@store
-POST   api/auth/otp/resend   → Api\Auth\OtpVerificationController@resend
+GET    api/auth/google           → Api\Auth\GoogleAuthController@redirect
+GET    api/auth/google/callback  → Api\Auth\GoogleAuthController@callback
+POST   api/auth/email            → Api\Auth\EmailLoginController
+POST   api/auth/otp/verify       → Api\Auth\OtpVerificationController@store
+POST   api/auth/otp/resend       → Api\Auth\OtpVerificationController@resend
 ```
 
 **Authenticated API routes (Sanctum):**
 ```
-POST   api/auth/logout   → OtpVerificationController@logout
-GET    api/user          → OtpVerificationController@user
+POST   api/auth/logout     → OtpVerificationController@logout
+GET    api/user            → OtpVerificationController@user
+GET    api/onboarding      → OnboardingController@show
+POST   api/onboarding      → OnboardingController@store
+GET    api/auth/terms      → TermsController@show
+POST   api/auth/terms      → TermsController@store
 ```
 
 ---
@@ -99,16 +149,17 @@ GET    api/user          → OtpVerificationController@user
 
 ### Overview
 
-After first-time OTP login, users are redirected to `/onboarding` to complete their profile. This is a one-time flow tracked by `onboarding_completed_at` on the `users` table.
+After first-time login (OTP or Google), users are redirected to `/onboarding` to complete their profile. This is a one-time flow tracked by `onboarding_completed_at` on the `users` table.
 
 ### Flow
 
 ```
 [First Login] → Redirect to /onboarding
     → [Dialog: "Are you a KeNHA Staff?"] (skipped for @kenha.co.ke)
-    → [Personal Info: name, mobile, gender, personal email, password]
+    → [Personal Info: name, mobile, gender, email, password]
     → [Staff Info: region, directorate, department, contract type, designation]
     → [Submit] → user role assigned → redirected to /dashboard
+    → (terms middleware catches if not accepted) → /auth/terms
 ```
 
 ### Key Components
@@ -123,7 +174,7 @@ After first-time OTP login, users are redirected to `/onboarding` to complete th
 
 1. User's `name` is set from `first_name + other_names`
 2. `mobile_number`, `gender`, `password` are saved
-3. Optional `email` field stores a personal email (rejected if it matches `work_email`)
+3. Email input: for **normal users**, their login email is shown as disabled (can't be changed); for **kenha users**, it's an editable optional personal email field
 4. `email_verified_at` stays null for personal emails set during onboarding (not used for login)
 5. If staff: a `Staff` record is created with region/directorate/department/contract/designation
 6. `setPermissionsTeamId(null)` is called, then the `user` role is assigned
@@ -132,10 +183,47 @@ After first-time OTP login, users are redirected to `/onboarding` to complete th
 ### Middleware Stack for Protected Routes
 
 ```
-auth → verified → onboarding.complete
+auth → verified → onboarding.complete → terms
 ```
 
-Protected routes (dashboard, settings) require all three.
+Protected routes (dashboard, settings) require all four. The order ensures:
+1. User must be logged in
+2. Email must be verified
+3. Onboarding must be completed
+4. Terms & conditions must be accepted
+
+---
+
+## Terms & Conditions Module
+
+### Overview
+
+After onboarding, users must accept the terms and conditions before accessing the application. This is a one-time acceptance tracked by `terms_accepted` on the `users` table.
+
+### Flow
+
+```
+[Onboarding complete] → Redirect to /dashboard
+    → [terms middleware catches] → Redirect to /auth/terms
+    → [Scrollable terms text + Accept button]
+    → [Accept] → terms_accepted = true → Redirect to /dashboard
+```
+
+### Key Components
+
+- **Controller**: `Auth\TermsController` (web), `Api\Auth\TermsController` (API)
+- **Middleware**: `EnsureTermsAccepted` — registered as `terms` alias, redirects to `/auth/terms` if `terms_accepted` is false (skips if already on `terms*` routes)
+- **Config**: `config/terms.php` — configurable title and text via env or inline default
+- **Frontend**: `resources/js/pages/auth/terms.tsx` — scrollable terms box with accept button
+
+### Routes
+
+```
+GET  /auth/terms   → TermsController@create (web) / TermsController@show (API)
+POST /auth/terms   → TermsController@store
+```
+
+Terms routes are protected by `auth` middleware only (not by `terms` itself to avoid circular redirects).
 
 ---
 
@@ -291,7 +379,16 @@ On creation, `Idea::booted()` calls `createTeamRoles()` to generate per-idea rol
 
 The same business logic serves both the web SPA and mobile clients. Mobile clients authenticate via **Sanctum** tokens instead of session cookies.
 
-### Authentication
+### Google OAuth
+
+```
+GET  api/auth/google           → 200 { url: "https://accounts.google.com/..." }
+GET  api/auth/google/callback  → 200 { token, user }
+```
+
+The callback uses `stateless()` to avoid session state issues in API contexts.
+
+### OTP Authentication
 
 ```
 POST api/auth/email          → Send OTP → 200 { message, cooldown_remaining }
@@ -302,10 +399,12 @@ POST api/auth/otp/resend     → Resend OTP → 200 { message, cooldown_remainin
 ### Authenticated Endpoints
 
 ```
-GET  api/user                → Current user with roles
+GET  api/user                → Current user with roles + terms_accepted
 POST api/auth/logout         → Revoke current token
 GET  api/onboarding          → Onboarding form data (regions, contract types, auto_staff)
 POST api/onboarding          → Complete onboarding
+GET  api/auth/terms          → Terms text + accepted status
+POST api/auth/terms          → Accept terms
 ```
 
 All authenticated endpoints require `Authorization: Bearer <token>` header.
@@ -316,6 +415,7 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 - On successful OTP verify, API returns a `plainTextToken` instead of logging into session
 - API uses `auth:sanctum` guard instead of session-based `auth`
 - Onboarding uses `GET /api/onboarding` (show) instead of `GET /onboarding` (Inertia page)
+- Google OAuth callback uses `stateless()` to avoid session dependency
 
 ---
 
@@ -325,7 +425,7 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 
 | Table | Purpose |
 |-------|---------|
-| `users` | User accounts with dual email support (email + work_email) |
+| `users` | User accounts with dual email support (email + work_email) + google_id |
 | `password_reset_tokens` | Laravel default |
 | `sessions` | Session storage |
 | `cache` + `cache_locks` | Cache storage |
@@ -349,7 +449,7 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 ### Key Indexes
 
 - `users`: composite index on `(email, work_email)` for login lookup
-- `users`: unique indexes on `email`, `work_email`, `mobile_number`
+- `users`: unique indexes on `email`, `work_email`, `mobile_number`, `google_id`
 - `regions/directorates/departments`: unique indexes on `code`
 - `model_has_roles`: composite primary key `(team_id, role_id, model_id, model_type)`
 
@@ -362,9 +462,10 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 ```
 resources/js/pages/
 ├── auth/
-│   ├── login.tsx          → Email-only input, POST to /auth/email
+│   ├── login.tsx          → Google OAuth + email input, POST to /auth/email
 │   ├── otp.tsx            → 6-digit OTP input with countdown timer
-│   └── onboarding.tsx     → Personal info + staff hierarchy form
+│   ├── onboarding.tsx     → Personal info + staff hierarchy form
+│   └── terms.tsx          → Scrollable terms text + accept button
 ├── dashboard.tsx
 ├── welcome.tsx
 └── settings/
@@ -376,11 +477,10 @@ resources/js/pages/
 ### Auth Flow Components
 
 **`login.tsx`**
-- Single email input field
+- Google Sign-in button at top (redirects to `/auth/google`)
+- Divider between OAuth and email sections
+- Email input + Continue button below
 - Submits to `POST /auth/email`
-- Displays `processing` state as "Sending OTP..."
-- On success, redirects to OTP page
-- Shows flash status messages
 
 **`otp.tsx`**
 - 6-digit input using `input-otp` library with digit-only pattern
@@ -391,22 +491,38 @@ resources/js/pages/
 
 **`onboarding.tsx`**
 - Staff dialog (skipped for `auto_staff` users with `@kenha.co.ke` emails)
-- Personal info section: first name, other names, mobile, gender, personal email, password, confirm password
+- **Email input**: disabled with login email pre-filled for normal users (can't be changed), editable optional field for kenha users
+- Personal info section: first name, other names, mobile, gender, password, confirm password
 - Staff info section (conditionally shown): region → directorate → department cascading selects, contract type, designation
 - Uses hidden inputs for Shadcn Select values
 - Submits to `POST /onboarding`
+
+**`terms.tsx`**
+- Scrollable terms text in a bordered container with muted background
+- "Accept Terms & Conditions" button
+- Submits to `POST /auth/terms`
 
 ### Layouts
 
 - `layouts/app-layout.tsx` — Authenticated app shell with sidebar navigation, includes `<Toaster />` for notifications
 - `layouts/auth-layout.tsx` — Auth pages shell, includes `<Toaster />`
 - `layouts/auth/auth-split-layout.tsx` — Split screen layout for login/OTP
-- `layouts/auth/auth-card-layout.tsx` — Centered card layout for onboarding
+- `layouts/auth/auth-card-layout.tsx` — Centered card layout for onboarding and terms
 
 ### Components
 
 - `components/user-info.tsx` — User avatar + name/email display (uses `useInitials()` for avatar fallback)
 - `components/ui/` — Shadcn UI component library
+
+### Body Pointer-Events Cleanup
+
+When mobile sidebar (Radix UI Sheet) is open and the user navigates away (e.g., logout), `react-remove-scroll` can leave `pointer-events: none` stuck on the body. A global Inertia navigation listener in `app.tsx` cleans this up:
+
+```ts
+router.on('navigate', () => {
+    document.body.style.removeProperty('pointer-events');
+});
+```
 
 ---
 
@@ -438,3 +554,15 @@ resources/js/pages/
 - Global roles (admin, board, user) have `team_id = null`
 - The `model_has_roles` pivot table must accept null team_id for these global assignments
 - Per-idea roles use the idea's ID as team_id
+
+### Why Terms After Onboarding?
+
+- User completes profile first, then reads and accepts terms
+- Clean separation: onboarding collects user data, terms capture legal consent
+- The middleware stack enforces the order: auth → verified → onboarding.complete → terms
+
+### Why GoogleAuthService?
+
+- Both web and API Google controllers share identical find-or-create logic
+- Extracting to `GoogleAuthService` eliminates duplication
+- Follows the project's service-oriented pattern (AuthService, OtpService, OnboardingService)
