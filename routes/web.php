@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AuditController;
+use App\Http\Controllers\Audit\AuditController;
 use App\Http\Controllers\Auth\EmailLoginController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\OnboardingController;

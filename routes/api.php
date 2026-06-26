@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Audit\AuditController as ApiAuditController;
 use App\Http\Controllers\Api\Auth\EmailLoginController;
 use App\Http\Controllers\Api\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\Auth\OnboardingController;
@@ -37,4 +38,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('leaderboard', [LeaderboardController::class, 'index']);
+
+    Route::get('audit', [ApiAuditController::class, 'index']);
 });

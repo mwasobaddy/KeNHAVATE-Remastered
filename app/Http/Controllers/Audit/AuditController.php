@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Audit;
 
+use App\Http\Controllers\Controller;
 use App\Services\AuditService;
 use Inertia\Response;
 
