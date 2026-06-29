@@ -39,6 +39,7 @@ const actionLabels: Record<string, { label: string; variant: 'default' | 'second
 
 function actionBadge(action: string) {
     const config = actionLabels[action] ?? { label: action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), variant: 'outline' as const };
+
     return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
@@ -112,6 +113,7 @@ export default function AuditIndex({ logs }: Props) {
                                                 </span>
                                             );
                                         }
+
                                         return (
                                             <Button
                                                 key={i}

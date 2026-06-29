@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\TermsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Ideas\IdeaController;
 use App\Http\Controllers\Points\LeaderboardController;
 use App\Http\Controllers\Points\PointController;
 use App\Http\Controllers\Points\TransactionController;
@@ -96,4 +97,16 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
     Route::get('audit', [AuditController::class, 'index'])
         ->name('audit.index')
         ->middleware('permission:audit.view');
+
+    Route::prefix('ideas')->name('ideas.')->group(function () {
+        Route::get('/', [IdeaController::class, 'index'])->name('index');
+        Route::get('/create', [IdeaController::class, 'create'])->name('create');
+        Route::post('/', [IdeaController::class, 'store'])->name('store');
+        Route::get('/{slug}', [IdeaController::class, 'show'])->name('show');
+        Route::get('/{slug}/edit', [IdeaController::class, 'edit'])->name('edit');
+        Route::put('/{slug}', [IdeaController::class, 'update'])->name('update');
+        Route::delete('/{slug}', [IdeaController::class, 'destroy'])->name('destroy');
+        Route::get('/{slug}/proposal', [IdeaController::class, 'downloadProposal'])->name('proposal.download');
+        Route::get('/{slug}/support-document/{index}', [IdeaController::class, 'downloadSupportDocument'])->name('support-document.download');
+    });
 });

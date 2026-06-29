@@ -11,9 +11,18 @@ return new class extends Migration
         Schema::create('ideas', function (Blueprint $table) {
             $table->id();
             $table->string('title');
+            $table->string('slug')->unique();
             $table->text('description');
+            $table->foreignId('category_id')->constrained('idea_categories');
             $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
+            $table->text('problem_statement');
+            $table->text('proposed_solution');
+            $table->text('cost_benefit_analysis');
+            $table->string('proposal_file_path')->nullable();
+            $table->json('support_documents')->nullable();
+            $table->boolean('collaboration_enabled')->default(true);
             $table->string('status')->default('draft');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -5,17 +5,36 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class Idea extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'title',
+        'slug',
         'description',
+        'category_id',
         'author_id',
+        'problem_statement',
+        'proposed_solution',
+        'cost_benefit_analysis',
+        'proposal_file_path',
+        'support_documents',
+        'collaboration_enabled',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'support_documents' => 'array',
+            'collaboration_enabled' => 'boolean',
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -42,6 +61,11 @@ class Idea extends Model
         return $this->belongsTo(User::class, 'author_id');
     }
 
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(IdeaCategory::class, 'category_id');
+    }
+
     public function changeRequests(): HasMany
     {
         return $this->hasMany(ChangeRequest::class);
@@ -50,6 +74,11 @@ class Idea extends Model
     public function collaborationRequests(): HasMany
     {
         return $this->hasMany(CollaborationRequest::class);
+    }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(IdeaInvitation::class);
     }
 
     public function createTeamRoles(): void

@@ -67,6 +67,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(PointTransaction::class);
     }
 
+    public function ideaInvitations()
+    {
+        return $this->hasMany(IdeaInvitation::class, 'invited_by');
+    }
+
+    public function pendingInvitations()
+    {
+        return $this->hasMany(IdeaInvitation::class, 'user_id')->where('status', 'pending');
+    }
+
     protected $fillable = [
         'name',
         'email',

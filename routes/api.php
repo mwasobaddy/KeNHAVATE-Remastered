@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\Auth\OnboardingController;
 use App\Http\Controllers\Api\Auth\OtpVerificationController;
 use App\Http\Controllers\Api\Auth\TermsController;
+use App\Http\Controllers\Api\Ideas\IdeaController as ApiIdeaController;
 use App\Http\Controllers\Api\Points\LeaderboardController;
 use App\Http\Controllers\Api\Points\PointController;
 use App\Http\Controllers\Api\Points\TransactionController;
@@ -40,4 +41,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('leaderboard', [LeaderboardController::class, 'index']);
 
     Route::get('audit', [ApiAuditController::class, 'index']);
+
+    Route::prefix('ideas')->group(function () {
+        Route::get('/', [ApiIdeaController::class, 'index']);
+        Route::post('/', [ApiIdeaController::class, 'store']);
+        Route::get('/{slug}', [ApiIdeaController::class, 'show']);
+        Route::put('/{slug}', [ApiIdeaController::class, 'update']);
+        Route::delete('/{slug}', [ApiIdeaController::class, 'destroy']);
+    });
 });
