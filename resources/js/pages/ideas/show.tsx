@@ -179,7 +179,7 @@ export default function ShowIdea({ idea }: Props) {
                 {idea.invitations.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Team Members</CardTitle>
+                            <CardTitle>Contributors</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
@@ -218,6 +218,11 @@ export default function ShowIdea({ idea }: Props) {
                     </Button>
                     <Button variant="outline" asChild>
                         <Link href={ideas.edit(idea.slug)}>Edit</Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                        <Link href={ideas.changes.index(idea.slug)}>
+                            Change Requests
+                        </Link>
                     </Button>
                 </div>
             </div>

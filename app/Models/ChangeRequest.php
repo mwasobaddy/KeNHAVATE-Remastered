@@ -29,9 +29,9 @@ class ChangeRequest extends Model
         return $this->belongsTo(Idea::class);
     }
 
-    public function user(): BelongsTo
+    public function proposer(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function reviewer(): BelongsTo

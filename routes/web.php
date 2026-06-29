@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\TermsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Ideas\ChangeRequestController;
 use App\Http\Controllers\Ideas\IdeaController;
 use App\Http\Controllers\Ideas\InvitationController;
 use App\Http\Controllers\Points\LeaderboardController;
@@ -111,5 +112,12 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::put('/{slug}', [IdeaController::class, 'update'])->name('update');
         Route::delete('/{slug}', [IdeaController::class, 'destroy'])->name('destroy');
         Route::get('/{slug}/documents/{document}', [IdeaController::class, 'downloadDocument'])->name('documents.download');
+
+        Route::get('/{slug}/changes', [ChangeRequestController::class, 'index'])->name('changes.index');
+        Route::get('/{slug}/changes/create', [ChangeRequestController::class, 'create'])->name('changes.create');
+        Route::post('/{slug}/changes', [ChangeRequestController::class, 'store'])->name('changes.store');
+        Route::get('/{slug}/changes/{changeRequest}', [ChangeRequestController::class, 'show'])->name('changes.show');
+        Route::post('/{slug}/changes/{changeRequest}/approve', [ChangeRequestController::class, 'approve'])->name('changes.approve');
+        Route::post('/{slug}/changes/{changeRequest}/reject', [ChangeRequestController::class, 'reject'])->name('changes.reject');
     });
 });

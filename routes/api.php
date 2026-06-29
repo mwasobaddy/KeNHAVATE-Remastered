@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\Auth\OnboardingController;
 use App\Http\Controllers\Api\Auth\OtpVerificationController;
 use App\Http\Controllers\Api\Auth\TermsController;
+use App\Http\Controllers\Api\Ideas\ChangeRequestController as ApiChangeRequestController;
 use App\Http\Controllers\Api\Ideas\IdeaController as ApiIdeaController;
 use App\Http\Controllers\Api\Ideas\InvitationController as ApiInvitationController;
 use App\Http\Controllers\Api\Points\LeaderboardController;
@@ -53,5 +54,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{slug}', [ApiIdeaController::class, 'show']);
         Route::put('/{slug}', [ApiIdeaController::class, 'update']);
         Route::delete('/{slug}', [ApiIdeaController::class, 'destroy']);
+
+        Route::get('/{slug}/changes', [ApiChangeRequestController::class, 'index']);
+        Route::post('/{slug}/changes', [ApiChangeRequestController::class, 'store']);
+        Route::get('/{slug}/changes/{changeRequest}', [ApiChangeRequestController::class, 'show']);
+        Route::post('/{slug}/changes/{changeRequest}/approve', [ApiChangeRequestController::class, 'approve']);
+        Route::post('/{slug}/changes/{changeRequest}/reject', [ApiChangeRequestController::class, 'reject']);
     });
 });
