@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Auth\OnboardingController;
 use App\Http\Controllers\Api\Auth\OtpVerificationController;
 use App\Http\Controllers\Api\Auth\TermsController;
 use App\Http\Controllers\Api\Ideas\IdeaController as ApiIdeaController;
+use App\Http\Controllers\Api\Ideas\InvitationController as ApiInvitationController;
 use App\Http\Controllers\Api\Points\LeaderboardController;
 use App\Http\Controllers\Api\Points\PointController;
 use App\Http\Controllers\Api\Points\TransactionController;
@@ -17,6 +18,8 @@ Route::get('auth/google/callback', [GoogleAuthController::class, 'callback']);
 Route::post('auth/email', EmailLoginController::class);
 Route::post('auth/otp/verify', [OtpVerificationController::class, 'store']);
 Route::post('auth/otp/resend', [OtpVerificationController::class, 'resend']);
+
+Route::get('invitations/{token}', [ApiInvitationController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/logout', [OtpVerificationController::class, 'logout']);
@@ -41,6 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('leaderboard', [LeaderboardController::class, 'index']);
 
     Route::get('audit', [ApiAuditController::class, 'index']);
+
+    Route::post('invitations/{token}/accept', [ApiInvitationController::class, 'accept']);
 
     Route::prefix('ideas')->group(function () {
         Route::get('/', [ApiIdeaController::class, 'index']);

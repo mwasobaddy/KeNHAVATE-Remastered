@@ -27,11 +27,11 @@ class OnboardingController extends Controller
 
     public function store(OnboardingRequest $request): RedirectResponse
     {
-        $this->onboardingService->complete(
+        $redirectUrl = $this->onboardingService->complete(
             $request->user(),
             $request->validated(),
         );
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended($redirectUrl ?? route('dashboard'));
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\TermsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Ideas\IdeaController;
+use App\Http\Controllers\Ideas\InvitationController;
 use App\Http\Controllers\Points\LeaderboardController;
 use App\Http\Controllers\Points\PointController;
 use App\Http\Controllers\Points\TransactionController;
@@ -34,6 +35,9 @@ Route::middleware('auth')->group(function () {
     Route::get('auth/terms', [TermsController::class, 'create'])->name('terms');
     Route::post('auth/terms', [TermsController::class, 'store'])->name('terms.store');
 });
+
+Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
+Route::post('invitations/accept', [InvitationController::class, 'acceptFromLogin'])->name('invitations.accept');
 
 Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
