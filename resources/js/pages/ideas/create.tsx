@@ -152,14 +152,14 @@ export default function CreateIdea({ categories }: Props) {
                                         </Label>
                                         <Input
                                             id="team_emails"
-                                            name="team_emails[]"
+                                            name="team_emails"
                                             type="text"
                                             placeholder="john@kenha.co.ke, jane@example.com"
                                         />
                                         <p className="text-xs text-muted-foreground">
-                                            Separate multiple emails with commas. Existing users will be added as collaborators. New users will receive an invitation.
+                                            Separate multiple emails with commas. Existing users will be added as contributors. New users will receive an invitation.
                                         </p>
-                                        <InputError message={errors['team_emails.0']} />
+                                        <InputError message={errors.team_emails} />
                                     </div>
 
                                     <div className="flex items-center space-x-3">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Ideas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ideas\StoreIdeaRequest;
 use App\Http\Requests\Ideas\UpdateIdeaRequest;
+use App\Services\AuditService;
 use App\Services\Ideas\IdeaService;
 use Illuminate\Http\JsonResponse;
 
@@ -12,6 +13,7 @@ class IdeaController extends Controller
 {
     public function __construct(
         private IdeaService $ideaService,
+        private AuditService $auditService,
     ) {}
 
     public function index(): JsonResponse
@@ -74,6 +76,8 @@ class IdeaController extends Controller
         if (! $idea->userCan(request()->user(), 'idea.delete')) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
+
+        $this->auditService->log(request()->user(), 'idea_deleted', "Deleted idea: {$idea->title}");
 
         $idea->delete();
 

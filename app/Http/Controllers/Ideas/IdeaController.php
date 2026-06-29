@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Ideas\StoreIdeaRequest;
 use App\Http\Requests\Ideas\UpdateIdeaRequest;
 use App\Models\IdeaDocument;
+use App\Services\AuditService;
 use App\Services\Ideas\IdeaCategoryService;
 use App\Services\Ideas\IdeaService;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ class IdeaController extends Controller
     public function __construct(
         private IdeaService $ideaService,
         private IdeaCategoryService $ideaCategoryService,
+        private AuditService $auditService,
     ) {}
 
     public function index(): Response
@@ -124,6 +126,8 @@ class IdeaController extends Controller
         if (! $idea->userCan(request()->user(), 'idea.delete')) {
             abort(403);
         }
+
+        $this->auditService->log(request()->user(), 'idea_deleted', "Deleted idea: {$idea->title}");
 
         $idea->delete();
 

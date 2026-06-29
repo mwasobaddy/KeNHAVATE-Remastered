@@ -2,13 +2,17 @@
 
 namespace App\Services\Ideas;
 
+use App\Mail\IdeaInvitationMail;
 use App\Models\Idea;
 use App\Models\IdeaDocument;
 use App\Models\IdeaInvitation;
+use App\Models\Point;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\Points\PointAwardService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -16,6 +20,7 @@ class IdeaService
 {
     public function __construct(
         private AuditService $auditService,
+        private PointAwardService $pointAwardService,
     ) {}
 
     public function create(User $user, array $data, ?UploadedFile $proposal = null, array $supportDocs = []): Idea
@@ -35,6 +40,8 @@ class IdeaService
 
         $idea->assignRole($user, 'author');
 
+        $this->awardIdeaSubmissionPoints($user);
+
         if ($proposal) {
             $this->storeDocument($idea, 'proposal', $proposal);
         }
@@ -46,7 +53,9 @@ class IdeaService
         }
 
         if (! empty($data['team_emails'])) {
-            $this->createInvitations($idea, $user, $data['team_emails']);
+            $emails = array_map('trim', explode(',', $data['team_emails']));
+            $emails = array_filter($emails, fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
+            $this->createInvitations($idea, $user, $emails);
         }
 
         $this->auditService->log($user, 'idea_submitted', "Created idea: {$idea->title}");
@@ -117,6 +126,15 @@ class IdeaService
         return $slug;
     }
 
+    protected function awardIdeaSubmissionPoints(User $user): void
+    {
+        $point = Point::where('name', 'Idea Submission')->first();
+
+        if ($point && $point->is_active) {
+            $this->pointAwardService->award($user, $point);
+        }
+    }
+
     protected function createInvitations(Idea $idea, User $invitedBy, array $emails): void
     {
         foreach ($emails as $email) {
@@ -129,23 +147,25 @@ class IdeaService
                 'email' => $email,
                 'user_id' => $member?->id,
                 'token' => $member ? null : Str::random(32),
-                'role' => 'collaborator',
+                'role' => 'contributor',
                 'status' => $member ? 'accepted' : 'pending',
                 'invited_by' => $invitedBy->id,
             ]);
 
             if ($member) {
-                $idea->assignRole($member, 'collaborator');
+                $idea->assignRole($member, 'contributor');
+                $this->awardIdeaSubmissionPoints($member);
                 $this->auditService->log(
                     $invitedBy,
                     'team_member_added',
-                    "Added {$member->name} as collaborator on idea: {$idea->title}",
+                    "Added {$member->name} as contributor on idea: {$idea->title}",
                 );
             } else {
+                Mail::to($email)->send(new IdeaInvitationMail($invitation));
                 $this->auditService->log(
                     $invitedBy,
                     'team_member_invited',
-                    "Invited {$email} to collaborate on idea: {$idea->title}",
+                    "Invited {$email} as contributor on idea: {$idea->title}",
                 );
             }
         }

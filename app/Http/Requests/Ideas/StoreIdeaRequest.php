@@ -23,8 +23,7 @@ class StoreIdeaRequest extends FormRequest
             'proposal_file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
             'support_documents.*' => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png', 'max:10240'],
             'collaboration_enabled' => ['boolean'],
-            'team_emails' => ['nullable', 'array'],
-            'team_emails.*' => ['required', 'email'],
+            'team_emails' => ['nullable', 'string'],
         ];
     }
 }

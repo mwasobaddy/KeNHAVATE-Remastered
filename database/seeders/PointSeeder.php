@@ -26,5 +26,14 @@ class PointSeeder extends Seeder
                 'is_active' => true,
             ],
         );
+
+        Point::firstOrCreate(
+            ['name' => 'Idea Submission'],
+            [
+                'description' => 'Points awarded to each contributor for submitting a new idea.',
+                'points' => 50,
+                'is_active' => true,
+            ],
+        );
     }
 }
