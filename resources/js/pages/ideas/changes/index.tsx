@@ -87,7 +87,7 @@ export default function ChangeRequestIndex({ idea, changeRequests }: Props) {
                                         )}
                                     </div>
                                     <Button variant="outline" size="sm" className="mt-3" asChild>
-                                        <Link href={ideas.changes.show(idea.slug, cr.id)}>
+                                        <Link href={ideas.changes.show([idea.slug, cr.id])}>
                                             Review
                                         </Link>
                                     </Button>

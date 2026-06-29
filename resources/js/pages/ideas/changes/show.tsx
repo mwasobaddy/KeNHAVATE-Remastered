@@ -114,7 +114,7 @@ export default function ReviewChange({ idea, changeRequest }: Props) {
                     <div className="grid gap-6 md:grid-cols-2">
                         <Form
                             method="post"
-                            action={ideas.changes.approve(idea.slug, changeRequest.id)}
+                            action={ideas.changes.approve([idea.slug, changeRequest.id])}
                             className="space-y-4"
                         >
                             {({ processing, errors }) => (
@@ -145,7 +145,7 @@ export default function ReviewChange({ idea, changeRequest }: Props) {
 
                         <Form
                             method="post"
-                            action={ideas.changes.reject(idea.slug, changeRequest.id)}
+                            action={ideas.changes.reject([idea.slug, changeRequest.id])}
                             className="space-y-4"
                         >
                             {({ processing, errors }) => (
