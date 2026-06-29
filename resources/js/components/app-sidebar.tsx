@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, FileText, FolderGit2, LayoutGrid, Lightbulb, ScrollText, Trophy, Zap } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -13,7 +13,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { dashboard, leaderboard } from '@/routes';
+import ideas from '@/routes/ideas';
+import points from '@/routes/points';
+import type { LucideIcon } from 'lucide-react';
 import type { NavItem } from '@/types';
 
 const footerNavItems: NavItem[] = [
@@ -29,15 +32,57 @@ const footerNavItems: NavItem[] = [
     },
 ];
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
 export function AppSidebar() {
+    const { auth } = usePage().props;
+    const user = auth.user;
+    const roles = user?.roles ?? [];
+
+    const hasPointsAccess = roles.some((r) => ['admin', 'board'].includes(r));
+    const hasAuditAccess = roles.some((r) => ['admin', 'board'].includes(r));
+
+    const generalItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+            group: 'General',
+        },
+        {
+            title: 'Ideas',
+            href: ideas.index(),
+            icon: Lightbulb,
+            group: 'General',
+        },
+        {
+            title: 'Leaderboard',
+            href: leaderboard(),
+            icon: Trophy,
+            group: 'General',
+        },
+    ];
+
+    const reviewItems: NavItem[] = [];
+
+    if (hasPointsAccess) {
+        reviewItems.push({
+            title: 'Points',
+            href: points.index(),
+            icon: Zap as LucideIcon,
+            group: 'Review',
+        });
+    }
+
+    if (hasAuditAccess) {
+        reviewItems.push({
+            title: 'Audit Log',
+            href: '/audit',
+            icon: ScrollText as LucideIcon,
+            group: 'Review',
+        });
+    }
+
+    const mainNavItems = [...generalItems, ...reviewItems];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
