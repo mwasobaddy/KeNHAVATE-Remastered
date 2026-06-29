@@ -19,12 +19,18 @@ Laravel 13 + PHP 8.5   (Backend API + Inertia server)
 The application follows a **service-oriented architecture**:
 
 - **Controllers** — Thin HTTP handlers that delegate to services
-- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService, PointService, PointAwardService)
+- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService, PointService, PointAwardService, IdeaService, IdeaCategoryService, ChangeRequestService, InvitationService, AuditService)
 - **Form Requests** — Validation logic extracted from controllers
 - **Models** — Eloquent models with relationships and Spatie permission traits
 - **Shared frontend/backend** — Same backend serves both web (Inertia SPA) and mobile (Sanctum API)
 
-Web controllers live under `App\Http\Controllers\Auth\`, API controllers mirror them under `App\Http\Controllers\Api\Auth\` with identical method names.
+Feature controllers are organized in subdirectories by domain:
+- `Auth\` — Authentication controllers (web) with `Api\Auth\` mirrors
+- `Ideas\` — Idea management, change requests, invitations with `Api\Ideas\` mirrors
+- `Points\` — Gamification with `Api\Points\` mirrors
+- `Audit\` — Audit trail with `Api\Audit\` mirrors
+
+Web controllers live under `App\Http\Controllers\`, API controllers mirror them under `App\Http\Controllers\Api\` with identical method names.
 
 ---
 
@@ -122,6 +128,33 @@ GET    /settings/profile
 GET    /settings/security
 GET    /settings/appearance
 DELETE /settings/profile
+GET    /leaderboard            → LeaderboardController@index
+GET    /audit                  → AuditController@index       (permission: audit.view)
+```
+
+**Idea routes (web)** `[auth, verified, onboarding.complete, terms]`:
+```
+GET    /ideas                   → IdeaController@index
+GET    /ideas/create            → IdeaController@create
+POST   /ideas                   → IdeaController@store
+GET    /ideas/{slug}            → IdeaController@show
+GET    /ideas/{slug}/edit       → IdeaController@edit
+PUT    /ideas/{slug}            → IdeaController@update
+DELETE /ideas/{slug}            → IdeaController@destroy
+GET    /ideas/{slug}/documents/{document} → IdeaController@downloadDocument
+
+GET    /ideas/{slug}/changes                              → ChangeRequestController@index
+GET    /ideas/{slug}/changes/create                        → ChangeRequestController@create
+POST   /ideas/{slug}/changes                               → ChangeRequestController@store
+GET    /ideas/{slug}/changes/{changeRequest}                → ChangeRequestController@show
+POST   /ideas/{slug}/changes/{changeRequest}/approve        → ChangeRequestController@approve
+POST   /ideas/{slug}/changes/{changeRequest}/reject         → ChangeRequestController@reject
+```
+
+**Invitation routes (web)** (no middleware — public + guest):
+```
+GET    /invitations/{token}     → InvitationController@show
+POST   /invitations/accept      → InvitationController@acceptFromLogin
 ```
 
 **Gamification routes (web)** `[auth, verified, onboarding.complete, terms, permission]`:
@@ -137,6 +170,36 @@ GET    /points/transactions    → TransactionController@index  (permission: poi
 GET    /leaderboard            → LeaderboardController@index
 ```
 
+**Idea routes (API)** under `auth:sanctum`:
+```
+GET    api/ideas                                  → Api\Ideas\IdeaController@index
+POST   api/ideas                                  → Api\Ideas\IdeaController@store
+GET    api/ideas/{slug}                           → Api\Ideas\IdeaController@show
+PUT    api/ideas/{slug}                           → Api\Ideas\IdeaController@update
+DELETE api/ideas/{slug}                           → Api\Ideas\IdeaController@destroy
+
+GET    api/ideas/{slug}/changes                   → Api\Ideas\ChangeRequestController@index
+POST   api/ideas/{slug}/changes                   → Api\Ideas\ChangeRequestController@store
+GET    api/ideas/{slug}/changes/{changeRequest}    → Api\Ideas\ChangeRequestController@show
+POST   api/ideas/{slug}/changes/{changeRequest}/approve → Api\Ideas\ChangeRequestController@approve
+POST   api/ideas/{slug}/changes/{changeRequest}/reject  → Api\Ideas\ChangeRequestController@reject
+```
+
+**Invitation routes (API)** (no auth — public):
+```
+GET    api/invitations/{token}                     → Api\Ideas\InvitationController@show
+```
+
+**Invitation routes (API)** under `auth:sanctum`:
+```
+POST   api/invitations/{token}/accept              → Api\Ideas\InvitationController@accept
+```
+
+**Audit routes (API)** under `auth:sanctum`:
+```
+GET    api/audit                                   → Api\Audit\AuditController@index
+```
+
 **Gamification routes (API)** under `auth:sanctum`:
 ```
 GET    api/points                 → Api\Points\PointController@index
@@ -147,6 +210,7 @@ DELETE api/points/{point}         → Api\Points\PointController@destroy
 POST   api/points/{point}/toggle  → Api\Points\PointController@toggle
 GET    api/points/transactions    → Api\Points\TransactionController@index
 GET    api/leaderboard            → Api\Points\LeaderboardController@index
+GET    api/audit                  → Api\Audit\AuditController@index
 ```
 
 **Guest routes (api):**
@@ -160,12 +224,13 @@ POST   api/auth/otp/resend       → Api\Auth\OtpVerificationController@resend
 
 **Authenticated API routes (Sanctum):**
 ```
-POST   api/auth/logout     → OtpVerificationController@logout
-GET    api/user            → OtpVerificationController@user
-GET    api/onboarding      → OnboardingController@show
-POST   api/onboarding      → OnboardingController@store
-GET    api/auth/terms      → TermsController@show
-POST   api/auth/terms      → TermsController@store
+POST   api/auth/logout       → OtpVerificationController@logout
+GET    api/user              → OtpVerificationController@user
+GET    api/onboarding        → OnboardingController@show
+POST   api/onboarding        → OnboardingController@store
+GET    api/auth/terms        → TermsController@show
+POST   api/auth/terms        → TermsController@store
+POST   api/invitations/{token}/accept → InvitationController@accept
 ```
 
 ---
@@ -315,8 +380,8 @@ Uses `spatie/laravel-permission` v6 with **teams enabled**. Each idea is a Spati
 
 | Role | Permissions | Assigned To |
 |------|-------------|-------------|
-| `admin` | All permissions + `points.create`, `points.edit`, `points.delete`, `points.view` | Super administrators (seeded: `kelvinramsiel@gmail.com`) |
-| `board` | `idea.view`, `idea.approve_changes`, `points.view` | Board members who review and approve |
+| `admin` | All permissions + `points.create`, `points.edit`, `points.delete`, `points.view`, `audit.view` | Super administrators (seeded: `kelvinramsiel@gmail.com`) |
+| `board` | `idea.view`, `idea.approve_changes`, `points.view`, `audit.view` | Board members who review and approve |
 | `user` | `idea.create` | All registered users (assigned during onboarding) |
 
 ### Per-Idea Roles (team_id = idea.id)
@@ -353,7 +418,11 @@ The `team_id` columns in `model_has_roles` and `model_has_permissions` are **nul
 
 ### Overview
 
-Ideas are the core entity of the application. Each idea acts as a Spatie team for permission scoping, with collaboration and change request workflows.
+Ideas are the core entity of the application. Each idea acts as a Spatie team for permission scoping, with team invitations, file attachments, and a git-like change request workflow.
+
+### Idea Categories
+
+Categories are seeded via `IdeaCategorySeeder` with 8 categories (Technology & Systems, Process & Operations, etc.). Each idea belongs to one category.
 
 ### Models
 
@@ -361,18 +430,54 @@ Ideas are the core entity of the application. Each idea acts as a Spatie team fo
 | Field | Type | Description |
 |-------|------|-------------|
 | title | string | Idea title |
+| slug | string | URL-friendly unique slug |
 | description | text | Idea description |
+| problem_statement | text | Problem being solved |
+| proposed_solution | text | Proposed solution |
+| cost_benefit_analysis | text | Cost/benefit breakdown |
+| category_id | FK→idea_categories | Category |
 | author_id | FK→users | Creator |
-| status | string | e.g. draft, submitted, approved |
+| status | string | draft, submitted, approved, rejected |
+| deleted_at | timestamp (nullable) | Soft delete support |
 
-On creation, `Idea::booted()` calls `createTeamRoles()` to generate per-idea roles.
+On creation, `Idea::booted()` calls `createTeamRoles()` to generate per-idea roles (author, contributor, collaborator).
+
+**`IdeaCategory`** — `app/Models/IdeaCategory.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Category name |
+| slug | string | Unique URL slug |
+| description | text (nullable) | Category description |
+
+**`IdeaDocument`** — `app/Models/IdeaDocument.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| idea_id | FK→ideas | Parent idea |
+| user_id | FK→users | Uploader |
+| type | string | proposal or supporting |
+| filename | string | Original filename |
+| filepath | string | Storage path (private/ideas/) |
+| mime_type | string | e.g. application/pdf |
+| size | integer | File size in bytes |
+
+Documents are append-only (no `updated_at` column). Files are stored privately on the `local` disk at `storage/app/private/ideas/`.
+
+**`IdeaInvitation`** — `app/Models/IdeaInvitation.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| idea_id | FK→ideas | Target idea |
+| email | string | Invited email |
+| token | string | Unique UUID token for acceptance |
+| accepted_at | timestamp (nullable) | When accepted |
+
+Supports two flows: existing users are assigned `contributor` role immediately; non-users receive an email with an acceptance link.
 
 **`ChangeRequest`** — `app/Models/ChangeRequest.php`
 | Field | Type | Description |
 |-------|------|-------------|
 | idea_id | FK→ideas | Parent idea |
 | user_id | FK→users | Proposer |
-| proposed_data | json | Proposed changes |
+| proposed_data | json | Array of `{field, old_value, new_value}` objects |
 | notes | text | Optional notes |
 | status | string | pending, approved, rejected |
 | reviewed_by | FK→users (nullable) | Reviewer |
@@ -388,13 +493,52 @@ On creation, `Idea::booted()` calls `createTeamRoles()` to generate per-idea rol
 | reviewed_by | FK→users (nullable) | Reviewer |
 | feedback | text (nullable) | Review feedback |
 
-### Workflow
+### Services
 
-1. User submits an idea → becomes `author`
-2. Other users request collaboration → `CollaborationRequest`
-3. Author approves → collaborator gets `collaborator` role on that idea
-4. Contributors propose changes → `ChangeRequest`
-5. Author approves/rejects → change auto-applied or rejected with feedback
+**`IdeaService`** — `app/Services/Ideas/IdeaService.php`
+- `create(data, user)` — Creates idea + slug, handles file uploads, sends team invitations, awards 50pts to author and each contributor
+- `update(idea, data)` — Updates idea fields, manages document replacements
+- `delete(idea)` — Soft deletes with audit logging
+- Team emails accepted as comma-separated string, split and validated server-side
+
+**`InvitationService`** — `app/Services/Ideas/InvitationService.php`
+- `findByToken(token)` — Look up pending invitation
+- `accept(invitation, user)` — Assign `contributor` role, award 50pts, mark accepted
+- `getPendingForEmail(email)` — Find all pending invitations for auto-accept
+
+**`ChangeRequestService`** — `app/Services/Ideas/ChangeRequestService.php`
+- `propose(idea, user, data)` — Create pending change request, notify author
+- `approve(changeRequest, reviewer, feedback?)` — Auto-apply changes to idea, audit log
+- `reject(changeRequest, reviewer, feedback)` — Mark rejected with feedback, notify proposer
+
+### Invitation Flow
+
+```
+[Idea Created with team_emails]
+    → For each email:
+        → User exists? → Assign contributor role, award 50pts
+        → No user? → Create IdeaInvitation with token, send IdeaInvitationMail
+            → User clicks link → GET /invitations/{token}
+            → Sees idea title + inviter → "Sign in to Accept"
+            → Login (OTP or Google) → OnboardingService::processPendingInvitations()
+            → Auto-accepts by email → contributor role + 50pts → Redirect to idea
+```
+
+### Change Request Workflow
+
+```
+[Contributor proposes changes]
+    → GET /ideas/{slug}/changes/create → Select fields to edit, enter new values
+    → POST /ideas/{slug}/changes → Proposed data stored as JSON diff
+    → Email sent to idea author (ChangeRequestSubmittedMail)
+    
+[Author reviews]
+    → GET /ideas/{slug}/changes/{id} → Side-by-side diff view
+    → Approve → Changes auto-applied to idea, proposer notified
+    → Reject → Feedback recorded, proposal closed, proposer notified
+```
+
+Each change request batches multiple field edits (title, description, problem_statement, proposed_solution, cost_benefit_analysis) with old/new values preserved in `proposed_data` for full history. Rejected requests can be resubmitted as new proposals.
 
 ---
 
@@ -461,9 +605,13 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 | `model_has_permissions` | Spatie: direct user-permission assignments |
 | `model_has_roles` | Spatie: user-role assignments (scoped by team_id) |
 | `role_has_permissions` | Spatie: role-permission associations |
-| `ideas` | Innovation ideas (each idea is also a Spatie team) |
-| `change_requests` | Proposed changes to ideas |
+| `ideas` | Innovation ideas (each idea is also a Spatie team, soft deletes) |
+| `idea_categories` | Pre-seeded categories for classifying ideas |
+| `idea_documents` | File attachments (proposals & supporting docs, append-only) |
+| `idea_invitations` | Pending team member invitations (token-based) |
+| `change_requests` | Proposed changes to ideas (diff-based, full history) |
 | `collaboration_requests` | Requests to join/collaborate on ideas |
+| `audit_logs` | Structured audit trail for all key actions |
 | `otp_codes` | Audit trail for OTP requests |
 | `regions` | KeNHA geographic regions |
 | `directorates` | Directorates within regions |
@@ -500,11 +648,22 @@ resources/js/pages/
 │   ├── profile.tsx
 │   ├── security.tsx       → 2FA management
 │   └── appearance.tsx
-└── points/
-    ├── index.tsx          → Table of point actions with status/toggle/edit/delete
-    ├── create.tsx         → Form to define a new point action
-    ├── edit.tsx           → Edit an existing point action
-    └── transactions.tsx   → Paginated audit log of all point awards
+├── points/
+│   ├── index.tsx          → Table of point actions with status/toggle/edit/delete
+│   ├── create.tsx         → Form to define a new point action
+│   ├── edit.tsx           → Edit an existing point action
+│   └── transactions.tsx   → Paginated audit log of all point awards
+├── ideas/
+│   ├── index.tsx          → Paginated table of ideas with status badges
+│   ├── create.tsx         → Full form with file uploads, category select, team emails input
+│   ├── show.tsx           → Detail view with grouped documents + action bar
+│   ├── invitation.tsx     → Invitation acceptance page (idea title, inviter, sign-in prompt)
+│   └── changes/
+│       ├── index.tsx      → List of change requests with status badges
+│       ├── create.tsx     → Select fields to edit, enter new values against originals
+│       └── show.tsx       → Side-by-side diff view + approve/reject forms
+└── audit/
+    └── index.tsx          → Paginated structured audit log of all key actions
 ```
 
 ### Auth Flow Components
@@ -647,6 +806,7 @@ The dashboard has three permission tiers for progressive disclosure:
 |--------|-------------|-------------|
 | New Account | 100 | Onboarding completion (via `OnboardingService`) |
 | Daily Login | 10 | First login each day (via `AwardDailyLoginPoints` listener) |
+| Idea Submission | 50 | Idea creation — awarded to author + each invited contributor (via `IdeaService`) |
 
 ### Listener: AwardDailyLoginPoints
 
@@ -660,9 +820,20 @@ On each login event, it:
 2. Checks `PointAwardService::hasBeenAwardedToday()` against `point_transactions`
 3. If not yet awarded today, calls `award()` to credit the user
 
+### Sidebar Navigation
+
+The sidebar (`resources/js/components/app-sidebar.tsx`) has two groups:
+
+| Group | Items | Access |
+|-------|-------|--------|
+| **General** | Dashboard, Ideas, Leaderboard | All authenticated users |
+| **Review** | Points, Audit Log | Gated by role (admin/board) |
+
+Points and Audit Log are hidden from regular users via the user's `roles` array, shared to the frontend through `HandleInertiaRequests`.
+
 ### Wayfinder Integration
 
-Points routes generate a separate barrel file at `resources/js/routes/points/index.ts`:
+Points routes generate a barrel file at `resources/js/routes/points/index.ts`:
 ```ts
 import points from '@/routes/points';
 
@@ -678,6 +849,83 @@ points.transactions() // GET /points/transactions
 ```
 
 This follows the Wayfinder v0.1.16 barrel pattern — each route group gets its own file, not re-exported from the main `routes/index.ts`.
+
+Ideas routes generate a nested barrel at `resources/js/routes/ideas/index.ts`:
+```ts
+import { ideas } from '@/routes';
+
+// Usage:
+ideas.index()                          // GET /ideas
+ideas.show(slug)                       // GET /ideas/{slug}
+ideas.create()                         // GET /ideas/create
+ideas.store()                          // POST /ideas
+ideas.changes.index(slug)              // GET /ideas/{slug}/changes
+ideas.changes.create(slug)             // GET /ideas/{slug}/changes/create
+ideas.changes.store(slug)              // POST /ideas/{slug}/changes
+ideas.changes.show(slug, id)           // GET /ideas/{slug}/changes/{id}
+ideas.changes.approve(slug, id)        // POST /ideas/{slug}/changes/{id}/approve
+ideas.changes.reject(slug, id)         // POST /ideas/{slug}/changes/{id}/reject
+```
+
+Nested route groups (like `changes` under `ideas`) generate nested objects — use dot-chain syntax (`ideas.changes.index(slug)`), not bracket notation (`ideas['changes.index'](slug)`).
+
+---
+
+## Audit Trail Module
+
+### Overview
+
+A structured audit trail that logs all key actions across the application. Logs are stored in the database (not Laravel log files) for easy querying, pagination, and frontend display.
+
+### Architecture
+
+```
+Audit/
+├── Models
+│   └── AuditLog          → Action/actor/target/metadata log entry
+└── Services
+    └── AuditService      → Logging interface used across all services
+```
+
+### Model
+
+**`AuditLog`** — `app/Models/AuditLog.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| action | string | Action name (snake_case, e.g. `idea_created`, `point_awarded`) |
+| actor_id | FK→users (nullable) | User who performed the action |
+| actor_type | string | User type (e.g. `user`, `system`) |
+| target_type | string | Model class of the affected entity |
+| target_id | integer | ID of the affected entity |
+| description | text (nullable) | Human-readable summary |
+| metadata | json (nullable) | Arbitrary data payload |
+| ip_address | string (nullable) | Request IP address |
+
+### Logged Actions
+
+| Action | Triggered By |
+|--------|-------------|
+| `idea_created` | Idea creation |
+| `idea_deleted` | Idea soft delete |
+| `change_requested` | Change request submitted |
+| `change_approved` | Change request approved |
+| `change_rejected` | Change request rejected |
+| `point_awarded` | Point award |
+| `team_member_added` | Invitation auto-accepted via onboarding |
+| `team_member_invited` | Invitation email sent to non-user |
+
+### Service
+
+**`AuditService`** — `app/Services/AuditService.php`
+- `log(string $action, ...)` — Create an audit log entry
+- Called from services (IdeaService, ChangeRequestService, PointAwardService) and controllers (IdeaController)
+
+### Access
+
+- Web: `GET /audit` → `AuditController@index` (permission: `audit.view`)
+- API: `GET api/audit` → `Api\Audit\AuditController@index` (auth:sanctum)
+- Accessible to roles: `admin` and `board`
+- Viewable at `resources/js/pages/audit/index.tsx` — paginated table of all entries
 
 ---
 
@@ -751,3 +999,50 @@ This follows the Wayfinder v0.1.16 barrel pattern — each route group gets its 
 - Progressive disclosure: normal users see their own data, authorized users see system stats, managers see admin links
 - Avoids an empty dashboard for users without gamification permissions
 - Uses a single controller with conditional prop passing instead of separate endpoints
+
+### Why Features Are in Subfolders Instead of Flat?
+
+All feature modules follow a consistent folder structure:
+```
+{Feature}/
+├── Services/
+│   └── {Feature}Service.php
+├── Http/
+│   ├── Controllers/
+│   │   ├── {Feature}Controller.php        (web)
+│   │   └── Api/{Feature}/
+│   │       └── {Feature}Controller.php    (API)
+│   └── Requests/{Feature}/
+│       └── Store{Feature}Request.php
+```
+This keeps each feature self-contained, avoids the `admin` word, and mirrors the route prefix structure. Example: points → `Points/`, ideas → `Ideas/`, audit → `Audit/`.
+
+### Why Comma-Separated `team_emails` Instead of Array?
+
+- HTML forms send comma-separated values as a single string
+- Laravel's `array` validation rule treats each comma-separated item as a single invalid email
+- Server-side split and trim is more reliable than JS pre-processing
+- Simplifies the form request (validates as `nullable|string`) and defers per-email validation to `IdeaService`
+
+### Why Idea Invitations Use Email + Token Instead of In-App Notification?
+
+- Invited users may not have accounts yet — email is the only communication channel
+- Token-based acceptance works without a pre-existing account
+- After signup, `OnboardingService::processPendingInvitations()` auto-accepts by matching email
+- Existing users get the `contributor` role + points immediately at submission time
+
+### Why Change Requests Use JSON Diffs Instead of Versioned Snapshots?
+
+- Each change request stores only the delta (field, old_value, new_value)
+- Approving a change request applies each field update to the idea record
+- Multiple edits can be batched in one request (like a PR)
+- Full history is preserved even after approval — no data is lost
+- Frontend renders a side-by-side diff (old strikethrough red / new green) for review
+
+### Why Audit Logs in the Database Instead of Laravel Log Files?
+
+- Structured data enables filtering, pagination, and frontend display
+- Can be queried and exported via API for compliance
+- `AuditLog` model stores action, actor, target, metadata, and IP address
+- `AuditService` provides a clean interface for logging across all services
+- Viewable at `/audit` for authorized roles (admin, board)
