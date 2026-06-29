@@ -41,7 +41,7 @@ class IdeaController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        return response()->json($idea->load(['author', 'category', 'invitations']));
+        return response()->json($idea->load(['author', 'category', 'invitations', 'documents']));
     }
 
     public function update(UpdateIdeaRequest $request, string $slug): JsonResponse

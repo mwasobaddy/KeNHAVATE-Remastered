@@ -106,7 +106,6 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::get('/{slug}/edit', [IdeaController::class, 'edit'])->name('edit');
         Route::put('/{slug}', [IdeaController::class, 'update'])->name('update');
         Route::delete('/{slug}', [IdeaController::class, 'destroy'])->name('destroy');
-        Route::get('/{slug}/proposal', [IdeaController::class, 'downloadProposal'])->name('proposal.download');
-        Route::get('/{slug}/support-document/{index}', [IdeaController::class, 'downloadSupportDocument'])->name('support-document.download');
+        Route::get('/{slug}/documents/{document}', [IdeaController::class, 'downloadDocument'])->name('documents.download');
     });
 });

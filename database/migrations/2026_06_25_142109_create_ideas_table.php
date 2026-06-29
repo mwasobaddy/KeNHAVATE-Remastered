@@ -18,8 +18,6 @@ return new class extends Migration
             $table->text('problem_statement');
             $table->text('proposed_solution');
             $table->text('cost_benefit_analysis');
-            $table->string('proposal_file_path')->nullable();
-            $table->json('support_documents')->nullable();
             $table->boolean('collaboration_enabled')->default(true);
             $table->string('status')->default('draft');
             $table->softDeletes();

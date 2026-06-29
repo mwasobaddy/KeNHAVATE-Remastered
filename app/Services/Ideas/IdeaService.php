@@ -3,6 +3,7 @@
 namespace App\Services\Ideas;
 
 use App\Models\Idea;
+use App\Models\IdeaDocument;
 use App\Models\IdeaInvitation;
 use App\Models\User;
 use App\Services\AuditService;
@@ -19,17 +20,6 @@ class IdeaService
 
     public function create(User $user, array $data, ?UploadedFile $proposal = null, array $supportDocs = []): Idea
     {
-        $proposalPath = $proposal
-            ? $proposal->store('ideas/proposals', 'local')
-            : null;
-
-        $supportPaths = [];
-        foreach ($supportDocs as $doc) {
-            if ($doc instanceof UploadedFile) {
-                $supportPaths[] = $doc->store('ideas/supporting-documents', 'local');
-            }
-        }
-
         $idea = Idea::create([
             'title' => $data['title'],
             'slug' => $this->generateUniqueSlug(),
@@ -39,13 +29,21 @@ class IdeaService
             'problem_statement' => $data['problem_statement'],
             'proposed_solution' => $data['proposed_solution'],
             'cost_benefit_analysis' => $data['cost_benefit_analysis'],
-            'proposal_file_path' => $proposalPath,
-            'support_documents' => ! empty($supportPaths) ? $supportPaths : null,
             'collaboration_enabled' => $data['collaboration_enabled'] ?? true,
             'status' => $data['status'] ?? 'draft',
         ]);
 
         $idea->assignRole($user, 'author');
+
+        if ($proposal) {
+            $this->storeDocument($idea, 'proposal', $proposal);
+        }
+
+        foreach ($supportDocs as $doc) {
+            if ($doc instanceof UploadedFile) {
+                $this->storeDocument($idea, 'supporting', $doc);
+            }
+        }
 
         if (! empty($data['team_emails'])) {
             $this->createInvitations($idea, $user, $data['team_emails']);
@@ -59,19 +57,15 @@ class IdeaService
     public function update(Idea $idea, User $user, array $data, ?UploadedFile $proposal = null, array $supportDocs = []): Idea
     {
         if ($proposal) {
-            if ($idea->proposal_file_path) {
-                Storage::disk('local')->delete($idea->proposal_file_path);
-            }
-            $data['proposal_file_path'] = $proposal->store('ideas/proposals', 'local');
+            $idea->documents()->where('type', 'proposal')->each(fn ($doc) => $this->deleteDocument($doc));
+            $this->storeDocument($idea, 'proposal', $proposal);
         }
 
-        $supportPaths = $idea->support_documents ?? [];
         foreach ($supportDocs as $doc) {
             if ($doc instanceof UploadedFile) {
-                $supportPaths[] = $doc->store('ideas/supporting-documents', 'private');
+                $this->storeDocument($idea, 'supporting', $doc);
             }
         }
-        $data['support_documents'] = ! empty($supportPaths) ? $supportPaths : null;
 
         $idea->update($data);
 
@@ -82,7 +76,7 @@ class IdeaService
 
     public function findBySlug(string $slug): ?Idea
     {
-        return Idea::with(['author', 'category'])
+        return Idea::with(['author', 'category', 'documents'])
             ->where('slug', $slug)
             ->first();
     }
@@ -92,6 +86,26 @@ class IdeaService
         return Idea::with(['author', 'category'])
             ->latest()
             ->paginate($perPage);
+    }
+
+    protected function storeDocument(Idea $idea, string $type, UploadedFile $file): IdeaDocument
+    {
+        $path = $file->store("ideas/{$type}s", 'local');
+
+        return IdeaDocument::create([
+            'idea_id' => $idea->id,
+            'type' => $type,
+            'file_path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+        ]);
+    }
+
+    protected function deleteDocument(IdeaDocument $document): void
+    {
+        Storage::disk('local')->delete($document->file_path);
+        $document->delete();
     }
 
     protected function generateUniqueSlug(): string

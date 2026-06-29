@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Ideas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ideas\StoreIdeaRequest;
 use App\Http\Requests\Ideas\UpdateIdeaRequest;
+use App\Models\IdeaDocument;
 use App\Services\Ideas\IdeaCategoryService;
 use App\Services\Ideas\IdeaService;
 use Illuminate\Http\RedirectResponse;
@@ -55,7 +56,7 @@ class IdeaController extends Controller
         }
 
         return inertia('ideas/show', [
-            'idea' => $idea->load(['author', 'category', 'invitations']),
+            'idea' => $idea->load(['author', 'category', 'invitations', 'documents']),
         ]);
     }
 
@@ -72,7 +73,7 @@ class IdeaController extends Controller
         }
 
         return inertia('ideas/edit', [
-            'idea' => $idea,
+            'idea' => $idea->load('documents'),
             'categories' => $this->ideaCategoryService->getAll(),
         ]);
     }
@@ -97,36 +98,19 @@ class IdeaController extends Controller
             ->with('success', 'Idea updated successfully!');
     }
 
-    public function downloadProposal(string $slug): StreamedResponse|RedirectResponse
+    public function downloadDocument(string $slug, IdeaDocument $document): StreamedResponse|RedirectResponse
     {
         $idea = $this->ideaService->findBySlug($slug);
 
-        if (! $idea || ! $idea->proposal_file_path) {
+        if (! $idea || $document->idea_id !== $idea->id) {
             abort(404);
         }
 
-        if (! Storage::disk('local')->exists($idea->proposal_file_path)) {
+        if (! Storage::disk('local')->exists($document->file_path)) {
             abort(404);
         }
 
-        return Storage::disk('local')->download($idea->proposal_file_path);
-    }
-
-    public function downloadSupportDocument(string $slug, int $index): StreamedResponse|RedirectResponse
-    {
-        $idea = $this->ideaService->findBySlug($slug);
-
-        if (! $idea || ! $idea->support_documents || ! isset($idea->support_documents[$index])) {
-            abort(404);
-        }
-
-        $path = $idea->support_documents[$index];
-
-        if (! Storage::disk('local')->exists($path)) {
-            abort(404);
-        }
-
-        return Storage::disk('local')->download($path);
+        return Storage::disk('local')->download($document->file_path, $document->original_name);
     }
 
     public function destroy(string $slug): RedirectResponse

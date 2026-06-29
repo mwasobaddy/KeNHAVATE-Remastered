@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Heading from '@/components/heading';
 import ideas from '@/routes/ideas';
 
+type Document = {
+    id: number;
+    type: 'proposal' | 'supporting';
+    original_name: string;
+    file_size: number | null;
+};
+
 type Invitation = {
     id: number;
     email: string;
@@ -20,13 +27,12 @@ type Idea = {
     problem_statement: string;
     proposed_solution: string;
     cost_benefit_analysis: string;
-    proposal_file_path: string | null;
-    support_documents: string[] | null;
     collaboration_enabled: boolean;
     status: string;
     created_at: string;
     author: { id: number; name: string };
     category: { id: number; name: string };
+    documents: Document[];
     invitations: Invitation[];
 };
 
@@ -42,6 +48,9 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'dest
 };
 
 export default function ShowIdea({ idea }: Props) {
+    const proposal = idea.documents.find((d) => d.type === 'proposal');
+    const supportingDocs = idea.documents.filter((d) => d.type === 'supporting');
+
     return (
         <>
             <Head title={idea.title} />
@@ -111,7 +120,7 @@ export default function ShowIdea({ idea }: Props) {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
-                    {idea.proposal_file_path && (
+                    {proposal && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Full Proposal</CardTitle>
@@ -119,35 +128,46 @@ export default function ShowIdea({ idea }: Props) {
                             <CardContent>
                                 <Button variant="outline" asChild>
                                     <a
-                                        href={`/ideas/${idea.slug}/proposal`}
+                                        href={`/ideas/${idea.slug}/documents/${proposal.id}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
                                         Download Proposal
                                     </a>
                                 </Button>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    {proposal.original_name}
+                                    {proposal.file_size
+                                        ? ` (${(proposal.file_size / 1024).toFixed(1)} KB)`
+                                        : ''}
+                                </p>
                             </CardContent>
                         </Card>
                     )}
 
-                    {idea.support_documents && idea.support_documents.length > 0 && (
+                    {supportingDocs.length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Supporting Documents</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <ul className="space-y-2">
-                                    {idea.support_documents.map((doc, i) => (
-                                        <li key={i}>
+                                    {supportingDocs.map((doc) => (
+                                        <li key={doc.id}>
                                             <Button variant="link" className="h-auto p-0" asChild>
                                                 <a
-                                                    href={`/ideas/${idea.slug}/support-document/${i}`}
+                                                    href={`/ideas/${idea.slug}/documents/${doc.id}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                 >
-                                                    Document {i + 1}
+                                                    {doc.original_name}
                                                 </a>
                                             </Button>
+                                            {doc.file_size && (
+                                                <span className="ml-2 text-xs text-muted-foreground">
+                                                    ({(doc.file_size / 1024).toFixed(1)} KB)
+                                                </span>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>

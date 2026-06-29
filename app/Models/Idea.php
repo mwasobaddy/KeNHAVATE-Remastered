@@ -22,8 +22,6 @@ class Idea extends Model
         'problem_statement',
         'proposed_solution',
         'cost_benefit_analysis',
-        'proposal_file_path',
-        'support_documents',
         'collaboration_enabled',
         'status',
     ];
@@ -31,7 +29,6 @@ class Idea extends Model
     protected function casts(): array
     {
         return [
-            'support_documents' => 'array',
             'collaboration_enabled' => 'boolean',
         ];
     }
@@ -64,6 +61,11 @@ class Idea extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(IdeaCategory::class, 'category_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(IdeaDocument::class);
     }
 
     public function changeRequests(): HasMany
