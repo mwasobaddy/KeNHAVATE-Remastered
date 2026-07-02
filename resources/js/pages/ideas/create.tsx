@@ -1,11 +1,12 @@
 import { Form, Head } from '@inertiajs/react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import InputError from '@/components/input-error';
 import Heading from '@/components/heading';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ideas from '@/routes/ideas';
 
 type Category = {
@@ -19,6 +20,8 @@ type Props = {
 };
 
 export default function CreateIdea({ categories }: Props) {
+    const [hasIpProtection, setHasIpProtection] = useState<string>('0');
+
     return (
         <>
             <Head title="Submit Idea" />
@@ -145,6 +148,102 @@ export default function CreateIdea({ categories }: Props) {
                                         />
                                         <InputError message={errors['support_documents.0']} />
                                     </div>
+
+                                    <Card className="border-dashed">
+                                        <CardHeader>
+                                            <CardTitle className="text-base">Intellectual Property</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="space-y-3">
+                                                <Label>Is this idea IP protected?</Label>
+                                                <div className="flex items-center gap-6">
+                                                    <label className="flex items-center gap-2 text-sm">
+                                                        <input
+                                                            type="radio"
+                                                            name="has_ip_protection"
+                                                            value="1"
+                                                            checked={hasIpProtection === '1'}
+                                                            onChange={(e) => setHasIpProtection(e.target.value)}
+                                                            className="h-4 w-4"
+                                                        />
+                                                        Yes
+                                                    </label>
+                                                    <label className="flex items-center gap-2 text-sm">
+                                                        <input
+                                                            type="radio"
+                                                            name="has_ip_protection"
+                                                            value="0"
+                                                            checked={hasIpProtection === '0'}
+                                                            onChange={(e) => setHasIpProtection(e.target.value)}
+                                                            className="h-4 w-4"
+                                                        />
+                                                        No
+                                                    </label>
+                                                </div>
+                                                <InputError message={errors.has_ip_protection} />
+                                            </div>
+
+                                            {hasIpProtection === '1' && (
+                                                <>
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="patent_number">
+                                                            Patent Number (optional)
+                                                        </Label>
+                                                        <Input
+                                                            id="patent_number"
+                                                            name="patent_number"
+                                                            type="text"
+                                                            placeholder="e.g. KE/P/2025/001234"
+                                                        />
+                                                        <InputError message={errors.patent_number} />
+                                                    </div>
+
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="ip_documents">
+                                                            Upload Patent Document (PDF, DOC, DOCX — max 10MB)
+                                                        </Label>
+                                                        <Input
+                                                            id="ip_documents"
+                                                            name="ip_documents[]"
+                                                            type="file"
+                                                            multiple
+                                                            accept=".pdf,.doc,.docx"
+                                                        />
+                                                        <InputError message={errors['ip_documents.0']} />
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {hasIpProtection === '0' && (
+                                                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                                                    <p className="font-medium">Important Notice</p>
+                                                    <p className="mt-1">
+                                                        This idea is not currently IP protected. By submitting,
+                                                        you give KeNHA consent to proceed with the initialization
+                                                        of Intellectual Property for this idea.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    id="consent_given"
+                                                    type="checkbox"
+                                                    name="consent_given"
+                                                    value="1"
+                                                    className="h-4 w-4 rounded border-gray-300"
+                                                    required
+                                                />
+                                                <Label htmlFor="consent_given" className="text-sm">
+                                                    I give KeNHA consent to proceed with the
+                                                    {hasIpProtection === '1'
+                                                        ? ' review and processing of this idea'
+                                                        : ' initialization of Intellectual Property for this idea'}
+                                                </Label>
+                                            </div>
+                                            <InputError message={errors.consent_given} />
+                                        </CardContent>
+                                    </Card>
 
                                     <div className="grid gap-2">
                                         <Label htmlFor="team_emails">
