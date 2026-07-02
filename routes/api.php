@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Auth\OnboardingController;
 use App\Http\Controllers\Api\Auth\OtpVerificationController;
 use App\Http\Controllers\Api\Auth\TermsController;
 use App\Http\Controllers\Api\Ideas\ChangeRequestController as ApiChangeRequestController;
+use App\Http\Controllers\Api\Ideas\CollaborationController as ApiCollaborationController;
 use App\Http\Controllers\Api\Ideas\IdeaController as ApiIdeaController;
 use App\Http\Controllers\Api\Ideas\InvitationController as ApiInvitationController;
 use App\Http\Controllers\Api\Points\LeaderboardController;
@@ -60,5 +61,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{slug}/changes/{changeRequest}', [ApiChangeRequestController::class, 'show']);
         Route::post('/{slug}/changes/{changeRequest}/approve', [ApiChangeRequestController::class, 'approve']);
         Route::post('/{slug}/changes/{changeRequest}/reject', [ApiChangeRequestController::class, 'reject']);
+
+        Route::get('/{slug}/collaborations', [ApiCollaborationController::class, 'index']);
+        Route::post('/{slug}/collaborations', [ApiCollaborationController::class, 'store']);
+        Route::post('/{slug}/collaborations/{collaboration}/approve', [ApiCollaborationController::class, 'approve']);
+        Route::post('/{slug}/collaborations/{collaboration}/reject', [ApiCollaborationController::class, 'reject']);
     });
 });
