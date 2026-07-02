@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\TermsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Ideas\ChangeRequestController;
+use App\Http\Controllers\Ideas\CollaborationController;
 use App\Http\Controllers\Ideas\IdeaController;
 use App\Http\Controllers\Ideas\InvitationController;
 use App\Http\Controllers\Points\LeaderboardController;
@@ -112,6 +113,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::put('/{slug}', [IdeaController::class, 'update'])->name('update');
         Route::delete('/{slug}', [IdeaController::class, 'destroy'])->name('destroy');
         Route::get('/{slug}/documents/{document}', [IdeaController::class, 'downloadDocument'])->name('documents.download');
+        Route::get('/{slug}/ip-documents/{ipDocument}', [IdeaController::class, 'downloadIpDocument'])->name('ip-documents.download');
 
         Route::get('/{slug}/changes', [ChangeRequestController::class, 'index'])->name('changes.index');
         Route::get('/{slug}/changes/create', [ChangeRequestController::class, 'create'])->name('changes.create');
@@ -119,5 +121,10 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::get('/{slug}/changes/{changeRequest}', [ChangeRequestController::class, 'show'])->name('changes.show');
         Route::post('/{slug}/changes/{changeRequest}/approve', [ChangeRequestController::class, 'approve'])->name('changes.approve');
         Route::post('/{slug}/changes/{changeRequest}/reject', [ChangeRequestController::class, 'reject'])->name('changes.reject');
+
+        Route::get('/{slug}/collaborations', [CollaborationController::class, 'index'])->name('collaborations.index');
+        Route::post('/{slug}/collaborations', [CollaborationController::class, 'store'])->name('collaborations.store');
+        Route::post('/{slug}/collaborations/{collaboration}/approve', [CollaborationController::class, 'approve'])->name('collaborations.approve');
+        Route::post('/{slug}/collaborations/{collaboration}/reject', [CollaborationController::class, 'reject'])->name('collaborations.reject');
     });
 });
