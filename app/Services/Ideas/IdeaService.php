@@ -3,9 +3,12 @@
 namespace App\Services\Ideas;
 
 use App\Mail\IdeaInvitationMail;
+use App\Models\CollaborationRequest;
 use App\Models\Idea;
 use App\Models\IdeaDocument;
 use App\Models\IdeaInvitation;
+use App\Models\IdeaIpDocument;
+use App\Models\IdeaIpRight;
 use App\Models\Point;
 use App\Models\User;
 use App\Services\AuditService;
@@ -23,8 +26,14 @@ class IdeaService
         private PointAwardService $pointAwardService,
     ) {}
 
-    public function create(User $user, array $data, ?UploadedFile $proposal = null, array $supportDocs = []): Idea
-    {
+    public function create(
+        User $user,
+        array $data,
+        ?UploadedFile $proposal = null,
+        array $supportDocs = [],
+        ?array $ipData = null,
+        array $ipDocuments = [],
+    ): Idea {
         $idea = Idea::create([
             'title' => $data['title'],
             'slug' => $this->generateUniqueSlug(),
@@ -52,6 +61,8 @@ class IdeaService
             }
         }
 
+        $this->handleIpData($idea, $ipData, $ipDocuments);
+
         if (! empty($data['team_emails'])) {
             $emails = array_map('trim', explode(',', $data['team_emails']));
             $emails = array_filter($emails, fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
@@ -63,8 +74,15 @@ class IdeaService
         return $idea;
     }
 
-    public function update(Idea $idea, User $user, array $data, ?UploadedFile $proposal = null, array $supportDocs = []): Idea
-    {
+    public function update(
+        Idea $idea,
+        User $user,
+        array $data,
+        ?UploadedFile $proposal = null,
+        array $supportDocs = [],
+        ?array $ipData = null,
+        array $ipDocuments = [],
+    ): Idea {
         if ($proposal) {
             $idea->documents()->where('type', 'proposal')->each(fn ($doc) => $this->deleteDocument($doc));
             $this->storeDocument($idea, 'proposal', $proposal);
@@ -75,6 +93,8 @@ class IdeaService
                 $this->storeDocument($idea, 'supporting', $doc);
             }
         }
+
+        $this->handleIpData($idea, $ipData, $ipDocuments);
 
         $idea->update($data);
 
@@ -94,7 +114,52 @@ class IdeaService
     {
         return Idea::with(['author', 'category'])
             ->latest()
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->appends(request()->query());
+    }
+
+    public function getMyIdeas(User $user, int $perPage = 15): LengthAwarePaginator
+    {
+        return Idea::with(['author', 'category'])
+            ->where('author_id', $user->id)
+            ->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
+    }
+
+    public function getOpenForCollaboration(User $user, int $perPage = 15): LengthAwarePaginator
+    {
+        $statusSubquery = CollaborationRequest::select('status')
+            ->whereColumn('idea_id', 'ideas.id')
+            ->where('user_id', $user->id)
+            ->latest()
+            ->limit(1);
+
+        return Idea::with(['author', 'category'])
+            ->select('ideas.*')
+            ->selectSub($statusSubquery, 'collaboration_status')
+            ->where('collaboration_enabled', true)
+            ->where('author_id', '!=', $user->id)
+            ->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
+    }
+
+    public function getMyContributions(User $user, int $perPage = 15): LengthAwarePaginator
+    {
+        $invitedIdeaIds = IdeaInvitation::where(function ($q) use ($user) {
+            $q->where('email', $user->email)
+                ->orWhere('user_id', $user->id);
+        })
+            ->where('role', 'contributor')
+            ->where('status', 'accepted')
+            ->pluck('idea_id');
+
+        return Idea::with(['author', 'category'])
+            ->whereIn('id', $invitedIdeaIds)
+            ->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
     }
 
     protected function storeDocument(Idea $idea, string $type, UploadedFile $file): IdeaDocument
@@ -133,6 +198,63 @@ class IdeaService
         if ($point && $point->is_active) {
             $this->pointAwardService->award($user, $point);
         }
+    }
+
+    protected function handleIpData(Idea $idea, ?array $ipData, array $ipDocuments): void
+    {
+        if ($ipData === null) {
+            return;
+        }
+
+        $ipRight = $idea->ipRight()->first();
+
+        $data = [
+            'has_ip_protection' => $ipData['has_ip_protection'] ?? false,
+            'patent_number' => $ipData['patent_number'] ?? null,
+            'status' => 'pending',
+            'consent_given' => $ipData['consent_given'] ?? false,
+            'consent_given_at' => now(),
+        ];
+
+        if (! $data['has_ip_protection'] && $ipRight) {
+            foreach ($ipRight->documents as $doc) {
+                $this->deleteIpDocument($doc);
+            }
+        }
+
+        if ($ipRight) {
+            $ipRight->update($data);
+        } else {
+            $data['idea_id'] = $idea->id;
+            $ipRight = IdeaIpRight::create($data);
+        }
+
+        if ($data['has_ip_protection']) {
+            foreach ($ipDocuments as $doc) {
+                if ($doc instanceof UploadedFile) {
+                    $this->storeIpDocument($ipRight, $doc);
+                }
+            }
+        }
+    }
+
+    protected function storeIpDocument(IdeaIpRight $ipRight, UploadedFile $file): IdeaIpDocument
+    {
+        $path = $file->store('ip-documents/'.$ipRight->idea_id, 'local');
+
+        return IdeaIpDocument::create([
+            'idea_ip_right_id' => $ipRight->id,
+            'file_path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+        ]);
+    }
+
+    protected function deleteIpDocument(IdeaIpDocument $document): void
+    {
+        Storage::disk('local')->delete($document->file_path);
+        $document->delete();
     }
 
     protected function createInvitations(Idea $idea, User $invitedBy, array $emails): void
