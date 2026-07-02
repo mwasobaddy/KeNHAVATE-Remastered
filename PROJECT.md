@@ -134,21 +134,27 @@ GET    /audit                  → AuditController@index       (permission: audi
 
 **Idea routes (web)** `[auth, verified, onboarding.complete, terms]`:
 ```
-GET    /ideas                   → IdeaController@index
-GET    /ideas/create            → IdeaController@create
-POST   /ideas                   → IdeaController@store
-GET    /ideas/{slug}            → IdeaController@show
-GET    /ideas/{slug}/edit       → IdeaController@edit
-PUT    /ideas/{slug}            → IdeaController@update
-DELETE /ideas/{slug}            → IdeaController@destroy
-GET    /ideas/{slug}/documents/{document} → IdeaController@downloadDocument
+GET    /ideas                                         → IdeaController@index
+GET    /ideas/create                                  → IdeaController@create
+POST   /ideas                                         → IdeaController@store
+GET    /ideas/{slug}                                  → IdeaController@show
+GET    /ideas/{slug}/edit                             → IdeaController@edit
+PUT    /ideas/{slug}                                  → IdeaController@update
+DELETE /ideas/{slug}                                  → IdeaController@destroy
+GET    /ideas/{slug}/documents/{document}              → IdeaController@downloadDocument
+GET    /ideas/{slug}/ip-documents/{ipDocument}         → IdeaController@downloadIpDocument
 
-GET    /ideas/{slug}/changes                              → ChangeRequestController@index
-GET    /ideas/{slug}/changes/create                        → ChangeRequestController@create
-POST   /ideas/{slug}/changes                               → ChangeRequestController@store
-GET    /ideas/{slug}/changes/{changeRequest}                → ChangeRequestController@show
-POST   /ideas/{slug}/changes/{changeRequest}/approve        → ChangeRequestController@approve
-POST   /ideas/{slug}/changes/{changeRequest}/reject         → ChangeRequestController@reject
+GET    /ideas/{slug}/changes                                          → ChangeRequestController@index
+GET    /ideas/{slug}/changes/create                                    → ChangeRequestController@create
+POST   /ideas/{slug}/changes                                           → ChangeRequestController@store
+GET    /ideas/{slug}/changes/{changeRequest}                            → ChangeRequestController@show
+POST   /ideas/{slug}/changes/{changeRequest}/approve                    → ChangeRequestController@approve
+POST   /ideas/{slug}/changes/{changeRequest}/reject                     → ChangeRequestController@reject
+
+GET    /ideas/{slug}/collaborations                                    → CollaborationController@index
+POST   /ideas/{slug}/collaborations                                    → CollaborationController@store
+POST   /ideas/{slug}/collaborations/{collaboration}/approve             → CollaborationController@approve
+POST   /ideas/{slug}/collaborations/{collaboration}/reject              → CollaborationController@reject
 ```
 
 **Invitation routes (web)** (no middleware — public + guest):
@@ -392,7 +398,7 @@ When an idea is created, `Idea::createTeamRoles()` generates three roles scoped 
 |------|-------------|
 | `author` | view, edit, delete, propose_changes, approve_changes, manage_contributors |
 | `contributor` | view, propose_changes |
-| `collaborator` | view |
+| `collaborator` | view, propose_changes |
 
 ### How Teams Work
 
@@ -437,10 +443,12 @@ Categories are seeded via `IdeaCategorySeeder` with 8 categories (Technology & S
 | cost_benefit_analysis | text | Cost/benefit breakdown |
 | category_id | FK→idea_categories | Category |
 | author_id | FK→users | Creator |
+| collaboration_enabled | boolean | Whether others can request to collaborate (default true) |
 | status | string | draft, submitted, approved, rejected |
 | deleted_at | timestamp (nullable) | Soft delete support |
 
 On creation, `Idea::booted()` calls `createTeamRoles()` to generate per-idea roles (author, contributor, collaborator).
+The `ipRight()` HasOne relationship provides access to the linked `IdeaIpRight` record.
 
 **`IdeaCategory`** — `app/Models/IdeaCategory.php`
 | Field | Type | Description |
@@ -453,14 +461,13 @@ On creation, `Idea::booted()` calls `createTeamRoles()` to generate per-idea rol
 | Field | Type | Description |
 |-------|------|-------------|
 | idea_id | FK→ideas | Parent idea |
-| user_id | FK→users | Uploader |
 | type | string | proposal or supporting |
-| filename | string | Original filename |
-| filepath | string | Storage path (private/ideas/) |
+| file_path | string | Storage path (private/ideas/) |
+| original_name | string | Original filename |
+| file_size | integer | File size in bytes |
 | mime_type | string | e.g. application/pdf |
-| size | integer | File size in bytes |
 
-Documents are append-only (no `updated_at` column). Files are stored privately on the `local` disk at `storage/app/private/ideas/`.
+Documents are append-only (no `updated_at` column). Files are stored privately on the `local` disk at `storage/app/private/ideas/`. Downloaded via `IdeaController::downloadDocument()`.
 
 **`IdeaInvitation`** — `app/Models/IdeaInvitation.php`
 | Field | Type | Description |
@@ -483,6 +490,30 @@ Supports two flows: existing users are assigned `contributor` role immediately; 
 | reviewed_by | FK→users (nullable) | Reviewer |
 | feedback | text (nullable) | Review feedback |
 
+**`IdeaIpRight`** — `app/Models/IdeaIpRight.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| idea_id | FK→ideas (unique) | Parent idea (one IP right per idea) |
+| has_ip_protection | boolean | User indicates whether IP is already protected |
+| patent_number | string (nullable) | Optional patent/registration number |
+| consent_given | boolean | User gave KeNHA consent for IP processing |
+| consent_given_at | timestamp (nullable) | When consent was given |
+| status | string | pending, in_review, registered, rejected |
+
+On create/update, consent is recorded for all submissions regardless of IP protection status.
+The `documents()` HasMany relationship provides access to patent document files.
+
+**`IdeaIpDocument`** — `app/Models/IdeaIpDocument.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| idea_ip_right_id | FK→idea_ip_rights | Parent IP right |
+| file_path | string | Storage path (private/ip-documents/) |
+| original_name | string | Original filename |
+| file_size | integer | File size in bytes |
+| mime_type | string | e.g. application/pdf |
+
+Append-only (no `updated_at`). Downloaded via `IdeaController::downloadIpDocument()`.
+
 **`CollaborationRequest`** — `app/Models/CollaborationRequest.php`
 | Field | Type | Description |
 |-------|------|-------------|
@@ -496,10 +527,21 @@ Supports two flows: existing users are assigned `contributor` role immediately; 
 ### Services
 
 **`IdeaService`** — `app/Services/Ideas/IdeaService.php`
-- `create(data, user)` — Creates idea + slug, handles file uploads, sends team invitations, awards 50pts to author and each contributor
-- `update(idea, data)` — Updates idea fields, manages document replacements
+- `create(user, data, proposal?, supportDocs?, ipData?, ipDocuments?)` — Creates idea + slug, handles file uploads, sends team invitations, awards 50pts to author and each contributor. Accepts optional IP data (has_ip_protection, patent_number, consent_given) and IP document files
+- `update(idea, user, data, proposal?, supportDocs?, ipData?, ipDocuments?)` — Updates idea fields, manages document replacements and IP data
 - `delete(idea)` — Soft deletes with audit logging
+- `getMyIdeas(user)` — Paginated ideas authored by the user
+- `getOpenForCollaboration(user)` — Paginated ideas with collaboration enabled, excluding user's own
+- `getMyContributions(user)` — Paginated ideas where user is an invited/accepted contributor
+- `handleIpData(idea, ipData, ipDocuments)` — Creates/updates `IdeaIpRight` record, records consent timestamp, stores/deletes IP documents based on has_ip_protection toggle
 - Team emails accepted as comma-separated string, split and validated server-side
+
+**`CollaborationRequestService`** — `app/Services/Ideas/CollaborationRequestService.php`
+- `request(idea, user, message)` — Create collaboration request (validates: idea exists, collaboration enabled, user not author, no existing pending request)
+- `approve(request, reviewer, feedback?)` — Assign `collaborator` role on the idea's team, audit log (`collaboration_approved`)
+- `reject(request, reviewer, feedback)` — Mark rejected, send `CollaborationRejectedMail`, audit log (`collaboration_rejected`)
+- `getForIdea(idea)` — All requests for an idea (with user + reviewer relations)
+- `getPendingForIdea(idea)` — Only pending requests
 
 **`InvitationService`** — `app/Services/Ideas/InvitationService.php`
 - `findByToken(token)` — Look up pending invitation
@@ -539,6 +581,54 @@ Supports two flows: existing users are assigned `contributor` role immediately; 
 ```
 
 Each change request batches multiple field edits (title, description, problem_statement, proposed_solution, cost_benefit_analysis) with old/new values preserved in `proposed_data` for full history. Rejected requests can be resubmitted as new proposals.
+
+### Collaboration Request Workflow
+
+```
+[User requests to collaborate]
+    → Idea must have collaboration_enabled = true
+    → User must not be the idea author
+    → No existing pending request for this user+idea
+    → POST /ideas/{slug}/collaborations → Creates pending request
+    → Email sent to idea author (CollaborationRequestedMail)
+
+[Author reviews pending requests]
+    → GET /ideas/{slug}/collaborations → List of pending requests
+    → Approve → Assigns collaborator role, sends CollaborationApprovedMail
+    → Reject → Records feedback, sends CollaborationRejectedMail
+```
+
+Collaboration requests award no points on approval — points are earned later through actual content contributions (planned future feature). `collaborator` role includes `idea.propose_changes` permission, enabling the collaborator to propose change requests like contributors.
+
+### Intellectual Property Rights
+
+Each idea has an optional one-to-one IP rights record collected during creation/editing:
+
+```
+[IP Section in Create/Edit Form]
+    → Radio: "Is this idea IP protected?" (Yes / No)
+    
+    [If Yes]
+        → Patent Number (optional text input)
+        → Upload Patent Documents (PDF, DOC, DOCX, ≤10MB)
+    
+    [If No]
+        → Warning: "This idea is not currently IP protected. By submitting,
+          you give KeNHA consent to proceed with the initialization of
+          Intellectual Property for this idea."
+    
+    [Always — required checkbox]
+        → Consent checkbox adapts text based on selection:
+            • IP protected: "review and processing of this idea"
+            • Not protected: "initialization of Intellectual Property"
+        → Validation: `required|accepted` (must be checked)
+```
+
+**Storage**: Patent documents stored on `local` disk at `storage/app/private/ip-documents/{idea_id}/`. The `idea_ip_documents` table is append-only (no `updated_at`). Switching from "Yes" to "No" removes existing IP documents.
+
+**Show page**: Displays IP card with status badges (IP Protected / Not Protected), registration status, patent number, document download links, and consent date.
+
+**Download endpoint**: `GET /ideas/{slug}/ip-documents/{ipDocument}` → `IdeaController::downloadIpDocument()`
 
 ---
 
@@ -609,6 +699,8 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 | `idea_categories` | Pre-seeded categories for classifying ideas |
 | `idea_documents` | File attachments (proposals & supporting docs, append-only) |
 | `idea_invitations` | Pending team member invitations (token-based) |
+| `idea_ip_rights` | One-to-one IP right record per idea (has_ip_protection, patent_number, consent_given, status) |
+| `idea_ip_documents` | Patent document files attached to an IP right record |
 | `change_requests` | Proposed changes to ideas (diff-based, full history) |
 | `collaboration_requests` | Requests to join/collaborate on ideas |
 | `audit_logs` | Structured audit trail for all key actions |
@@ -654,10 +746,13 @@ resources/js/pages/
 │   ├── edit.tsx           → Edit an existing point action
 │   └── transactions.tsx   → Paginated audit log of all point awards
 ├── ideas/
-│   ├── index.tsx          → Paginated table of ideas with status badges
-│   ├── create.tsx         → Full form with file uploads, category select, team emails input
-│   ├── show.tsx           → Detail view with grouped documents + action bar
+│   ├── index.tsx          → Paginated table with 3 tabs (My Ideas / Open for Collaboration / My Contributions). Action icons with Lucide + Tooltips (Eye, Pencil, Trash2 with delete dialog, UserPlus). Tab state via ?tab= query param (default: my-ideas).
+│   ├── create.tsx         → Full form with file uploads, category select, team emails input, IP section (radio + conditional fields + required consent checkbox)
+│   ├── edit.tsx           → Pre-populated form with existing IP data, document management, consent checkbox
+│   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog
 │   ├── invitation.tsx     → Invitation acceptance page (idea title, inviter, sign-in prompt)
+│   ├── collaborations/
+│   │   └── index.tsx      → Pending collaboration request list with inline approve/reject forms
 │   └── changes/
 │       ├── index.tsx      → List of change requests with status badges
 │       ├── create.tsx     → Select fields to edit, enter new values against originals
@@ -906,10 +1001,14 @@ Audit/
 | Action | Triggered By |
 |--------|-------------|
 | `idea_created` | Idea creation |
+| `idea_updated` | Idea update |
 | `idea_deleted` | Idea soft delete |
 | `change_requested` | Change request submitted |
 | `change_approved` | Change request approved |
 | `change_rejected` | Change request rejected |
+| `collaboration_requested` | Collaboration request submitted |
+| `collaboration_approved` | Collaboration request approved |
+| `collaboration_rejected` | Collaboration request rejected |
 | `point_awarded` | Point award |
 | `team_member_added` | Invitation auto-accepted via onboarding |
 | `team_member_invited` | Invitation email sent to non-user |
@@ -1046,3 +1145,48 @@ This keeps each feature self-contained, avoids the `admin` word, and mirrors the
 - `AuditLog` model stores action, actor, target, metadata, and IP address
 - `AuditService` provides a clean interface for logging across all services
 - Viewable at `/audit` for authorized roles (admin, board)
+
+### Why Collaboration Requests Award No Points on Approval?
+
+- Points should reflect actual content contributions, not just joining an idea
+- The `collaborator` role already grants `propose_changes` permission — the ability to contribute is the reward
+- Future feature: award points when a collaborator's change request is approved
+
+### Why Collaborator Role Includes `propose_changes`?
+
+- Symmetry with contributor: both contributor and collaborator can propose changes to the idea
+- Previously collaborator only had `view` — this limited their ability to contribute
+- The author retains exclusive `approve_changes` and `manage_contributors` permissions
+
+### Why Consent Is Required for All Users Regardless of IP Status?
+
+- When IP is not protected: user consents to KeNHA initiating IP protection
+- When IP is already protected: user consents to KeNHA reviewing and processing the idea including its IP
+- Two-tier consent text adapts based on the user's IP protection selection
+- `required|accepted` validation ensures the checkbox cannot be skipped
+- Consent timestamp (`consent_given_at`) is recorded for audit purposes
+
+### Why Separate `idea_ip_rights` and `idea_ip_documents` Tables?
+
+- One-to-one IP right record keeps IP metadata separate from the idea itself
+- Documents are append-only (no `updated_at`) following the same pattern as `idea_documents`
+- Files stored under `private/ip-documents/{idea_id}/` on the `local` disk
+- Switching from IP protected to unprotected deletes existing patent documents
+- The `status` field (pending → in_review → registered/rejected) enables a future IP review workflow
+
+### Why Index Page Has Three Tabs Instead of Flat List?
+
+- "All Ideas" removed to focus on user-relevant views
+- **My Ideas** (default) — ideas the user authored
+- **Open for Collaboration** — ideas seeking collaborators, excluding user's own
+- **My Contributions** — ideas where user was invited as contributor
+- Tab state stored as `?tab=` query param for shareable/bookmarkable URLs
+- `select('ideas.*')` must always precede `selectSub()` to prevent subquery overriding all columns
+
+### Why Action Buttons Changed to Icons with Tooltips?
+
+- Reduces visual clutter in the ideas table row
+- Lucide icons (Eye, Pencil, Trash2, UserPlus) are universally recognized
+- Radix UI Tooltip provides on-hover labels for clarity
+- Delete confirmation uses a Dialog to prevent accidental deletion
+- Consistent with modern table UI patterns
