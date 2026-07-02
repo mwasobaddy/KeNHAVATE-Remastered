@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Ideas;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ideas\StoreIdeaRequest;
 use App\Http\Requests\Ideas\UpdateIdeaRequest;
+use App\Models\CollaborationRequest;
 use App\Models\IdeaDocument;
+use App\Models\IdeaIpDocument;
 use App\Services\AuditService;
 use App\Services\Ideas\IdeaCategoryService;
 use App\Services\Ideas\IdeaService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -22,10 +25,21 @@ class IdeaController extends Controller
         private AuditService $auditService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $tab = $request->query('tab', 'my-ideas');
+        $user = $request->user();
+
+        $ideas = match ($tab) {
+            'my-ideas' => $this->ideaService->getMyIdeas($user),
+            'open-for-collaboration' => $this->ideaService->getOpenForCollaboration($user),
+            'my-contributions' => $this->ideaService->getMyContributions($user),
+            default => $this->ideaService->getAll(),
+        };
+
         return inertia('ideas/index', [
-            'ideas' => $this->ideaService->getAll(),
+            'ideas' => $ideas,
+            'currentTab' => $tab,
         ]);
     }
 
@@ -40,9 +54,11 @@ class IdeaController extends Controller
     {
         $idea = $this->ideaService->create(
             $request->user(),
-            $request->safe()->except(['proposal_file', 'support_documents']),
+            $request->safe()->except(['proposal_file', 'support_documents', 'has_ip_protection', 'patent_number', 'consent_given', 'ip_documents']),
             $request->file('proposal_file'),
             $request->file('support_documents', []),
+            $request->safe()->only(['has_ip_protection', 'patent_number', 'consent_given']),
+            $request->file('ip_documents', []),
         );
 
         return redirect()->route('ideas.show', $idea->slug)
@@ -57,8 +73,35 @@ class IdeaController extends Controller
             abort(404);
         }
 
+        $idea->load(['author', 'category', 'invitations', 'documents', 'ipRight.documents']);
+
+        $user = request()->user();
+        $isAuthor = $idea->author_id === $user->id;
+        $hasPendingRequest = CollaborationRequest::where('idea_id', $idea->id)
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->exists();
+        $hasApprovedRequest = CollaborationRequest::where('idea_id', $idea->id)
+            ->where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->exists();
+        $hasAcceptedInvitation = $idea->invitations->contains(
+            fn ($i) => $i->email === $user->email && $i->status === 'accepted'
+        );
+        $alreadyInvolved = $hasApprovedRequest || $hasAcceptedInvitation;
+        $canRequestCollaboration = $idea->collaboration_enabled && ! $isAuthor && ! $hasPendingRequest && ! $alreadyInvolved;
+        $hasPendingCount = CollaborationRequest::where('idea_id', $idea->id)
+            ->where('status', 'pending')
+            ->count();
+        $canProposeChanges = $idea->userCan($user, 'idea.propose_changes');
+        $canApproveChanges = $idea->userCan($user, 'idea.approve_changes');
+
         return inertia('ideas/show', [
-            'idea' => $idea->load(['author', 'category', 'invitations', 'documents']),
+            'idea' => $idea,
+            'canRequestCollaboration' => $canRequestCollaboration,
+            'hasPendingCollaborationCount' => $hasPendingCount,
+            'canProposeChanges' => $canProposeChanges,
+            'canApproveChanges' => $canApproveChanges,
         ]);
     }
 
@@ -75,7 +118,7 @@ class IdeaController extends Controller
         }
 
         return inertia('ideas/edit', [
-            'idea' => $idea->load('documents'),
+            'idea' => $idea->load(['documents', 'ipRight.documents']),
             'categories' => $this->ideaCategoryService->getAll(),
         ]);
     }
@@ -91,9 +134,11 @@ class IdeaController extends Controller
         $this->ideaService->update(
             $idea,
             $request->user(),
-            $request->safe()->except(['proposal_file', 'support_documents']),
+            $request->safe()->except(['proposal_file', 'support_documents', 'has_ip_protection', 'patent_number', 'consent_given', 'ip_documents']),
             $request->file('proposal_file'),
             $request->file('support_documents', []),
+            $request->safe()->only(['has_ip_protection', 'patent_number', 'consent_given']),
+            $request->file('ip_documents', []),
         );
 
         return redirect()->route('ideas.show', $idea->slug)
@@ -113,6 +158,21 @@ class IdeaController extends Controller
         }
 
         return Storage::disk('local')->download($document->file_path, $document->original_name);
+    }
+
+    public function downloadIpDocument(string $slug, IdeaIpDocument $ipDocument): StreamedResponse|RedirectResponse
+    {
+        $idea = $this->ideaService->findBySlug($slug);
+
+        if (! $idea || ! $idea->ipRight || $ipDocument->idea_ip_right_id !== $idea->ipRight->id) {
+            abort(404);
+        }
+
+        if (! Storage::disk('local')->exists($ipDocument->file_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download($ipDocument->file_path, $ipDocument->original_name);
     }
 
     public function destroy(string $slug): RedirectResponse
