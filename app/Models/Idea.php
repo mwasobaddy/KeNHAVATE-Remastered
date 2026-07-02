@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -83,6 +84,11 @@ class Idea extends Model
         return $this->hasMany(IdeaInvitation::class);
     }
 
+    public function ipRight(): HasOne
+    {
+        return $this->hasOne(IdeaIpRight::class);
+    }
+
     public function createTeamRoles(): void
     {
         $previous = $this->bootTeamContext();
@@ -102,6 +108,7 @@ class Idea extends Model
             ],
             'collaborator' => [
                 'idea.view',
+                'idea.propose_changes',
             ],
         ];
 
