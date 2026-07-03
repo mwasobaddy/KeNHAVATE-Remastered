@@ -6,10 +6,13 @@ use App\Http\Controllers\Api\Auth\GoogleAuthController;
 use App\Http\Controllers\Api\Auth\OnboardingController;
 use App\Http\Controllers\Api\Auth\OtpVerificationController;
 use App\Http\Controllers\Api\Auth\TermsController;
+use App\Http\Controllers\Api\Ideas\AssignmentController as ApiAssignmentController;
 use App\Http\Controllers\Api\Ideas\ChangeRequestController as ApiChangeRequestController;
+use App\Http\Controllers\Api\Ideas\ClassificationController as ApiClassificationController;
 use App\Http\Controllers\Api\Ideas\CollaborationController as ApiCollaborationController;
 use App\Http\Controllers\Api\Ideas\IdeaController as ApiIdeaController;
 use App\Http\Controllers\Api\Ideas\InvitationController as ApiInvitationController;
+use App\Http\Controllers\Api\Ideas\ReviewController as ApiReviewController;
 use App\Http\Controllers\Api\Points\LeaderboardController;
 use App\Http\Controllers\Api\Points\PointController;
 use App\Http\Controllers\Api\Points\TransactionController;
@@ -52,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('ideas')->group(function () {
         Route::get('/', [ApiIdeaController::class, 'index']);
         Route::post('/', [ApiIdeaController::class, 'store']);
+        Route::get('/review', [ApiReviewController::class, 'index']);
         Route::get('/{slug}', [ApiIdeaController::class, 'show']);
         Route::put('/{slug}', [ApiIdeaController::class, 'update']);
         Route::delete('/{slug}', [ApiIdeaController::class, 'destroy']);
@@ -66,5 +70,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{slug}/collaborations', [ApiCollaborationController::class, 'store']);
         Route::post('/{slug}/collaborations/{collaboration}/approve', [ApiCollaborationController::class, 'approve']);
         Route::post('/{slug}/collaborations/{collaboration}/reject', [ApiCollaborationController::class, 'reject']);
+
+        Route::post('/{slug}/assign', [ApiAssignmentController::class, 'store']);
+        Route::post('/{slug}/classify', [ApiClassificationController::class, 'store']);
     });
 });
