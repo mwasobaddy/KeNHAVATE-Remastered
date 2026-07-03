@@ -19,18 +19,18 @@ Laravel 13 + PHP 8.5   (Backend API + Inertia server)
 The application follows a **service-oriented architecture**:
 
 - **Controllers** — Thin HTTP handlers that delegate to services
-- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService, PointService, PointAwardService, IdeaService, IdeaCategoryService, ChangeRequestService, InvitationService, AuditService)
+- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService, PointService, PointAwardService, IdeaService, IdeaCategoryService, AssignmentService, ClassificationService, ChangeRequestService, InvitationService, AuditService)
 - **Form Requests** — Validation logic extracted from controllers
 - **Models** — Eloquent models with relationships and Spatie permission traits
 - **Shared frontend/backend** — Same backend serves both web (Inertia SPA) and mobile (Sanctum API)
 
 Feature controllers are organized in subdirectories by domain:
 - `Auth\` — Authentication controllers (web) with `Api\Auth\` mirrors
-- `Ideas\` — Idea management, change requests, invitations with `Api\Ideas\` mirrors
+- `Ideas\` — Idea management, assignments, classifications, review dashboard, change requests, invitations, collaborations with `Api\Ideas\` mirrors (AssignmentController, ClassificationController, ReviewController, ChangeRequestController, CollaborationController, InvitationController)
 - `Points\` — Gamification with `Api\Points\` mirrors
 - `Audit\` — Audit trail with `Api\Audit\` mirrors
 
-Web controllers live under `App\Http\Controllers\`, API controllers mirror them under `App\Http\Controllers\Api\` with identical method names.
+Web controllers live under `App\Http\Controllers\`, API controllers mirror them under `App\Http\Controllers\Api\` with identical method names. Both web (`ReviewController`) and API (`Api\Ideas\ReviewController`) versions serve the review dashboard with permission-gated sections.
 
 ---
 
@@ -135,6 +135,7 @@ GET    /audit                  → AuditController@index       (permission: audi
 **Idea routes (web)** `[auth, verified, onboarding.complete, terms]`:
 ```
 GET    /ideas                                         → IdeaController@index
+GET    /ideas/review                                  → ReviewController@index
 GET    /ideas/create                                  → IdeaController@create
 POST   /ideas                                         → IdeaController@store
 GET    /ideas/{slug}                                  → IdeaController@show
@@ -180,6 +181,7 @@ GET    /leaderboard            → LeaderboardController@index
 ```
 GET    api/ideas                                  → Api\Ideas\IdeaController@index
 POST   api/ideas                                  → Api\Ideas\IdeaController@store
+GET    api/ideas/review                           → Api\Ideas\ReviewController@index
 GET    api/ideas/{slug}                           → Api\Ideas\IdeaController@show
 PUT    api/ideas/{slug}                           → Api\Ideas\IdeaController@update
 DELETE api/ideas/{slug}                           → Api\Ideas\IdeaController@destroy
@@ -189,6 +191,14 @@ POST   api/ideas/{slug}/changes                   → Api\Ideas\ChangeRequestCon
 GET    api/ideas/{slug}/changes/{changeRequest}    → Api\Ideas\ChangeRequestController@show
 POST   api/ideas/{slug}/changes/{changeRequest}/approve → Api\Ideas\ChangeRequestController@approve
 POST   api/ideas/{slug}/changes/{changeRequest}/reject  → Api\Ideas\ChangeRequestController@reject
+
+GET    api/ideas/{slug}/collaborations                → Api\Ideas\CollaborationController@index
+POST   api/ideas/{slug}/collaborations                → Api\Ideas\CollaborationController@store
+POST   api/ideas/{slug}/collaborations/{collaboration}/approve → Api\Ideas\CollaborationController@approve
+POST   api/ideas/{slug}/collaborations/{collaboration}/reject  → Api\Ideas\CollaborationController@reject
+
+POST   api/ideas/{slug}/assign                       → Api\Ideas\AssignmentController@store
+POST   api/ideas/{slug}/classify                      → Api\Ideas\ClassificationController@store
 ```
 
 **Invitation routes (API)** (no auth — public):
@@ -386,8 +396,7 @@ Uses `spatie/laravel-permission` v6 with **teams enabled**. Each idea is a Spati
 
 | Role | Permissions | Assigned To |
 |------|-------------|-------------|
-| `admin` | All permissions + `points.create`, `points.edit`, `points.delete`, `points.view`, `audit.view` | Super administrators (seeded: `kelvinramsiel@gmail.com`) |
-| `board` | `idea.view`, `idea.approve_changes`, `points.view`, `audit.view` | Board members who review and approve |
+| `admin` | All permissions | Super administrators (seeded: `kelvinramsiel@gmail.com`) |
 | `user` | `idea.create` | All registered users (assigned during onboarding) |
 
 ### Per-Idea Roles (team_id = idea.id)
@@ -443,12 +452,16 @@ Categories are seeded via `IdeaCategorySeeder` with 8 categories (Technology & S
 | cost_benefit_analysis | text | Cost/benefit breakdown |
 | category_id | FK→idea_categories | Category |
 | author_id | FK→users | Creator |
+| assigned_officer_id | FK→users (nullable) | RI&KM Officer processing this idea |
+| assigned_at | timestamp (nullable) | When officer was assigned |
+| classification_id | FK→idea_classifications (nullable) | Innovation, Research, Project, or Outside Mandate |
+| classified_at | timestamp (nullable) | When classification was recorded |
 | collaboration_enabled | boolean | Whether others can request to collaborate (default true) |
-| status | string | draft, submitted, approved, rejected |
+| status | string | draft, submitted, assigned, revision_requested, resubmitted, classified, dg_review, approved, declined, deferred, planned, closed, in_progress, completed, implemented |
 | deleted_at | timestamp (nullable) | Soft delete support |
 
 On creation, `Idea::booted()` calls `createTeamRoles()` to generate per-idea roles (author, contributor, collaborator).
-The `ipRight()` HasOne relationship provides access to the linked `IdeaIpRight` record.
+Relationships: `ipRight()` HasOne → `IdeaIpRight`, `assignedOfficer()` BelongsTo → `User`, `classification()` BelongsTo → `IdeaClassification`, `reviews()` HasMany → `IdeaReview`.
 
 **`IdeaCategory`** — `app/Models/IdeaCategory.php`
 | Field | Type | Description |
@@ -533,7 +546,11 @@ Append-only (no `updated_at`). Downloaded via `IdeaController::downloadIpDocumen
 - `getMyIdeas(user)` — Paginated ideas authored by the user
 - `getOpenForCollaboration(user)` — Paginated ideas with collaboration enabled, excluding user's own
 - `getMyContributions(user)` — Paginated ideas where user is an invited/accepted contributor
+- `getPendingAssignment()` — Paginated submitted ideas with no officer assigned (for DD)
+- `getMyAssignments(user)` — Paginated ideas where user is assigned as officer (status: assigned, resubmitted)
+- `getPendingDecisions()` — Paginated ideas in dg_review status awaiting DG decision
 - `handleIpData(idea, ipData, ipDocuments)` — Creates/updates `IdeaIpRight` record, records consent timestamp, stores/deletes IP documents based on has_ip_protection toggle
+- `notifyReviewers(idea)` — Queries users with `idea.receive_new_submission_notifications` permission and emails them a `NewIdeaSubmittedMail` with idea details and link
 - Team emails accepted as comma-separated string, split and validated server-side
 
 **`CollaborationRequestService`** — `app/Services/Ideas/CollaborationRequestService.php`
@@ -552,6 +569,21 @@ Append-only (no `updated_at`). Downloaded via `IdeaController::downloadIpDocumen
 - `propose(idea, user, data)` — Create pending change request, notify author
 - `approve(changeRequest, reviewer, feedback?)` — Auto-apply changes to idea, audit log
 - `reject(changeRequest, reviewer, feedback)` — Mark rejected with feedback, notify proposer
+
+### Idea Submission Notification Flow
+
+```
+[User submits an idea]
+    → IdeaService::create() runs all creation logic
+    → notifyReviewers() queries users with `idea.receive_new_submission_notifications` permission
+    → For each matching user: sends NewIdeaSubmittedMail (title, author, category, link to idea)
+```
+
+This permission is assigned to `admin` by default and can be granted directly to any user. It is intentionally **not tied to a specific role** — any user can be granted this permission at any time, making the notification system flexible. To assign it to a user:
+
+```php
+$user->givePermissionTo('idea.receive_new_submission_notifications');
+```
 
 ### Invitation Flow
 
@@ -630,6 +662,79 @@ Each idea has an optional one-to-one IP rights record collected during creation/
 
 **Download endpoint**: `GET /ideas/{slug}/ip-documents/{ipDocument}` → `IdeaController::downloadIpDocument()`
 
+### Review Workflow
+
+The idea review process follows the KeNHA RI&KM policy (section 2.3.1):
+
+```
+[Idea submitted] → status: submitted
+    ↓ (appears in "Pending Assignment" on review dashboard)
+[DD assigns RI&KM Officer] → status: assigned
+    ↓ (appears in officer's "My Assignments" on review dashboard)
+    ↓
+[Officer reviews, may request revision ↔ author resubmits]
+    → revision_requested ↔ resubmitted (loop as needed)
+    ↓
+[Officer classifies idea] → status: classified, classification_id set
+    ↓
+[DD action based on type]
+    ├── Innovation → DD memo to DG → status: dg_review (appears in "Pending Decisions")
+    │   ├── DG approves → status: approved
+    │   ├── DG defers → status: deferred
+    │   └── DG declines → status: declined
+    ├── Research/Project → status: planned (logged for annual planning)
+    │   └── Deferred (max 2 cycles) → status: deferred → closed
+    └── Outside Mandate → status: closed
+    ↓
+[After approval] → status: in_progress → completed → implemented
+```
+
+Each review action (assignment, classification, revision request, decision) creates an `IdeaReview` record with the stage, action, reviewer, notes, and optional uploaded document. The full trail is visible to the idea author.
+
+### Review Dashboard
+
+A dedicated review dashboard (`/ideas/review`) surfaces ideas at each stage of the review pipeline:
+
+| Section | Shows | Permission |
+|---------|-------|------------|
+| **Pending Assignment** | Submitted ideas with no officer assigned | `idea.assign_officer` |
+| **My Assignments** | Ideas assigned to the current officer (status: assigned, resubmitted) | `idea.classify` |
+| **Pending Decisions** | Ideas in dg_review status awaiting DG decision | `idea.dg_decision` |
+
+Ideas **move between views** as they progress through the workflow — a submitted idea appears in Pending Assignment, then moves to My Assignments once assigned, then to Pending Decisions once classified as Innovation. Each section shows the ideas status, author, category, submission date, and assigned officer with a direct link to the idea detail page.
+
+The sidebar has individual navigation links under the **Review** group for each section, each gated by its respective permission. A "Back to Review Dashboard" button appears on the idea show page when the user has any review permission.
+
+**`IdeaClassification`** — `app/Models/IdeaClassification.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Display name (Innovation, Research, Project, Outside Mandate) |
+| slug | string | Unique URL slug |
+| description | text (nullable) | Description of the classification type |
+
+Seeded via `IdeaClassificationSeeder` with the 4 types defined in the RI&KM policy.
+
+**`IdeaReview`** — `app/Models/IdeaReview.php`
+| Field | Type | Description |
+|-------|------|-------------|
+| idea_id | FK→ideas | Parent idea |
+| reviewer_id | FK→users | Who performed the review action |
+| stage | string | Which step in the workflow (assignment, classification, revision, dg_decision, planning, execution, close) |
+| action | string | Specific action taken (assigned, classified, revision_requested, resubmitted, memo_to_dg, approved, declined, etc.) |
+| notes | text (nullable) | Internal notes or feedback for author |
+| document_path | string (nullable) | Uploaded memo, decision letter, or report |
+
+### Review Permissions
+
+Permissions are assigned directly to users rather than tied to specific global roles. This allows any user to be granted review capabilities regardless of their role.
+
+| Permission | Purpose | Typical Holder |
+|-----------|---------|---------------|
+| `idea.assign_officer` | Assign an RI&KM Officer to an idea | DD (RI&KM) |
+| `idea.classify` | Classify ideas into Innovation/Research/Project/Outside Mandate | RI&KM Officer |
+| `idea.dg_decision` | Record approval/deferral/decline decisions | DG |
+| `idea.review` | View review dashboard and pending reviews | DD, Officer, DG |
+
 ---
 
 ## API Module
@@ -701,6 +806,8 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 | `idea_invitations` | Pending team member invitations (token-based) |
 | `idea_ip_rights` | One-to-one IP right record per idea (has_ip_protection, patent_number, consent_given, status) |
 | `idea_ip_documents` | Patent document files attached to an IP right record |
+| `idea_classifications` | Lookup: Innovation, Research, Project, Outside Mandate |
+| `idea_reviews` | Structured review decision history (stage, action, notes, document_path) |
 | `change_requests` | Proposed changes to ideas (diff-based, full history) |
 | `collaboration_requests` | Requests to join/collaborate on ideas |
 | `audit_logs` | Structured audit trail for all key actions |
@@ -747,6 +854,7 @@ resources/js/pages/
 │   └── transactions.tsx   → Paginated audit log of all point awards
 ├── ideas/
 │   ├── index.tsx          → Paginated table with 3 tabs (My Ideas / Open for Collaboration / My Contributions). Action icons with Lucide + Tooltips (Eye, Pencil, Trash2 with delete dialog, UserPlus). Tab state via ?tab= query param (default: my-ideas).
+│   ├── review.tsx         → Review dashboard with tabbed sections (Pending Assignment, My Assignments, Pending Decisions). Each tab gated by permission (idea.assign_officer, idea.classify, idea.dg_decision).
 │   ├── create.tsx         → Full form with file uploads, category select, team emails input, IP section (radio + conditional fields + required consent checkbox)
 │   ├── edit.tsx           → Pre-populated form with existing IP data, document management, consent checkbox
 │   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog
@@ -922,9 +1030,16 @@ The sidebar (`resources/js/components/app-sidebar.tsx`) has two groups:
 | Group | Items | Access |
 |-------|-------|--------|
 | **General** | Dashboard, Ideas, Leaderboard | All authenticated users |
-| **Review** | Points, Audit Log | Gated by role (admin/board) |
+| **Review** | Pending Assignment, My Assignments, Pending Decisions, Points, Audit Log | Gated by permission |
 
-Points and Audit Log are hidden from regular users via the user's `roles` array, shared to the frontend through `HandleInertiaRequests`.
+**Review group** items:
+- **Pending Assignment** — `idea.assign_officer` permission (DD)
+- **My Assignments** — `idea.classify` permission (Officer)
+- **Pending Decisions** — `idea.dg_decision` permission (DG)
+- **Points** — `points.view` permission
+- **Audit Log** — `audit.view` permission
+
+Each sidebar item links to the review dashboard with a `?tab=` query param to pre-select the relevant section. Items hidden from users without the corresponding permission.
 
 ### Wayfinder Integration
 
@@ -951,6 +1066,7 @@ import { ideas } from '@/routes';
 
 // Usage:
 ideas.index()                          // GET /ideas
+ideas.review()                         // GET /ideas/review
 ideas.show(slug)                       // GET /ideas/{slug}
 ideas.create()                         // GET /ideas/create
 ideas.store()                          // POST /ideas
@@ -1009,6 +1125,12 @@ Audit/
 | `collaboration_requested` | Collaboration request submitted |
 | `collaboration_approved` | Collaboration request approved |
 | `collaboration_rejected` | Collaboration request rejected |
+| `officer_assigned` | DD assigned RI&KM Officer to idea |
+| `idea_classified` | Idea classified (Innovation/Research/Project/Outside Mandate) |
+| `revision_requested` | Officer requested author revision |
+| `idea_resubmitted` | Author resubmitted after revision |
+| `dg_decision_made` | DG decision recorded (approved/deferred/declined) |
+| `idea_closed` | Idea closed (outside mandate, expired, or completed) |
 | `point_awarded` | Point award |
 | `team_member_added` | Invitation auto-accepted via onboarding |
 | `team_member_invited` | Invitation email sent to non-user |
@@ -1182,6 +1304,13 @@ This keeps each feature self-contained, avoids the `admin` word, and mirrors the
 - **My Contributions** — ideas where user was invited as contributor
 - Tab state stored as `?tab=` query param for shareable/bookmarkable URLs
 - `select('ideas.*')` must always precede `selectSub()` to prevent subquery overriding all columns
+
+### Why Dedicated Review Dashboard Instead of an Index Tab?
+
+- **Permission-based structure** — Each review section maps to a specific permission (`idea.assign_officer`, `idea.classify`, `idea.dg_decision`). Users with multiple permissions see all relevant sections in one place without mixing unrelated content
+- **Ideas flow between views** — A submitted idea appears in "Pending Assignment", moves to "My Assignments" when the DD assigns an officer, then to "Pending Decisions" when sent to DG. This natural pipeline prevents duplication
+- **Sidebar shortcut per section** — Each section gets its own sidebar nav item with a `?tab=` query param for direct access, while the dashboard page keeps all sections discoverable
+- **Gated by `idea.review`** — The sidebar items and dashboard respect individual permissions so each user only sees what they can act on
 
 ### Why Action Buttons Changed to Icons with Tooltips?
 
