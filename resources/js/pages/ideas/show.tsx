@@ -1,10 +1,10 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import {
     Dialog,
     DialogContent,
@@ -12,8 +12,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import ideas from '@/routes/ideas';
 
 type Document = {
@@ -21,6 +21,25 @@ type Document = {
     type: 'proposal' | 'supporting';
     original_name: string;
     file_size: number | null;
+};
+
+type AssignedOfficer = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+type Officer = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+type Classification = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
 };
 
 type IpDocument = {
@@ -62,6 +81,8 @@ type Idea = {
     documents: Document[];
     invitations: Invitation[];
     ip_right: IpRight | null;
+    assigned_officer: AssignedOfficer | null;
+    classification: Classification | null;
 };
 
 type Props = {
@@ -70,6 +91,11 @@ type Props = {
     hasPendingCollaborationCount: number;
     canProposeChanges: boolean;
     canApproveChanges: boolean;
+    canAssign: boolean;
+    canClassify: boolean;
+    classifications: Classification[];
+    categories: { id: number; name: string }[];
+    officers: Officer[];
 };
 
 const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
@@ -79,7 +105,7 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'dest
     rejected: 'destructive',
 };
 
-export default function ShowIdea({ idea, canRequestCollaboration, hasPendingCollaborationCount, canProposeChanges, canApproveChanges }: Props) {
+export default function ShowIdea({ idea, canRequestCollaboration, hasPendingCollaborationCount, canProposeChanges, canApproveChanges, canAssign, canClassify, classifications, categories, officers }: Props) {
     const { auth } = usePage().props as { auth: { user: { id: number } } };
     const proposal = idea.documents.find((d) => d.type === 'proposal');
     const supportingDocs = idea.documents.filter((d) => d.type === 'supporting');
@@ -275,6 +301,78 @@ export default function ShowIdea({ idea, canRequestCollaboration, hasPendingColl
                     </Card>
                 )}
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Review</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {idea.assigned_officer ? (
+                            <div className="text-sm">
+                                <p>
+                                    <span className="font-medium">RI&KM Officer:</span>{' '}
+                                    {idea.assigned_officer.name}
+                                </p>
+                                <p className="text-muted-foreground">
+                                    {idea.assigned_officer.email}
+                                </p>
+                            </div>
+                        ) : canAssign ? (
+                            <Form
+                                method="post"
+                                action={ideas.assign(idea.slug)}
+                                className="space-y-4"
+                            >
+                                {({ processing, errors, data, setData }) => (
+                                    <>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="officer_id">
+                                                Assign RI&KM Officer
+                                            </Label>
+                                            <select
+                                                id="officer_id"
+                                                name="officer_id"
+                                                value={data.officer_id ?? ''}
+                                                onChange={(e) => setData('officer_id', e.target.value === '' ? undefined : e.target.value)}
+                                                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                                required
+                                            >
+                                                <option value="">Select an officer...</option>
+                                                {officers.map((o) => (
+                                                    <option key={o.id} value={o.id}>
+                                                        {o.name} ({o.email})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <InputError message={errors.officer_id} />
+                                        </div>
+                                        <Button type="submit" disabled={processing}>
+                                            {processing ? 'Assigning...' : 'Assign Officer'}
+                                        </Button>
+                                    </>
+                                )}
+                            </Form>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">
+                                No officer assigned yet.
+                            </p>
+                        )}
+
+                        {idea.classification && (
+                            <div className="border-t pt-4 text-sm">
+                                <p>
+                                    <span className="font-medium">Classification:</span>{' '}
+                                    {idea.classification.name}
+                                </p>
+                                {idea.classification.description && (
+                                    <p className="mt-1 text-muted-foreground">
+                                        {idea.classification.description}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
                 {idea.invitations.length > 0 && (
                     <Card>
                         <CardHeader>
@@ -315,6 +413,103 @@ export default function ShowIdea({ idea, canRequestCollaboration, hasPendingColl
                     <Button variant="outline" asChild>
                         <Link href={ideas.index()}>Back to Ideas</Link>
                     </Button>
+                    {(canAssign || canClassify) && (
+                        <Button variant="outline" asChild>
+                            <Link href={ideas.review().url}>Back to Review Dashboard</Link>
+                        </Button>
+                    )}
+
+                    {canClassify && (
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button>Classify Idea</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Classify Idea</DialogTitle>
+                                </DialogHeader>
+                                <Form
+                                    method="post"
+                                    action={ideas.classify(idea.slug)}
+                                    className="space-y-4"
+                                >
+                                    {({ processing, errors, data, setData }) => (
+                                        <>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="classification_id">
+                                                    Classification Type
+                                                </Label>
+                                                <select
+                                                    id="classification_id"
+                                                    name="classification_id"
+                                                    value={data.classification_id ?? ''}
+                                                    onChange={(e) => setData('classification_id', e.target.value === '' ? undefined : Number(e.target.value))}
+                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                                    required
+                                                >
+                                                    <option value="">Select type...</option>
+                                                    {classifications.map((c) => (
+                                                        <option key={c.id} value={c.id}>
+                                                            {c.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <InputError message={errors.classification_id} />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="category_id">
+                                                    Thematic Area <span className="text-muted-foreground">(optional)</span>
+                                                </Label>
+                                                <select
+                                                    id="category_id"
+                                                    name="category_id"
+                                                    value={data.category_id ?? ''}
+                                                    onChange={(e) => setData('category_id', e.target.value === '' ? undefined : Number(e.target.value))}
+                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                                >
+                                                    <option value="">Keep current area</option>
+                                                    {categories.map((c) => (
+                                                        <option key={c.id} value={c.id}>
+                                                            {c.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <InputError message={errors.category_id} />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="notes">
+                                                    Notes <span className="text-muted-foreground">(optional)</span>
+                                                </Label>
+                                                <textarea
+                                                    id="notes"
+                                                    name="notes"
+                                                    value={data.notes ?? ''}
+                                                    onChange={(e) => setData('notes', e.target.value)}
+                                                    rows={3}
+                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                                    placeholder="Any additional notes..."
+                                                />
+                                                <InputError message={errors.notes} />
+                                            </div>
+
+                                            <div className="flex justify-end gap-3">
+                                                <DialogTrigger asChild>
+                                                    <Button type="button" variant="outline">
+                                                        Cancel
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <Button type="submit" disabled={processing}>
+                                                    {processing ? 'Classifying...' : 'Classify Idea'}
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    )}
 
                     {isAuthor && (
                         <>
