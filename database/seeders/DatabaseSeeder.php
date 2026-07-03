@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             ContractTypeSeeder::class,
             PointSeeder::class,
             IdeaCategorySeeder::class,
+            IdeaClassificationSeeder::class,
         ]);
     }
 }
