@@ -3,6 +3,8 @@
 namespace App\Services\Ideas;
 
 use App\Mail\IdeaInvitationMail;
+use App\Mail\IdeaSubmittedConfirmationMail;
+use App\Mail\NewIdeaSubmittedMail;
 use App\Models\CollaborationRequest;
 use App\Models\Idea;
 use App\Models\IdeaDocument;
@@ -70,6 +72,10 @@ class IdeaService
         }
 
         $this->auditService->log($user, 'idea_submitted', "Created idea: {$idea->title}");
+
+        $this->notifyReviewers($idea);
+
+        Mail::to($user)->send(new IdeaSubmittedConfirmationMail($idea));
 
         return $idea;
     }
@@ -157,6 +163,35 @@ class IdeaService
 
         return Idea::with(['author', 'category'])
             ->whereIn('id', $invitedIdeaIds)
+            ->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
+    }
+
+    public function getPendingAssignment(int $perPage = 15): LengthAwarePaginator
+    {
+        return Idea::with(['author', 'category'])
+            ->where('status', 'submitted')
+            ->whereNull('assigned_officer_id')
+            ->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
+    }
+
+    public function getMyAssignments(User $user, int $perPage = 15): LengthAwarePaginator
+    {
+        return Idea::with(['author', 'category'])
+            ->where('assigned_officer_id', $user->id)
+            ->whereIn('status', ['assigned', 'resubmitted'])
+            ->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
+    }
+
+    public function getPendingDecisions(int $perPage = 15): LengthAwarePaginator
+    {
+        return Idea::with(['author', 'category', 'assignedOfficer'])
+            ->where('status', 'dg_review')
             ->latest()
             ->paginate($perPage)
             ->appends(request()->query());
@@ -255,6 +290,15 @@ class IdeaService
     {
         Storage::disk('local')->delete($document->file_path);
         $document->delete();
+    }
+
+    protected function notifyReviewers(Idea $idea): void
+    {
+        $reviewers = User::permission('idea.receive_new_submission_notifications')->get();
+
+        foreach ($reviewers as $reviewer) {
+            Mail::to($reviewer)->send(new NewIdeaSubmittedMail($idea));
+        }
     }
 
     protected function createInvitations(Idea $idea, User $invitedBy, array $emails): void
