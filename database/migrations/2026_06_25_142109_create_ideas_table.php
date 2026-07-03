@@ -15,6 +15,16 @@ return new class extends Migration
             $table->text('description');
             $table->foreignId('category_id')->constrained('idea_categories');
             $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('assigned_officer_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+            $table->timestamp('assigned_at')->nullable();
+            $table->foreignId('classification_id')
+                ->nullable()
+                ->constrained('idea_classifications')
+                ->nullOnDelete();
+            $table->timestamp('classified_at')->nullable();
             $table->text('problem_statement');
             $table->text('proposed_solution');
             $table->text('cost_benefit_analysis');

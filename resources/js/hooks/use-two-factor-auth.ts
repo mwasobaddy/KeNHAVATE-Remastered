@@ -1,11 +1,9 @@
-import { usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
 
 export const OTP_MAX_LENGTH = 6;
 
 export function useTwoFactorAuth() {
-    const { csrf_token } = usePage().props as { csrf_token?: string };
     const [qrCodeSvg, setQrCodeSvg] = useState<string>('');
     const [manualSetupKey, setManualSetupKey] = useState<string>('');
     const [recoveryCodesList, setRecoveryCodesList] = useState<string[]>([]);
@@ -14,7 +12,7 @@ export function useTwoFactorAuth() {
 
     const fetchSetupData = useCallback(async () => {
         try {
-            const response = await axios.post('/user/two-factor-authentication');
+            await axios.post('/user/two-factor-authentication');
             const qrCodeUrl = `/user/two-factor-qr-code`;
             const qrResponse = await axios.get(qrCodeUrl);
             setQrCodeSvg(qrResponse.data.svg ?? '');

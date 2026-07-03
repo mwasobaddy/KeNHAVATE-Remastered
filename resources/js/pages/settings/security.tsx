@@ -42,6 +42,7 @@ export default function Security({
         if (prevTwoFactorEnabled.current && !twoFactorEnabled) {
             clearTwoFactorAuthData();
         }
+
         prevTwoFactorEnabled.current = twoFactorEnabled;
     }, [twoFactorEnabled, clearTwoFactorAuthData]);
 
@@ -74,6 +75,7 @@ export default function Security({
                         if (errors.password) {
                             passwordInput.current?.focus();
                         }
+
                         if (errors.current_password) {
                             currentPasswordInput.current?.focus();
                         }
@@ -167,7 +169,6 @@ export default function Security({
                             <TwoFactorRecoveryCodes
                                 recoveryCodesList={recoveryCodesList}
                                 fetchRecoveryCodes={fetchRecoveryCodes}
-                                errors={errors}
                             />
                         </div>
                     ) : (

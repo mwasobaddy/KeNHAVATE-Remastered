@@ -1,4 +1,4 @@
-import { Form, usePage } from '@inertiajs/react';
+import { Form } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 export default function DeleteUser() {
     const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
     const passwordInput = useRef<HTMLInputElement>(null);
-    const { auth } = usePage().props as { auth: { user: { name: string; email: string } } };
 
     return (
         <div className="space-y-6">
@@ -31,7 +30,10 @@ export default function DeleteUser() {
                     open={confirmingUserDeletion}
                     onOpenChange={(open) => {
                         setConfirmingUserDeletion(open);
-                        if (!open) passwordInput.current?.focus();
+
+                        if (!open) {
+passwordInput.current?.focus();
+}
                     }}
                 >
                     <DialogTrigger asChild>

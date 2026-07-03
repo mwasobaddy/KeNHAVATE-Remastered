@@ -1,11 +1,11 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import InputError from '@/components/input-error';
-import Heading from '@/components/heading';
+import { Textarea } from '@/components/ui/textarea';
 import ideas from '@/routes/ideas';
 
 type User = { id: number; name: string };

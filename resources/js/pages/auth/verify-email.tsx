@@ -1,9 +1,18 @@
 import { Form, Head } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useReducer, useEffect } from 'react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
+
+function cooldownReducer(state: number, action: { type: 'start' } | { type: 'tick' }): number {
+    switch (action.type) {
+        case 'start':
+            return 60;
+        case 'tick':
+            return state - 1;
+    }
+}
 
 export default function VerifyEmail({
     email,
@@ -12,17 +21,18 @@ export default function VerifyEmail({
     email: string;
     status?: string;
 }) {
-    const [cooldown, setCooldown] = useState(0);
+    const [cooldown, dispatch] = useReducer(cooldownReducer, 0);
 
     useEffect(() => {
         if (status === 'verification-link-sent') {
-            setCooldown(60);
+            dispatch({ type: 'start' });
         }
     }, [status]);
 
     useEffect(() => {
         if (cooldown > 0) {
-            const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+            const timer = setTimeout(() => dispatch({ type: 'tick' }), 1000);
+
             return () => clearTimeout(timer);
         }
     }, [cooldown]);

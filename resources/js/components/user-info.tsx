@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { useInitials } from '@/hooks/use-initials';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useInitials } from '@/hooks/use-initials';
 
 type User = {
     name: string;

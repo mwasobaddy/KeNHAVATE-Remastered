@@ -4,13 +4,11 @@ import { Button } from '@/components/ui/button';
 type TwoFactorRecoveryCodesProps = {
     recoveryCodesList: string[];
     fetchRecoveryCodes: () => void;
-    errors: Record<string, string>;
 };
 
 export default function TwoFactorRecoveryCodes({
     recoveryCodesList,
     fetchRecoveryCodes,
-    errors,
 }: TwoFactorRecoveryCodesProps) {
     return (
         <div className="space-y-4">

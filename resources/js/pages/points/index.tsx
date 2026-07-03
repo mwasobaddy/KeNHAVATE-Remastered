@@ -3,7 +3,7 @@ import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import points from '@/routes/points';
+import routes from '@/routes/points';
 
 type Point = {
     id: number;
@@ -26,12 +26,12 @@ type Props = {
 export default function PointIndex({ points }: Props) {
     const handleDelete = (point: Point) => {
         if (confirm(`Are you sure you want to delete "${point.name}"?`)) {
-            router.delete(points.destroy({ point: point.id }));
+            router.delete(routes.destroy({ point: point.id }));
         }
     };
 
     const handleToggle = (point: Point) => {
-        router.patch(points.toggle({ point: point.id }));
+        router.patch(routes.toggle({ point: point.id }));
     };
 
     return (
@@ -45,7 +45,7 @@ export default function PointIndex({ points }: Props) {
                         description="Manage actions that award points to users"
                     />
                     <Button asChild>
-                        <Link href={points.create()}>Create New</Link>
+                        <Link href={routes.create()}>Create New</Link>
                     </Button>
                 </div>
 
@@ -99,7 +99,7 @@ export default function PointIndex({ points }: Props) {
                                                         size="sm"
                                                         asChild
                                                     >
-                                                        <Link href={points.edit({ point: point.id })}>
+                                                        <Link href={routes.edit({ point: point.id })}>
                                                             Edit
                                                         </Link>
                                                     </Button>

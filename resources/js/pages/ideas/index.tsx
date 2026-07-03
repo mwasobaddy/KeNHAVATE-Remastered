@@ -1,6 +1,7 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Eye, Pencil, Trash2, UserPlus } from 'lucide-react';
+import { useState } from 'react';
+import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,6 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import Heading from '@/components/heading';
 import ideas from '@/routes/ideas';
 
 type Idea = {
@@ -69,7 +69,6 @@ const TABS = [
 ] as const;
 
 export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
-    const { auth } = usePage().props as { auth: { user: { id: number } } };
     const colSpan = currentTab === 'my-ideas' ? 5 : 7;
     const [deleteIdea, setDeleteIdea] = useState<Idea | null>(null);
 
@@ -77,6 +76,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
         if (!deleteIdea) {
             return;
         }
+
         router.delete(ideas.destroy(deleteIdea.slug).url, {
             preserveScroll: true,
             onSuccess: () => setDeleteIdea(null),
@@ -270,6 +270,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
                                                     </span>
                                                 );
                                             }
+
                                             return (
                                                 <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
                                                     <Link href={link.url} preserveState preserveScroll>
@@ -285,7 +286,11 @@ export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
                     </Card>
                 </div>
 
-                <Dialog open={deleteIdea !== null} onOpenChange={(open) => { if (!open) setDeleteIdea(null); }}>
+                <Dialog open={deleteIdea !== null} onOpenChange={(open) => {
+ if (!open) {
+setDeleteIdea(null);
+} 
+}}>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Delete Idea</DialogTitle>

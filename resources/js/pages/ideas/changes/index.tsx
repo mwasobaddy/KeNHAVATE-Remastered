@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
+import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import Heading from '@/components/heading';
 import ideas from '@/routes/ideas';
 
 type User = { id: number; name: string };

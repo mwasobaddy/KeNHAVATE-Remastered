@@ -7,6 +7,7 @@ export function useCurrentUrl() {
     const isCurrentUrl = useCallback(
         (href: string) => {
             const urlPath = new URL(href, window.location.origin).pathname;
+
             return url === urlPath;
         },
         [url],
@@ -15,6 +16,7 @@ export function useCurrentUrl() {
     const isCurrentOrParentUrl = useCallback(
         (href: string) => {
             const urlPath = new URL(href, window.location.origin).pathname;
+
             return url === urlPath || url.startsWith(urlPath + '/');
         },
         [url],
