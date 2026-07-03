@@ -7,10 +7,13 @@ use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\TermsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Ideas\AssignmentController;
 use App\Http\Controllers\Ideas\ChangeRequestController;
+use App\Http\Controllers\Ideas\ClassificationController;
 use App\Http\Controllers\Ideas\CollaborationController;
 use App\Http\Controllers\Ideas\IdeaController;
 use App\Http\Controllers\Ideas\InvitationController;
+use App\Http\Controllers\Ideas\ReviewController;
 use App\Http\Controllers\Points\LeaderboardController;
 use App\Http\Controllers\Points\PointController;
 use App\Http\Controllers\Points\TransactionController;
@@ -106,6 +109,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
 
     Route::prefix('ideas')->name('ideas.')->group(function () {
         Route::get('/', [IdeaController::class, 'index'])->name('index');
+        Route::get('/review', [ReviewController::class, 'index'])->name('review');
         Route::get('/create', [IdeaController::class, 'create'])->name('create');
         Route::post('/', [IdeaController::class, 'store'])->name('store');
         Route::get('/{slug}', [IdeaController::class, 'show'])->name('show');
@@ -126,5 +130,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::post('/{slug}/collaborations', [CollaborationController::class, 'store'])->name('collaborations.store');
         Route::post('/{slug}/collaborations/{collaboration}/approve', [CollaborationController::class, 'approve'])->name('collaborations.approve');
         Route::post('/{slug}/collaborations/{collaboration}/reject', [CollaborationController::class, 'reject'])->name('collaborations.reject');
+
+        Route::post('/{slug}/assign', [AssignmentController::class, 'store'])->name('assign');
+        Route::post('/{slug}/classify', [ClassificationController::class, 'store'])->name('classify');
     });
 });
