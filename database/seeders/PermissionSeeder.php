@@ -21,6 +21,11 @@ class PermissionSeeder extends Seeder
             'idea.propose_changes',
             'idea.approve_changes',
             'idea.manage_contributors',
+            'idea.receive_new_submission_notifications',
+            'idea.assign_officer',
+            'idea.classify',
+            'idea.dg_decision',
+            'idea.review',
             'points.create',
             'points.edit',
             'points.delete',
@@ -34,9 +39,6 @@ class PermissionSeeder extends Seeder
 
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $admin->givePermissionTo(Permission::all());
-
-        $board = Role::firstOrCreate(['name' => 'board', 'guard_name' => 'web']);
-        $board->givePermissionTo(['idea.view', 'idea.approve_changes', 'points.view', 'audit.view']);
 
         $user = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
         $user->givePermissionTo(['idea.create']);
