@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Ideas\StoreIdeaRequest;
 use App\Http\Requests\Ideas\UpdateIdeaRequest;
 use App\Models\CollaborationRequest;
+use App\Models\IdeaClassification;
 use App\Models\IdeaDocument;
 use App\Models\IdeaIpDocument;
+use App\Models\User;
 use App\Services\AuditService;
 use App\Services\Ideas\IdeaCategoryService;
 use App\Services\Ideas\IdeaService;
@@ -73,7 +75,7 @@ class IdeaController extends Controller
             abort(404);
         }
 
-        $idea->load(['author', 'category', 'invitations', 'documents', 'ipRight.documents']);
+        $idea->load(['author', 'category', 'invitations', 'documents', 'ipRight.documents', 'assignedOfficer']);
 
         $user = request()->user();
         $isAuthor = $idea->author_id === $user->id;
@@ -95,6 +97,11 @@ class IdeaController extends Controller
             ->count();
         $canProposeChanges = $idea->userCan($user, 'idea.propose_changes');
         $canApproveChanges = $idea->userCan($user, 'idea.approve_changes');
+        $canAssign = $user->can('idea.assign_officer');
+        $canClassify = $user->can('idea.classify') && $idea->classification_id === null
+            && in_array($idea->status, ['assigned', 'resubmitted']);
+
+        $notClassified = $idea->classification_id === null && in_array($idea->status, ['assigned', 'resubmitted']);
 
         return inertia('ideas/show', [
             'idea' => $idea,
@@ -102,6 +109,17 @@ class IdeaController extends Controller
             'hasPendingCollaborationCount' => $hasPendingCount,
             'canProposeChanges' => $canProposeChanges,
             'canApproveChanges' => $canApproveChanges,
+            'canAssign' => $canAssign,
+            'canClassify' => $canClassify,
+            'classifications' => $canClassify
+                ? IdeaClassification::orderBy('name')->get()
+                : [],
+            'categories' => $notClassified
+                ? $this->ideaCategoryService->getAll()
+                : [],
+            'officers' => $canAssign && ! $idea->assigned_officer_id
+                ? User::select('id', 'name', 'email')->orderBy('name')->get()
+                : [],
         ]);
     }
 
