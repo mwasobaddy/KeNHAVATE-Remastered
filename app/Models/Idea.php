@@ -20,6 +20,10 @@ class Idea extends Model
         'description',
         'category_id',
         'author_id',
+        'assigned_officer_id',
+        'assigned_at',
+        'classification_id',
+        'classified_at',
         'problem_statement',
         'proposed_solution',
         'cost_benefit_analysis',
@@ -31,6 +35,8 @@ class Idea extends Model
     {
         return [
             'collaboration_enabled' => 'boolean',
+            'assigned_at' => 'datetime',
+            'classified_at' => 'datetime',
         ];
     }
 
@@ -87,6 +93,21 @@ class Idea extends Model
     public function ipRight(): HasOne
     {
         return $this->hasOne(IdeaIpRight::class);
+    }
+
+    public function assignedOfficer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_officer_id');
+    }
+
+    public function classification(): BelongsTo
+    {
+        return $this->belongsTo(IdeaClassification::class, 'classification_id');
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(IdeaReview::class);
     }
 
     public function createTeamRoles(): void
