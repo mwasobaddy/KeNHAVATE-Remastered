@@ -145,6 +145,9 @@ DELETE /ideas/{slug}                                  → IdeaController@destroy
 GET    /ideas/{slug}/documents/{document}              → IdeaController@downloadDocument
 GET    /ideas/{slug}/ip-documents/{ipDocument}         → IdeaController@downloadIpDocument
 
+GET    /ideas/collaborations/inbox                     → CollaborationRequestController@inbox
+GET    /ideas/collaborations/outbox                    → CollaborationRequestController@outbox
+
 GET    /ideas/{slug}/changes                                          → ChangeRequestController@index
 GET    /ideas/{slug}/changes/create                                    → ChangeRequestController@create
 POST   /ideas/{slug}/changes                                           → ChangeRequestController@store
@@ -559,6 +562,8 @@ Append-only (no `updated_at`). Downloaded via `IdeaController::downloadIpDocumen
 - `reject(request, reviewer, feedback)` — Mark rejected, send `CollaborationRejectedMail`, audit log (`collaboration_rejected`)
 - `getForIdea(idea)` — All requests for an idea (with user + reviewer relations)
 - `getPendingForIdea(idea)` — Only pending requests
+- `getInbox(user)` — Paginated requests for ideas where user is author (with idea, requester, reviewer relations)
+- `getOutbox(user)` — Paginated requests sent by the user (with idea, author, reviewer relations)
 
 **`InvitationService`** — `app/Services/Ideas/InvitationService.php`
 - `findByToken(token)` — Look up pending invitation
@@ -811,7 +816,7 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 | `change_requests` | Proposed changes to ideas (diff-based, full history) |
 | `collaboration_requests` | Requests to join/collaborate on ideas |
 | `audit_logs` | Structured audit trail for all key actions |
-| `otp_codes` | Audit trail for OTP requests |
+| `otp_codes` | Audit trail for OTP requests (`otp` column encrypted at rest via Eloquent cast) |
 | `regions` | KeNHA geographic regions |
 | `directorates` | Directorates within regions |
 | `departments` | Departments within directorates |
@@ -860,7 +865,10 @@ resources/js/pages/
 │   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog
 │   ├── invitation.tsx     → Invitation acceptance page (idea title, inviter, sign-in prompt)
 │   ├── collaborations/
-│   │   └── index.tsx      → Pending collaboration request list with inline approve/reject forms
+│   │   ├── index.tsx      → Pending collaboration request list with inline approve/reject forms (per-idea)
+│   │   └── request/
+│   │       ├── inbox.tsx  → Collaboration requests from users wanting to collaborate on MY ideas. Shows requester name, idea title, message, status badge, feedback, reviewer info. Paginated. Links to idea detail page.
+│   │       └── outbox.tsx → Collaboration requests I sent. Shows idea title, author, message, status, feedback. Paginated. Quick link to browse open ideas when empty.
 │   └── changes/
 │       ├── index.tsx      → List of change requests with status badges
 │       ├── create.tsx     → Select fields to edit, enter new values against originals
@@ -1025,21 +1033,40 @@ On each login event, it:
 
 ### Sidebar Navigation
 
-The sidebar (`resources/js/components/app-sidebar.tsx`) has two groups:
+The sidebar (`resources/js/components/app-sidebar.tsx`) has three groups:
 
 | Group | Items | Access |
 |-------|-------|--------|
 | **General** | Dashboard, Ideas, Leaderboard | All authenticated users |
-| **Review** | Pending Assignment, My Assignments, Pending Decisions, Points, Audit Log | Gated by permission |
+| **Review** | Pending Assignment, My Assignments, Pending Decisions, Points, Role Management, User Management, Audit Log | Gated by permission |
+| **Collaboration** | Inbox, Sent Requests | All authenticated users |
 
 **Review group** items:
 - **Pending Assignment** — `idea.assign_officer` permission (DD)
 - **My Assignments** — `idea.classify` permission (Officer)
 - **Pending Decisions** — `idea.dg_decision` permission (DG)
 - **Points** — `points.view` permission
+- **Role Management** — `role.manage` permission
+- **User Management** — `user.manage` permission
 - **Audit Log** — `audit.view` permission
 
 Each sidebar item links to the review dashboard with a `?tab=` query param to pre-select the relevant section. Items hidden from users without the corresponding permission.
+
+### Search & Filter on Ideas Index
+
+The ideas index page supports search and filtering within the current tab:
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `search` | string | Searches `title` and `description` columns |
+| `status` | string | Comma-separated list of statuses to filter by |
+| `category_id` | integer | Filter by idea category |
+| `date_from` | date | Filter ideas created on or after this date |
+| `date_to` | date | Filter ideas created on or before this date |
+
+**Frontend**: The search bar has a `Search` icon with a clear button. The `SlidersHorizontal` button opens a `Popover` with status checkboxes (15 statuses), category `Select`, and date range inputs. All filters are debounced at 300ms and preserve state across tab switches via `preserveState` + `preserveScroll`. The empty state adapts its message when filters are active ("No ideas match your search or filters").
+
+**Backend**: `IdeaService::applySearchAndFilters()` applies all filters to the query builder. All four query methods (`getAll`, `getMyIdeas`, `getOpenForCollaboration`, `getMyContributions`) accept optional `$search` and `$filters` params. `IdeaController@index` extracts query params, splits the comma-separated `status` into an array, and shares `categories`, `filters`, and `search` with the frontend.
 
 ### Wayfinder Integration
 
@@ -1070,6 +1097,12 @@ ideas.review()                         // GET /ideas/review
 ideas.show(slug)                       // GET /ideas/{slug}
 ideas.create()                         // GET /ideas/create
 ideas.store()                          // POST /ideas
+ideas.collaborations.inbox()             // GET /ideas/collaborations/inbox
+ideas.collaborations.outbox()            // GET /ideas/collaborations/outbox
+ideas.collaborations.index(slug)         // GET /ideas/{slug}/collaborations
+ideas.collaborations.store(slug)         // POST /ideas/{slug}/collaborations
+ideas.collaborations.approve(slug, id)   // POST /ideas/{slug}/collaborations/{id}/approve
+ideas.collaborations.reject(slug, id)    // POST /ideas/{slug}/collaborations/{id}/reject
 ideas.changes.index(slug)              // GET /ideas/{slug}/changes
 ideas.changes.create(slug)             // GET /ideas/{slug}/changes/create
 ideas.changes.store(slug)              // POST /ideas/{slug}/changes
@@ -1079,6 +1112,69 @@ ideas.changes.reject(slug, id)         // POST /ideas/{slug}/changes/{id}/reject
 ```
 
 Nested route groups (like `changes` under `ideas`) generate nested objects — use dot-chain syntax (`ideas.changes.index(slug)`), not bracket notation (`ideas['changes.index'](slug)`).
+
+## Role & User Management Module
+
+### Wayfinder Integration
+
+Roles and users routes generate barrel files at `resources/js/routes/roles/index.ts` and `resources/js/routes/users/index.ts`:
+```ts
+import roles from '@/routes/roles';
+import users from '@/routes/users';
+
+// Roles:
+roles.index()       // GET /roles
+roles.create()      // GET /roles/create
+roles.store()       // POST /roles
+roles.edit(id)      // GET /roles/{id}/edit
+roles.update(id)    // PUT /roles/{id}
+roles.destroy(id)   // DELETE /roles/{id}
+
+// Users:
+users.index()       // GET /users
+users.create()      // GET /users/create
+users.store()       // POST /users
+users.edit(id)      // GET /users/{id}/edit
+users.update(id)    // PUT /users/{id}
+users.destroy(id)   // DELETE /users/{id}
+```
+
+API counterparts use standard `apiResource` at `api/roles` and `api/users`.
+
+### Web Controllers
+
+| Controller | Web Routes | Permissions |
+|---|---|---|
+| `Roles\RoleController` | `roles.*` (resource) | `role.create`, `role.edit`, `role.delete` |
+| `Users\UserController` | `users.*` (resource) | `user.create`, `user.edit`, `user.delete` |
+
+### Frontend Pages
+
+| Page | File | Description |
+|------|------|-------------|
+| Role List | `roles/index.tsx` | Table with Shield icon, user/permission counts, Protected badge, Edit/Delete actions |
+| Create Role | `roles/create.tsx` | Form with permission checkboxes grouped by prefix |
+| Edit Role | `roles/edit.tsx` | Same form pre-filled; name disabled for protected roles |
+| User List | `users/index.tsx` | Table with role badge, staff indicator, Edit/Delete |
+| Create User | `users/create.tsx` | Full form with cascade selects for region→directorate→department |
+| Edit User | `users/edit.tsx` | Same form pre-filled with existing data |
+
+### Services
+
+**`RoleService`** — `app/Services/Roles/RoleService.php`
+- `getAll()` — List all roles with user count, permission count, and protected flag (admin/user are protected)
+- `getFormPermissions()` — All permissions ordered by name (for create/edit form checkboxes)
+- `create(string $name, array $permissions)` — Create role with optional permission sync
+- `getForEdit(Role $role)` — Load role with permissions, returns data including `is_protected`, `permission_names`
+- `update(Role $role, string $name, array $permissions)` — Update name (skipped for protected roles) and sync permissions
+- `isProtected(Role $role): bool` — Returns true for `admin` and `user` roles
+
+**`UserService`** — `app/Services/Users/UserService.php`
+- `getAll()` — List all users with role and staff indicator
+- `getFormData()` — Returns roles, regions (with directorates/departments), and contract types for cascade selects
+- `create(array $data)` — Creates user with auto-generated 16-char password if blank, assigns role, optionally creates staff record; returns `['user', 'generated_password']`
+- `getForEdit(User $user)` — Load user with roles and staff, returns structured data with nested staff fields
+- `update(User $user, array $data)` — Updates user fields, password if provided, syncs role, creates/updates/deletes staff record
 
 ---
 
@@ -1311,6 +1407,13 @@ This keeps each feature self-contained, avoids the `admin` word, and mirrors the
 - **Ideas flow between views** — A submitted idea appears in "Pending Assignment", moves to "My Assignments" when the DD assigns an officer, then to "Pending Decisions" when sent to DG. This natural pipeline prevents duplication
 - **Sidebar shortcut per section** — Each section gets its own sidebar nav item with a `?tab=` query param for direct access, while the dashboard page keeps all sections discoverable
 - **Gated by `idea.review`** — The sidebar items and dashboard respect individual permissions so each user only sees what they can act on
+
+### Why Collaboration Inbox/Outbox Are Separate Pages Instead of Tabs on the Index?
+
+- The ideas index is focused on managing ideas (browsing, filtering, creating)
+- Collaboration request management is a distinct workflow — reviewing incoming requests and tracking sent ones
+- The inbox/outbox model is familiar (email-like) and works better as standalone pages with their own pagination and filtering
+- Keeps the ideas index clean and focused on its core purpose
 
 ### Why Action Buttons Changed to Icons with Tooltips?
 
