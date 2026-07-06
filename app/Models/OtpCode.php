@@ -20,6 +20,7 @@ class OtpCode extends Model
     protected function casts(): array
     {
         return [
+            'otp' => 'encrypted',
             'used_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
