@@ -10,18 +10,20 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        setPermissionsTeamId(1);
+        setPermissionsTeamId(null);
 
-        $admin = User::create([
+        $user = User::create([
             'name' => 'Kelvin Ramsiel',
             'email' => 'kelvinramsiel@gmail.com',
             'email_verified_at' => now(),
             'mobile_number' => '+254712345678',
             'gender' => 'male',
             'password' => Hash::make('password'),
+            'terms_accepted' => true,
+            'onboarding_completed_at' => now(),
         ]);
 
-        $admin->assignRole('admin');
+        $user->assignRole('admin');
 
         User::factory(5)->create()->each(fn ($user) => $user->assignRole('user'));
     }
