@@ -9,6 +9,7 @@ use App\Models\CollaborationRequest;
 use App\Models\Idea;
 use App\Models\User;
 use App\Services\AuditService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Mail;
 
@@ -109,5 +110,23 @@ class CollaborationRequestService
             ->where('status', 'pending')
             ->latest()
             ->paginate(20);
+    }
+
+    public function getInbox(User $user, int $perPage = 15): LengthAwarePaginator
+    {
+        return CollaborationRequest::with(['user', 'idea', 'reviewer'])
+            ->whereHas('idea', fn (Builder $q) => $q->where('author_id', $user->id))
+            ->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
+    }
+
+    public function getOutbox(User $user, int $perPage = 15): LengthAwarePaginator
+    {
+        return CollaborationRequest::with(['idea.author', 'reviewer'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
     }
 }
