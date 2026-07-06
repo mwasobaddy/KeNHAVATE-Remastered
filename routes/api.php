@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\Ideas\ReviewController as ApiReviewController;
 use App\Http\Controllers\Api\Points\LeaderboardController;
 use App\Http\Controllers\Api\Points\PointController;
 use App\Http\Controllers\Api\Points\TransactionController;
+use App\Http\Controllers\Api\Roles\RoleController as ApiRoleController;
+use App\Http\Controllers\Api\Users\UserController as ApiUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('auth/google', [GoogleAuthController::class, 'redirect']);
@@ -49,6 +51,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('leaderboard', [LeaderboardController::class, 'index']);
 
     Route::get('audit', [ApiAuditController::class, 'index']);
+
+    Route::apiResource('roles', ApiRoleController::class)->only(['index', 'store', 'show', 'update', 'destroy'])->names('api.roles');
+    Route::apiResource('users', ApiUserController::class)->only(['index', 'store', 'show', 'update', 'destroy'])->names('api.users');
 
     Route::post('invitations/{token}/accept', [ApiInvitationController::class, 'accept']);
 
