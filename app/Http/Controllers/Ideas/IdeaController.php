@@ -30,18 +30,29 @@ class IdeaController extends Controller
     public function index(Request $request): Response
     {
         $tab = $request->query('tab', 'my-ideas');
+        $search = $request->query('search');
+        $filters = $request->only(['status', 'category_id', 'date_from', 'date_to']);
+        $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
+
+        if (! empty($filters['status'])) {
+            $filters['status'] = explode(',', $filters['status']);
+        }
+
         $user = $request->user();
 
         $ideas = match ($tab) {
-            'my-ideas' => $this->ideaService->getMyIdeas($user),
-            'open-for-collaboration' => $this->ideaService->getOpenForCollaboration($user),
-            'my-contributions' => $this->ideaService->getMyContributions($user),
-            default => $this->ideaService->getAll(),
+            'my-ideas' => $this->ideaService->getMyIdeas($user, $search, $filters),
+            'open-for-collaboration' => $this->ideaService->getOpenForCollaboration($user, $search, $filters),
+            'my-contributions' => $this->ideaService->getMyContributions($user, $search, $filters),
+            default => $this->ideaService->getAll($search, $filters),
         };
 
         return inertia('ideas/index', [
             'ideas' => $ideas,
             'currentTab' => $tab,
+            'categories' => $this->ideaCategoryService->getAll(),
+            'filters' => $filters,
+            'search' => $search,
         ]);
     }
 
