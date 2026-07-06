@@ -24,7 +24,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
         return acc;
     }, {});
 
-    const groupOrder = ['General', 'Review'];
+    const groupOrder = ['General', 'Review', 'Collaboration'];
 
     const sortedGroups = Object.keys(groupedItems).sort((a, b) => {
         const aIndex = groupOrder.indexOf(a);
