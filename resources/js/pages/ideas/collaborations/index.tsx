@@ -42,9 +42,17 @@ export default function CollaborationIndex({ idea, collaborationRequests }: Prop
                         title="Collaboration Requests"
                         description={`For: ${idea.title}`}
                     />
-                    <Button variant="outline" asChild>
-                        <Link href={ideas.show(idea.slug)}>Back to Idea</Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={ideas.collaborations.inbox()}>Inbox</Link>
+                        </Button>
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={ideas.collaborations.outbox()}>Sent Requests</Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href={ideas.show(idea.slug)}>Back to Idea</Link>
+                        </Button>
+                    </div>
                 </div>
 
                 {collaborationRequests.data.length === 0 ? (
