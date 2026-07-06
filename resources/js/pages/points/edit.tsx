@@ -96,10 +96,4 @@ export default function PointEdit({ point }: Props) {
     );
 }
 
-PointEdit.layout = {
-    breadcrumbs: [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Point Actions', href: '/points' },
-        { title: 'Edit', href: `/points/${point.id}/edit` },
-    ],
-};
+
