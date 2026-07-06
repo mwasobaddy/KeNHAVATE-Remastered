@@ -1,17 +1,17 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, Pencil, Trash2, UserPlus } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, Pencil, Search, SlidersHorizontal, Trash2, UserPlus, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
@@ -38,10 +38,36 @@ type PaginatedData = {
     links: { url: string | null; label: string; active: boolean }[];
 };
 
+type Category = {
+    id: number;
+    name: string;
+};
+
 type Props = {
     ideas: PaginatedData;
     currentTab: string;
+    categories: Category[];
+    filters: Record<string, string>;
+    search: string | null;
 };
+
+const IDEA_STATUSES = [
+    'draft',
+    'submitted',
+    'assigned',
+    'revision_requested',
+    'resubmitted',
+    'classified',
+    'dg_review',
+    'approved',
+    'declined',
+    'deferred',
+    'planned',
+    'closed',
+    'in_progress',
+    'completed',
+    'implemented',
+] as const;
 
 const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
     draft: 'outline',
@@ -68,9 +94,85 @@ const TABS = [
     { key: 'my-contributions', label: 'My Contributions' },
 ] as const;
 
-export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
+function navigateWithFilters(currentTab: string, searchValue: string, activeFilters: Record<string, string>) {
+    const params = new URLSearchParams();
+
+    if (currentTab !== 'my-ideas') {
+        params.set('tab', currentTab);
+    }
+
+    if (searchValue) {
+        params.set('search', searchValue);
+    }
+
+    for (const [key, value] of Object.entries(activeFilters)) {
+        if (value) {
+            params.set(key, value);
+        }
+    }
+
+    const qs = params.toString();
+
+    router.get(ideas.index().url + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
+}
+
+export default function IdeaIndex({ ideas: ideasData, currentTab, categories, filters: initialFilters, search: initialSearch }: Props) {
     const colSpan = currentTab === 'my-ideas' ? 5 : 7;
     const [deleteIdea, setDeleteIdea] = useState<Idea | null>(null);
+    const [searchValue, setSearchValue] = useState(initialSearch ?? '');
+    const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const [filterOpen, setFilterOpen] = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        if (searchValue !== (initialSearch ?? '')) {
+            debounceRef.current = setTimeout(() => {
+                navigateWithFilters(currentTab, searchValue, activeFilters);
+            }, 300);
+        }
+
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchValue]);
+
+    const updateFilter = (key: string, value: string) => {
+        const next = { ...activeFilters };
+
+        if (value) {
+            next[key] = value;
+        } else {
+            delete next[key];
+        }
+
+        setActiveFilters(next);
+    };
+
+    const applyFilters = () => {
+        setFilterOpen(false);
+        navigateWithFilters(currentTab, searchValue, activeFilters);
+    };
+
+    const clearFilters = () => {
+        const cleared: Record<string, string> = {};
+        setActiveFilters(cleared);
+        setFilterOpen(false);
+        navigateWithFilters(currentTab, searchValue, cleared);
+    };
+
+    const clearSearch = () => {
+        setSearchValue('');
+    };
+
+    const hasActiveFilters = Object.keys(activeFilters).length > 0;
+    const hasSearch = searchValue.length > 0;
 
     const confirmDelete = () => {
         if (!deleteIdea) {
@@ -97,6 +199,125 @@ export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
                         <Button asChild>
                             <Link href={ideas.create()}>Submit New Idea</Link>
                         </Button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Search ideas by title or description..."
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                className="pl-9 pr-9"
+                            />
+                            {hasSearch && (
+                                <button
+                                    onClick={clearSearch}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
+
+                        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" size="icon" className="relative shrink-0">
+                                    <SlidersHorizontal className="h-4 w-4" />
+                                    {hasActiveFilters && (
+                                        <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                                            <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
+                                        </span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-80">
+                                <div className="space-y-4">
+                                    <div>
+                                        <h4 className="mb-2 text-sm font-medium">Status</h4>
+                                        <div className="max-h-40 space-y-1.5 overflow-y-auto">
+                                            {IDEA_STATUSES.map((status) => (
+                                                <label
+                                                    key={status}
+                                                    className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-muted"
+                                                >
+                                                    <Checkbox
+                                                        checked={activeFilters.status?.split(',').includes(status)}
+                                                        onCheckedChange={(checked) => {
+                                                            const current = (activeFilters.status ?? '').split(',').filter(Boolean);
+                                                            const next = checked
+                                                                ? [...current, status]
+                                                                : current.filter((s) => s !== status);
+
+                                                            updateFilter('status', next.join(','));
+                                                        }}
+                                                    />
+                                                    {status}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <Separator />
+
+                                    <div>
+                                        <h4 className="mb-2 text-sm font-medium">Category</h4>
+                                        <Select
+                                            value={activeFilters.category_id ?? ''}
+                                            onValueChange={(value) => updateFilter('category_id', value === '_all' ? '' : value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="All categories" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="_all">All categories</SelectItem>
+                                                {categories.map((cat) => (
+                                                    <SelectItem key={cat.id} value={String(cat.id)}>
+                                                        {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <Separator />
+
+                                    <div>
+                                        <h4 className="mb-2 text-sm font-medium">Date Range</h4>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1">
+                                                <Label htmlFor="date-from" className="text-xs text-muted-foreground">From</Label>
+                                                <Input
+                                                    id="date-from"
+                                                    type="date"
+                                                    value={activeFilters.date_from ?? ''}
+                                                    onChange={(e) => updateFilter('date_from', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <Label htmlFor="date-to" className="text-xs text-muted-foreground">To</Label>
+                                                <Input
+                                                    id="date-to"
+                                                    type="date"
+                                                    value={activeFilters.date_to ?? ''}
+                                                    onChange={(e) => updateFilter('date_to', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-2 pt-2">
+                                        <Button variant="outline" size="sm" onClick={clearFilters}>
+                                            Clear filters
+                                        </Button>
+                                        <Button size="sm" onClick={applyFilters}>
+                                            Apply filters
+                                        </Button>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <div className="flex gap-1 rounded-lg bg-muted p-1">
@@ -161,7 +382,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
                                                     )}
                                                     <td className="py-3 pr-4">
                                                         <Badge variant={statusVariants[idea.status] ?? 'outline'}>
-                                                            {idea.status}
+                                                            {idea.status.replace(/_/g, ' ')}
                                                         </Badge>
                                                     </td>
                                                     {currentTab === 'open-for-collaboration' && (
@@ -244,11 +465,13 @@ export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
                                         ) : (
                                             <tr>
                                                 <td colSpan={colSpan} className="py-8 text-center text-muted-foreground">
-                                                    {currentTab === 'my-ideas'
-                                                        ? "You haven't submitted any ideas yet."
-                                                        : currentTab === 'open-for-collaboration'
-                                                          ? 'No ideas open for collaboration right now.'
-                                                          : "You haven't been invited as a contributor to any ideas."}
+                                                    {hasSearch || hasActiveFilters
+                                                        ? 'No ideas match your search or filters.'
+                                                        : currentTab === 'my-ideas'
+                                                            ? "You haven't submitted any ideas yet."
+                                                            : currentTab === 'open-for-collaboration'
+                                                                ? 'No ideas open for collaboration right now.'
+                                                                : "You haven't been invited as a contributor to any ideas."}
                                                 </td>
                                             </tr>
                                         )}
@@ -287,10 +510,10 @@ export default function IdeaIndex({ ideas: ideasData, currentTab }: Props) {
                 </div>
 
                 <Dialog open={deleteIdea !== null} onOpenChange={(open) => {
- if (!open) {
-setDeleteIdea(null);
-} 
-}}>
+                    if (!open) {
+                        setDeleteIdea(null);
+                    }
+                }}>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Delete Idea</DialogTitle>
