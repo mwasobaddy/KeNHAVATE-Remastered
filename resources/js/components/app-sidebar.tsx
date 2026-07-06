@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardCheck, ClipboardList, FolderGit2, Gavel, LayoutGrid, Lightbulb, ScrollText, Trophy, Zap } from 'lucide-react';
+import { BookOpen, ClipboardCheck, ClipboardList, FolderGit2, Gavel, LayoutGrid, Lightbulb, MessageSquare, ScrollText, Shield, Trophy, User, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -17,6 +17,8 @@ import {
 import { dashboard, leaderboard } from '@/routes';
 import ideas from '@/routes/ideas';
 import points from '@/routes/points';
+import roles from '@/routes/roles';
+import users from '@/routes/users';
 import type { NavItem } from '@/types';
 
 const footerNavItems: NavItem[] = [
@@ -42,7 +44,8 @@ export function AppSidebar() {
     const hasAssignPermission = permissions.includes('idea.assign_officer');
     const hasClassifyPermission = permissions.includes('idea.classify');
     const hasDecidePermission = permissions.includes('idea.dg_decision');
-
+    const hasRoleManage = permissions.includes('role.manage');
+    const hasUserManage = permissions.includes('user.manage');
     const generalItems: NavItem[] = [
         {
             title: 'Dashboard',
@@ -61,6 +64,21 @@ export function AppSidebar() {
             href: leaderboard(),
             icon: Trophy,
             group: 'General',
+        },
+    ];
+
+    const collaborationItems: NavItem[] = [
+        {
+            title: 'Inbox',
+            href: ideas.collaborations.inbox(),
+            icon: MessageSquare,
+            group: 'Collaboration',
+        },
+        {
+            title: 'Sent Requests',
+            href: ideas.collaborations.outbox(),
+            icon: MessageSquare,
+            group: 'Collaboration',
         },
     ];
 
@@ -111,7 +129,25 @@ export function AppSidebar() {
         });
     }
 
-    const mainNavItems = [...generalItems, ...reviewItems];
+    if (hasRoleManage) {
+        reviewItems.push({
+            title: 'Role Management',
+            href: roles.index(),
+            icon: Shield as LucideIcon,
+            group: 'Review',
+        });
+    }
+
+    if (hasUserManage) {
+        reviewItems.push({
+            title: 'User Management',
+            href: users.index(),
+            icon: User as LucideIcon,
+            group: 'Review',
+        });
+    }
+
+    const mainNavItems = [...generalItems, ...reviewItems, ...collaborationItems];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
