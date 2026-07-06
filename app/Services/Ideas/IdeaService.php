@@ -15,6 +15,7 @@ use App\Models\Point;
 use App\Models\User;
 use App\Services\AuditService;
 use App\Services\Points\PointAwardService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Mail;
@@ -116,24 +117,58 @@ class IdeaService
             ->first();
     }
 
-    public function getAll(int $perPage = 15): LengthAwarePaginator
-    {
-        return Idea::with(['author', 'category'])
-            ->latest()
-            ->paginate($perPage)
-            ->appends(request()->query());
+    protected function applySearchAndFilters(
+        Builder $query,
+        ?string $search,
+        array $filters = [],
+    ): Builder {
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if (! empty($filters['status'])) {
+            $query->whereIn('status', $filters['status']);
+        }
+
+        if (! empty($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        return $query;
     }
 
-    public function getMyIdeas(User $user, int $perPage = 15): LengthAwarePaginator
+    public function getAll(?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Idea::with(['author', 'category'])
+        $query = Idea::with(['author', 'category'])->latest();
+
+        $query = $this->applySearchAndFilters($query, $search, $filters);
+
+        return $query->paginate($perPage)->appends(request()->query());
+    }
+
+    public function getMyIdeas(User $user, ?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $query = Idea::with(['author', 'category'])
             ->where('author_id', $user->id)
-            ->latest()
-            ->paginate($perPage)
-            ->appends(request()->query());
+            ->latest();
+
+        $query = $this->applySearchAndFilters($query, $search, $filters);
+
+        return $query->paginate($perPage)->appends(request()->query());
     }
 
-    public function getOpenForCollaboration(User $user, int $perPage = 15): LengthAwarePaginator
+    public function getOpenForCollaboration(User $user, ?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $statusSubquery = CollaborationRequest::select('status')
             ->whereColumn('idea_id', 'ideas.id')
@@ -141,17 +176,19 @@ class IdeaService
             ->latest()
             ->limit(1);
 
-        return Idea::with(['author', 'category'])
+        $query = Idea::with(['author', 'category'])
             ->select('ideas.*')
             ->selectSub($statusSubquery, 'collaboration_status')
             ->where('collaboration_enabled', true)
             ->where('author_id', '!=', $user->id)
-            ->latest()
-            ->paginate($perPage)
-            ->appends(request()->query());
+            ->latest();
+
+        $query = $this->applySearchAndFilters($query, $search, $filters);
+
+        return $query->paginate($perPage)->appends(request()->query());
     }
 
-    public function getMyContributions(User $user, int $perPage = 15): LengthAwarePaginator
+    public function getMyContributions(User $user, ?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $invitedIdeaIds = IdeaInvitation::where(function ($q) use ($user) {
             $q->where('email', $user->email)
@@ -161,11 +198,13 @@ class IdeaService
             ->where('status', 'accepted')
             ->pluck('idea_id');
 
-        return Idea::with(['author', 'category'])
+        $query = Idea::with(['author', 'category'])
             ->whereIn('id', $invitedIdeaIds)
-            ->latest()
-            ->paginate($perPage)
-            ->appends(request()->query());
+            ->latest();
+
+        $query = $this->applySearchAndFilters($query, $search, $filters);
+
+        return $query->paginate($perPage)->appends(request()->query());
     }
 
     public function getPendingAssignment(int $perPage = 15): LengthAwarePaginator
