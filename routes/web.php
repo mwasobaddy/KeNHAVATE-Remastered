@@ -12,6 +12,8 @@ use App\Http\Controllers\Ideas\ChangeRequestController;
 use App\Http\Controllers\Ideas\ClassificationController;
 use App\Http\Controllers\Ideas\CollaborationController;
 use App\Http\Controllers\Ideas\CollaborationRequestController;
+use App\Http\Controllers\Ideas\Decisions\DecisionController;
+use App\Http\Controllers\Ideas\Decisions\RevisionController;
 use App\Http\Controllers\Ideas\IdeaController;
 use App\Http\Controllers\Ideas\InvitationController;
 use App\Http\Controllers\Ideas\ReviewController;
@@ -184,6 +186,9 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::get('/{slug}/changes/{changeRequest}', [ChangeRequestController::class, 'show'])->name('changes.show');
         Route::post('/{slug}/changes/{changeRequest}/approve', [ChangeRequestController::class, 'approve'])->name('changes.approve');
         Route::post('/{slug}/changes/{changeRequest}/reject', [ChangeRequestController::class, 'reject'])->name('changes.reject');
+        Route::delete('/{slug}/changes/{changeRequest}', [ChangeRequestController::class, 'destroy'])->name('changes.destroy');
+        Route::post('/{slug}/changes/{changeRequest}/hide', [ChangeRequestController::class, 'hide'])->name('changes.hide');
+        Route::post('/{slug}/changes/{changeRequest}/unhide', [ChangeRequestController::class, 'unhide'])->name('changes.unhide');
 
         Route::get('/{slug}/collaborations', [CollaborationController::class, 'index'])->name('collaborations.index');
         Route::post('/{slug}/collaborations', [CollaborationController::class, 'store'])->name('collaborations.store');
@@ -192,5 +197,12 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
 
         Route::post('/{slug}/assign', [AssignmentController::class, 'store'])->name('assign');
         Route::post('/{slug}/classify', [ClassificationController::class, 'store'])->name('classify');
+        Route::post('/{slug}/decide', [DecisionController::class, 'store'])->name('decide');
+        Route::post('/{slug}/progress', [DecisionController::class, 'progress'])->name('progress');
+        Route::post('/{slug}/request-revision', [RevisionController::class, 'requestRevision'])->name('request-revision');
+        Route::post('/{slug}/resubmit', [RevisionController::class, 'resubmit'])->name('resubmit');
     });
+
+    Route::get('/all-changes/mine', [ChangeRequestController::class, 'mine'])->name('all-changes.mine');
+    Route::get('/all-changes/pending', [ChangeRequestController::class, 'pending'])->name('all-changes.pending');
 });
