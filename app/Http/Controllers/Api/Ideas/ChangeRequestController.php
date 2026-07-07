@@ -100,6 +100,65 @@ class ChangeRequestController extends Controller
         return response()->json(['message' => 'Change request approved.']);
     }
 
+    public function hide(Request $request, string $slug, ChangeRequest $changeRequest): JsonResponse
+    {
+        $idea = $this->ideaService->findBySlug($slug);
+
+        if (! $idea || $changeRequest->idea_id !== $idea->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if ($changeRequest->user_id !== $request->user()->id && ! $idea->userCan($request->user(), 'idea.approve_changes')) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $this->changeRequestService->hide($request->user(), $changeRequest);
+
+        return response()->json(['message' => 'Change request hidden.']);
+    }
+
+    public function unhide(Request $request, string $slug, ChangeRequest $changeRequest): JsonResponse
+    {
+        $idea = $this->ideaService->findBySlug($slug);
+
+        if (! $idea || $changeRequest->idea_id !== $idea->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if ($changeRequest->user_id !== $request->user()->id && ! $idea->userCan($request->user(), 'idea.approve_changes')) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $this->changeRequestService->unhide($request->user(), $changeRequest);
+
+        return response()->json(['message' => 'Change request unhidden.']);
+    }
+
+    public function destroy(Request $request, string $slug, ChangeRequest $changeRequest): JsonResponse
+    {
+        $idea = $this->ideaService->findBySlug($slug);
+
+        if (! $idea || $changeRequest->idea_id !== $idea->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if ($changeRequest->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        if ($changeRequest->status !== 'pending') {
+            return response()->json(['message' => 'Only pending change requests can be deleted.'], 422);
+        }
+
+        $validated = $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $this->changeRequestService->delete($request->user(), $changeRequest);
+
+        return response()->json(['message' => 'Change request deleted.']);
+    }
+
     public function reject(Request $request, string $slug, ChangeRequest $changeRequest): JsonResponse
     {
         $idea = $this->ideaService->findBySlug($slug);

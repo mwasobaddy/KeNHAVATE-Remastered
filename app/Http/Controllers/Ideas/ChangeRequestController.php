@@ -17,7 +17,7 @@ class ChangeRequestController extends Controller
         private ChangeRequestService $changeRequestService,
     ) {}
 
-    public function index(string $slug): Response
+    public function index(Request $request, string $slug): Response
     {
         $idea = $this->ideaService->findBySlug($slug);
 
@@ -27,8 +27,22 @@ class ChangeRequestController extends Controller
 
         return inertia('ideas/changes/index', [
             'idea' => $idea->load('author'),
-            'changeRequests' => $this->changeRequestService->getForIdea($idea),
+            'changeRequests' => $this->changeRequestService->getForIdea($idea, $request->user()),
         ]);
+    }
+
+    public function mine(Request $request): Response
+    {
+        return inertia('ideas/changes/mine', [
+            'changeRequests' => $this->changeRequestService->getForUser($request->user())['proposed'],
+        ]);
+    }
+
+    public function pending(Request $request): Response
+    {
+        return inertia('ideas/changes/pending',
+            $this->changeRequestService->getForReviewAll($request->user()),
+        );
     }
 
     public function create(string $slug): Response
@@ -95,7 +109,7 @@ class ChangeRequestController extends Controller
             abort(404);
         }
 
-        $authorized = $idea->userCan(request()->user(), 'idea.approve_changes')
+        $authorized = $idea->userCan(request()->user(), 'idea.view_changes')
             || $changeRequest->user_id === request()->user()->id;
 
         if (! $authorized) {
@@ -105,6 +119,7 @@ class ChangeRequestController extends Controller
         return inertia('ideas/changes/show', [
             'idea' => $idea->only('slug', 'title'),
             'changeRequest' => $changeRequest->load(['proposer', 'reviewer']),
+            'canReview' => $idea->userCan(request()->user(), 'idea.approve_changes'),
         ]);
     }
 
@@ -132,6 +147,66 @@ class ChangeRequestController extends Controller
 
         return redirect()->route('ideas.changes.index', $idea->slug)
             ->with('success', 'Change request approved and applied.');
+    }
+
+    public function hide(Request $request, string $slug, ChangeRequest $changeRequest): RedirectResponse
+    {
+        $idea = $this->ideaService->findBySlug($slug);
+
+        if (! $idea || $changeRequest->idea_id !== $idea->id) {
+            abort(404);
+        }
+
+        if ($changeRequest->user_id !== $request->user()->id && ! $idea->userCan($request->user(), 'idea.approve_changes')) {
+            abort(403);
+        }
+
+        $this->changeRequestService->hide($request->user(), $changeRequest);
+
+        return back()->with('success', 'Change request hidden.');
+    }
+
+    public function unhide(Request $request, string $slug, ChangeRequest $changeRequest): RedirectResponse
+    {
+        $idea = $this->ideaService->findBySlug($slug);
+
+        if (! $idea || $changeRequest->idea_id !== $idea->id) {
+            abort(404);
+        }
+
+        if ($changeRequest->user_id !== $request->user()->id && ! $idea->userCan($request->user(), 'idea.approve_changes')) {
+            abort(403);
+        }
+
+        $this->changeRequestService->unhide($request->user(), $changeRequest);
+
+        return back()->with('success', 'Change request unhidden.');
+    }
+
+    public function destroy(Request $request, string $slug, ChangeRequest $changeRequest): RedirectResponse
+    {
+        $idea = $this->ideaService->findBySlug($slug);
+
+        if (! $idea || $changeRequest->idea_id !== $idea->id) {
+            abort(404);
+        }
+
+        if ($changeRequest->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        if ($changeRequest->status !== 'pending') {
+            return back()->withErrors(['error' => 'Only pending change requests can be deleted.']);
+        }
+
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $this->changeRequestService->delete($request->user(), $changeRequest);
+
+        return redirect()->route('ideas.changes.index', $slug)
+            ->with('success', 'Change request deleted.');
     }
 
     public function reject(Request $request, string $slug, ChangeRequest $changeRequest): RedirectResponse

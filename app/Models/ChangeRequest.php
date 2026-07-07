@@ -4,9 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ChangeRequest extends Model
 {
+    protected static function booted(): void
+    {
+        static::retrieved(function (self $cr) {
+            if (is_array($cr->proposed_data)) {
+                $cr->proposed_data = array_values($cr->proposed_data);
+            }
+        });
+    }
+
     protected $fillable = [
         'idea_id',
         'user_id',
@@ -37,5 +47,10 @@ class ChangeRequest extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function hiddenByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'change_request_hidden_users');
     }
 }

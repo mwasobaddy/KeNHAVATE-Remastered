@@ -10,6 +10,7 @@ use App\Models\Idea;
 use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class ChangeRequestService
@@ -89,11 +90,105 @@ class ChangeRequestService
         return $changeRequest->fresh();
     }
 
-    public function getForIdea(Idea $idea, int $perPage = 20): LengthAwarePaginator
+    public function hide(User $user, ChangeRequest $changeRequest): void
     {
-        return ChangeRequest::with(['proposer', 'reviewer'])
-            ->where('idea_id', $idea->id)
+        $changeRequest->hiddenByUsers()->syncWithoutDetaching([$user->id]);
+
+        $this->auditService->log(
+            $user,
+            'change_request_hidden',
+            "Hidden change request #{$changeRequest->id} from personal view",
+        );
+    }
+
+    public function unhide(User $user, ChangeRequest $changeRequest): void
+    {
+        $changeRequest->hiddenByUsers()->detach($user->id);
+
+        $this->auditService->log(
+            $user,
+            'change_request_unhidden',
+            "Unhidden change request #{$changeRequest->id} from personal view",
+        );
+    }
+
+    public function delete(User $user, ChangeRequest $changeRequest): void
+    {
+        $changeRequest->delete();
+
+        $this->auditService->log(
+            $user,
+            'change_request_deleted',
+            "Deleted change request #{$changeRequest->id} for idea: {$changeRequest->idea->title}",
+        );
+    }
+
+    public function getForIdea(Idea $idea, ?User $user = null, int $perPage = 20): LengthAwarePaginator
+    {
+        $query = ChangeRequest::with(['proposer', 'reviewer'])
+            ->where('idea_id', $idea->id);
+
+        if ($user) {
+            $hiddenSub = DB::table('change_request_hidden_users')
+                ->whereColumn('change_request_id', 'change_requests.id')
+                ->where('user_id', $user->id)
+                ->selectRaw('1')
+                ->limit(1);
+
+            $query->addSelect(['hidden_by_user' => $hiddenSub]);
+        }
+
+        return $query->latest()->paginate($perPage);
+    }
+
+    public function getForReviewAll(User $user): array
+    {
+        $hiddenSub = DB::table('change_request_hidden_users')
+            ->whereColumn('change_request_id', 'change_requests.id')
+            ->where('user_id', $user->id)
+            ->selectRaw('1')
+            ->limit(1);
+
+        $all = ChangeRequest::with(['idea', 'proposer', 'reviewer'])
+            ->where('user_id', '!=', $user->id)
+            ->whereHas('idea', fn ($q) => $q->where('author_id', $user->id))
+            ->addSelect(['hidden_by_user' => clone $hiddenSub])
             ->latest()
-            ->paginate($perPage);
+            ->get();
+
+        $pending = $all->where('status', 'pending')->values();
+
+        return [
+            'pending' => $pending,
+            'all' => $all,
+        ];
+    }
+
+    public function getForUser(User $user): array
+    {
+        $hiddenSub = DB::table('change_request_hidden_users')
+            ->whereColumn('change_request_id', 'change_requests.id')
+            ->where('user_id', $user->id)
+            ->selectRaw('1')
+            ->limit(1);
+
+        $proposed = ChangeRequest::with(['idea', 'proposer', 'reviewer'])
+            ->where('user_id', $user->id)
+            ->addSelect(['hidden_by_user' => clone $hiddenSub])
+            ->latest()
+            ->get();
+
+        $forReview = ChangeRequest::with(['idea', 'proposer', 'reviewer'])
+            ->where('status', 'pending')
+            ->where('user_id', '!=', $user->id)
+            ->whereHas('idea', fn ($q) => $q->where('author_id', $user->id))
+            ->addSelect(['hidden_by_user' => clone $hiddenSub])
+            ->latest()
+            ->get();
+
+        return [
+            'proposed' => $proposed,
+            'for_review' => $forReview,
+        ];
     }
 }

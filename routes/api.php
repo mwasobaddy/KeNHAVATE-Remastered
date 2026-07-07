@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\Ideas\AssignmentController as ApiAssignmentControll
 use App\Http\Controllers\Api\Ideas\ChangeRequestController as ApiChangeRequestController;
 use App\Http\Controllers\Api\Ideas\ClassificationController as ApiClassificationController;
 use App\Http\Controllers\Api\Ideas\CollaborationController as ApiCollaborationController;
+use App\Http\Controllers\Api\Ideas\Decisions\DecisionController as ApiDecisionController;
+use App\Http\Controllers\Api\Ideas\Decisions\RevisionController as ApiRevisionController;
 use App\Http\Controllers\Api\Ideas\IdeaController as ApiIdeaController;
 use App\Http\Controllers\Api\Ideas\InvitationController as ApiInvitationController;
 use App\Http\Controllers\Api\Ideas\ReviewController as ApiReviewController;
@@ -70,6 +72,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{slug}/changes/{changeRequest}', [ApiChangeRequestController::class, 'show']);
         Route::post('/{slug}/changes/{changeRequest}/approve', [ApiChangeRequestController::class, 'approve']);
         Route::post('/{slug}/changes/{changeRequest}/reject', [ApiChangeRequestController::class, 'reject']);
+        Route::delete('/{slug}/changes/{changeRequest}', [ApiChangeRequestController::class, 'destroy']);
+        Route::post('/{slug}/changes/{changeRequest}/hide', [ApiChangeRequestController::class, 'hide']);
+        Route::post('/{slug}/changes/{changeRequest}/unhide', [ApiChangeRequestController::class, 'unhide']);
 
         Route::get('/{slug}/collaborations', [ApiCollaborationController::class, 'index']);
         Route::post('/{slug}/collaborations', [ApiCollaborationController::class, 'store']);
@@ -78,5 +83,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('/{slug}/assign', [ApiAssignmentController::class, 'store']);
         Route::post('/{slug}/classify', [ApiClassificationController::class, 'store']);
+        Route::post('/{slug}/decide', [ApiDecisionController::class, 'store']);
+        Route::post('/{slug}/progress', [ApiDecisionController::class, 'progress']);
+        Route::post('/{slug}/request-revision', [ApiRevisionController::class, 'requestRevision']);
+        Route::post('/{slug}/resubmit', [ApiRevisionController::class, 'resubmit']);
     });
 });
