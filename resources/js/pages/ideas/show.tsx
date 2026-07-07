@@ -96,16 +96,31 @@ type Props = {
     classifications: Classification[];
     categories: { id: number; name: string }[];
     officers: Officer[];
+    canRecordDecision: boolean;
+    validDecisions: string[];
+    canProgress: boolean;
+    canRequestRevision: boolean;
+    canResubmit: boolean;
 };
 
 const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
     draft: 'outline',
     submitted: 'default',
+    assigned: 'secondary',
+    revision_requested: 'outline',
+    resubmitted: 'default',
+    classified: 'secondary',
     approved: 'secondary',
-    rejected: 'destructive',
+    declined: 'destructive',
+    deferred: 'outline',
+    budget_logged: 'secondary',
+    closed: 'outline',
+    in_progress: 'default',
+    completed: 'secondary',
+    implemented: 'secondary',
 };
 
-export default function ShowIdea({ idea, canRequestCollaboration, hasPendingCollaborationCount, canProposeChanges, canApproveChanges, canAssign, canClassify, classifications, categories, officers }: Props) {
+export default function ShowIdea({ idea, canRequestCollaboration, hasPendingCollaborationCount, canProposeChanges, canApproveChanges, canAssign, canClassify, classifications, categories, officers, canRecordDecision, validDecisions, canProgress, canRequestRevision, canResubmit }: Props) {
     const { auth } = usePage().props as { auth: { user: { id: number } } };
     const proposal = idea.documents.find((d) => d.type === 'proposal');
     const supportingDocs = idea.documents.filter((d) => d.type === 'supporting');
@@ -502,6 +517,192 @@ export default function ShowIdea({ idea, canRequestCollaboration, hasPendingColl
                                                 </DialogTrigger>
                                                 <Button type="submit" disabled={processing}>
                                                     {processing ? 'Classifying...' : 'Classify Idea'}
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    )}
+
+                    {canRecordDecision && (
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button>Record Decision</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Record DG Decision</DialogTitle>
+                                </DialogHeader>
+                                <Form
+                                    method="post"
+                                    action={ideas.decide(idea.slug)}
+                                    className="space-y-4"
+                                >
+                                    {({ processing, errors, data, setData }) => (
+                                        <>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="decision">Decision</Label>
+                                                <select
+                                                    id="decision"
+                                                    name="decision"
+                                                    value={data.decision ?? ''}
+                                                    onChange={(e) => setData('decision', e.target.value)}
+                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                                    required
+                                                >
+                                                    <option value="">Select decision...</option>
+                                                    {validDecisions.map((d) => (
+                                                        <option key={d} value={d}>
+                                                            {d.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <InputError message={errors.decision} />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="notes">
+                                                    Notes <span className="text-muted-foreground">(optional)</span>
+                                                </Label>
+                                                <Textarea
+                                                    id="notes"
+                                                    name="notes"
+                                                    value={data.notes ?? ''}
+                                                    onChange={(e) => setData('notes', e.target.value)}
+                                                    rows={3}
+                                                    placeholder="Any additional notes..."
+                                                />
+                                                <InputError message={errors.notes} />
+                                            </div>
+
+                                            <div className="flex justify-end gap-3">
+                                                <DialogTrigger asChild>
+                                                    <Button type="button" variant="outline">
+                                                        Cancel
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <Button type="submit" disabled={processing}>
+                                                    {processing ? 'Recording...' : 'Record Decision'}
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    )}
+
+                    {canProgress && (
+                        <Form
+                            method="post"
+                            action={ideas.progress(idea.slug)}
+                            className="inline"
+                        >
+                            {({ processing }) => (
+                                <Button type="submit" disabled={processing}>
+                                    {processing ? 'Advancing...' : 'Advance Status'}
+                                </Button>
+                            )}
+                        </Form>
+                    )}
+
+                    {canRequestRevision && (
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="outline">Request Revision</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Request Revision</DialogTitle>
+                                </DialogHeader>
+                                <Form
+                                    method="post"
+                                    action={ideas['request-revision'](idea.slug)}
+                                    className="space-y-4"
+                                >
+                                    {({ processing, errors, data, setData }) => (
+                                        <>
+                                            <p className="text-sm text-muted-foreground">
+                                                The author will be asked to revise and resubmit this idea.
+                                            </p>
+
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="notes">
+                                                    Instructions <span className="text-muted-foreground">(optional)</span>
+                                                </Label>
+                                                <Textarea
+                                                    id="notes"
+                                                    name="notes"
+                                                    value={data.notes ?? ''}
+                                                    onChange={(e) => setData('notes', e.target.value)}
+                                                    rows={3}
+                                                    placeholder="What changes are needed?"
+                                                />
+                                                <InputError message={errors.notes} />
+                                            </div>
+
+                                            <div className="flex justify-end gap-3">
+                                                <DialogTrigger asChild>
+                                                    <Button type="button" variant="outline">
+                                                        Cancel
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <Button type="submit" disabled={processing}>
+                                                    {processing ? 'Requesting...' : 'Request Revision'}
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    )}
+
+                    {canResubmit && (
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button>Resubmit Idea</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Resubmit Idea</DialogTitle>
+                                </DialogHeader>
+                                <Form
+                                    method="post"
+                                    action={ideas.resubmit(idea.slug)}
+                                    className="space-y-4"
+                                >
+                                    {({ processing, errors, data, setData }) => (
+                                        <>
+                                            <p className="text-sm text-muted-foreground">
+                                                This will notify the assigned officer that your idea is ready for review.
+                                            </p>
+
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="notes">
+                                                    Notes <span className="text-muted-foreground">(optional)</span>
+                                                </Label>
+                                                <Textarea
+                                                    id="notes"
+                                                    name="notes"
+                                                    value={data.notes ?? ''}
+                                                    onChange={(e) => setData('notes', e.target.value)}
+                                                    rows={3}
+                                                    placeholder="Any updates for the officer?"
+                                                />
+                                                <InputError message={errors.notes} />
+                                            </div>
+
+                                            <div className="flex justify-end gap-3">
+                                                <DialogTrigger asChild>
+                                                    <Button type="button" variant="outline">
+                                                        Cancel
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <Button type="submit" disabled={processing}>
+                                                    {processing ? 'Submitting...' : 'Resubmit'}
                                                 </Button>
                                             </div>
                                         </>
