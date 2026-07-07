@@ -27,7 +27,7 @@ class ReviewController extends Controller
             $data['my_assignments'] = $this->ideaService->getMyAssignments($user);
         }
 
-        if ($user->can('idea.dg_decision')) {
+        if ($user->can('idea.record_decision')) {
             $data['pending_decisions'] = $this->ideaService->getPendingDecisions();
         }
 

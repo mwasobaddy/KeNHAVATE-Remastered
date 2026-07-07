@@ -24,6 +24,10 @@ class Idea extends Model
         'assigned_at',
         'classification_id',
         'classified_at',
+        'decided_at',
+        'decided_by_id',
+        'budget_logged_at',
+        'completed_at',
         'problem_statement',
         'proposed_solution',
         'cost_benefit_analysis',
@@ -37,6 +41,9 @@ class Idea extends Model
             'collaboration_enabled' => 'boolean',
             'assigned_at' => 'datetime',
             'classified_at' => 'datetime',
+            'decided_at' => 'datetime',
+            'budget_logged_at' => 'datetime',
+            'completed_at' => 'datetime',
         ];
     }
 
@@ -100,6 +107,11 @@ class Idea extends Model
         return $this->belongsTo(User::class, 'assigned_officer_id');
     }
 
+    public function decidedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'decided_by_id');
+    }
+
     public function classification(): BelongsTo
     {
         return $this->belongsTo(IdeaClassification::class, 'classification_id');
@@ -121,15 +133,18 @@ class Idea extends Model
                 'idea.delete',
                 'idea.propose_changes',
                 'idea.approve_changes',
+                'idea.view_changes',
                 'idea.manage_contributors',
             ],
             'contributor' => [
                 'idea.view',
                 'idea.propose_changes',
+                'idea.view_changes',
             ],
             'collaborator' => [
                 'idea.view',
                 'idea.propose_changes',
+                'idea.view_changes',
             ],
         ];
 

@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Listeners\AwardDailyLoginPoints;
+use App\Models\User;
+use App\Observers\UserObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Date;
@@ -57,6 +59,8 @@ class AppServiceProvider extends ServiceProvider
     protected function registerEventListeners(): void
     {
         Event::listen(Login::class, AwardDailyLoginPoints::class);
+
+        User::observe(UserObserver::class);
     }
 
     protected function shareAuthData(): void

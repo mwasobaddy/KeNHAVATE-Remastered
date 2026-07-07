@@ -11,6 +11,7 @@ use App\Models\IdeaDocument;
 use App\Models\IdeaIpDocument;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\Ideas\Decisions\DecisionService;
 use App\Services\Ideas\IdeaCategoryService;
 use App\Services\Ideas\IdeaService;
 use Illuminate\Http\RedirectResponse;
@@ -114,6 +115,18 @@ class IdeaController extends Controller
 
         $notClassified = $idea->classification_id === null && in_array($idea->status, ['assigned', 'resubmitted']);
 
+        $canRecordDecision = $user->can('idea.record_decision')
+            && DecisionService::canDecide($idea);
+        $validDecisions = $user->can('idea.record_decision')
+            ? DecisionService::getValidDecisions($idea)
+            : [];
+        $canProgress = $user->can('idea.record_decision')
+            && DecisionService::canProgress($idea);
+        $canRequestRevision = $idea->assigned_officer_id === $user->id
+            && in_array($idea->status, ['assigned', 'resubmitted'], true);
+        $canResubmit = $idea->author_id === $user->id
+            && $idea->status === 'revision_requested';
+
         return inertia('ideas/show', [
             'idea' => $idea,
             'canRequestCollaboration' => $canRequestCollaboration,
@@ -131,6 +144,11 @@ class IdeaController extends Controller
             'officers' => $canAssign && ! $idea->assigned_officer_id
                 ? User::select('id', 'name', 'email')->orderBy('name')->get()
                 : [],
+            'canRecordDecision' => $canRecordDecision,
+            'validDecisions' => $validDecisions,
+            'canProgress' => $canProgress,
+            'canRequestRevision' => $canRequestRevision,
+            'canResubmit' => $canResubmit,
         ]);
     }
 

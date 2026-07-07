@@ -26,18 +26,12 @@ class ReviewController extends Controller
             ? $this->ideaService->getMyAssignments($user)
             : null;
 
-        $pendingDecisions = $user->can('idea.dg_decision')
-            ? $this->ideaService->getPendingDecisions()
-            : null;
-
         return inertia('ideas/review', [
             'currentTab' => $tab,
             'pendingAssignment' => $pendingAssignment,
             'myAssignments' => $myAssignments,
-            'pendingDecisions' => $pendingDecisions,
             'canAssign' => $user->can('idea.assign_officer'),
             'canClassify' => $user->can('idea.classify'),
-            'canDecide' => $user->can('idea.dg_decision'),
         ]);
     }
 }
