@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, Pencil, Search, SlidersHorizontal, Trash2, UserPlus, X } from 'lucide-react';
+import { Eye, FileEdit, Pencil, Search, SlidersHorizontal, Trash2, UserPlus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -456,6 +456,18 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                                         </Button>
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>Request to Collaborate</TooltipContent>
+                                                                </Tooltip>
+                                                            )}
+                                                            {currentTab === 'open-for-collaboration' && idea.collaboration_status === 'approved' && (
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button variant="ghost" size="icon" asChild>
+                                                                            <Link href={ideas.changes.create(idea.slug)}>
+                                                                                <FileEdit className="h-4 w-4" />
+                                                                            </Link>
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>Request Change</TooltipContent>
                                                                 </Tooltip>
                                                             )}
                                                         </div>
