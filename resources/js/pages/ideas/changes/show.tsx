@@ -30,6 +30,7 @@ type ChangeRequest = {
 type Props = {
     idea: { slug: string; title: string };
     changeRequest: ChangeRequest;
+    canReview: boolean;
 };
 
 const fieldLabels: Record<string, string> = {
@@ -40,7 +41,7 @@ const fieldLabels: Record<string, string> = {
     cost_benefit_analysis: 'Cost-Benefit Analysis',
 };
 
-export default function ReviewChange({ idea, changeRequest }: Props) {
+export default function ReviewChange({ idea, changeRequest, canReview }: Props) {
     const isPending = changeRequest.status === 'pending';
 
     return (
@@ -72,7 +73,7 @@ export default function ReviewChange({ idea, changeRequest }: Props) {
                 )}
 
                 <div className="space-y-6">
-                    {changeRequest.proposed_data.map((change, i) => (
+                    {(changeRequest.proposed_data ?? []).map((change, i) => (
                         <Card key={i}>
                             <CardHeader>
                                 <CardTitle className="text-base">
@@ -110,7 +111,7 @@ export default function ReviewChange({ idea, changeRequest }: Props) {
                     </Card>
                 )}
 
-                {isPending && (
+                {isPending && canReview && (
                     <div className="grid gap-6 md:grid-cols-2">
                         <Form
                             method="post"
