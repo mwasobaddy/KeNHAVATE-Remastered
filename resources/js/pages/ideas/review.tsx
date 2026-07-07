@@ -23,32 +23,28 @@ type Props = {
     currentTab: string;
     pendingAssignment: PaginatedData | null;
     myAssignments: PaginatedData | null;
-    pendingDecisions: PaginatedData | null;
     canAssign: boolean;
     canClassify: boolean;
-    canDecide: boolean;
 };
 
 const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
     submitted: 'default',
     assigned: 'secondary',
     resubmitted: 'warning' as any,
-    dg_review: 'default',
 };
 
 const tabs = [
-    { key: 'pending-assignment', label: 'Pending Assignment', gate: 'canAssign' },
-    { key: 'my-assignments', label: 'My Assignments', gate: 'canClassify' },
-    { key: 'pending-decisions', label: 'Pending Decisions', gate: 'canDecide' },
-] as const;
+    { key: 'pending-assignment', label: 'Pending Assignment', gate: 'canAssign' as const },
+    { key: 'my-assignments', label: 'My Assignments', gate: 'canClassify' as const },
+];
 
 function switchTab(tab: string) {
     router.get(ideas.review(), { tab }, { preserveState: true, preserveScroll: true });
 }
 
-export default function ReviewIndex({ currentTab, pendingAssignment, myAssignments, pendingDecisions, canAssign, canClassify, canDecide }: Props) {
-    const availableTabs = tabs.filter((t) => ({ canAssign, canClassify, canDecide }[t.gate]));
-    const currentData = { 'pending-assignment': pendingAssignment, 'my-assignments': myAssignments, 'pending-decisions': pendingDecisions }[currentTab] ?? null;
+export default function ReviewIndex({ currentTab, pendingAssignment, myAssignments, canAssign, canClassify }: Props) {
+    const availableTabs = tabs.filter((t) => ({ canAssign, canClassify }[t.gate]));
+    const currentData = { 'pending-assignment': pendingAssignment, 'my-assignments': myAssignments }[currentTab] ?? null;
     const visibleTabs = availableTabs.length > 1;
 
     return (
