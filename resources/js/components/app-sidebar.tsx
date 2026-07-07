@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardCheck, ClipboardList, FolderGit2, Gavel, LayoutGrid, Lightbulb, MessageSquare, ScrollText, Shield, Trophy, User, Zap } from 'lucide-react';
+import { ClipboardCheck, ClipboardList, FileEdit, LayoutGrid, Lightbulb, MessageSquare, ScrollText, Shield, Trophy, User, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -15,6 +15,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard, leaderboard } from '@/routes';
+import allChanges from '@/routes/all-changes';
 import ideas from '@/routes/ideas';
 import points from '@/routes/points';
 import roles from '@/routes/roles';
@@ -22,16 +23,16 @@ import users from '@/routes/users';
 import type { NavItem } from '@/types';
 
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#laravel',
-        icon: BookOpen,
-    },
+    // {
+    //     title: 'Repository',
+    //     href: 'https://github.com/laravel/react-starter-kit',
+    //     icon: FolderGit2,
+    // },
+    // {
+    //     title: 'Documentation',
+    //     href: 'https://laravel.com/docs/starter-kits#laravel',
+    //     icon: BookOpen,
+    // },
 ];
 
 export function AppSidebar() {
@@ -43,7 +44,6 @@ export function AppSidebar() {
     const hasAuditAccess = permissions.includes('audit.view');
     const hasAssignPermission = permissions.includes('idea.assign_officer');
     const hasClassifyPermission = permissions.includes('idea.classify');
-    const hasDecidePermission = permissions.includes('idea.dg_decision');
     const hasRoleManage = permissions.includes('role.manage');
     const hasUserManage = permissions.includes('user.manage');
     const generalItems: NavItem[] = [
@@ -64,6 +64,21 @@ export function AppSidebar() {
             href: leaderboard(),
             icon: Trophy,
             group: 'General',
+        },
+    ];
+
+    const allChangesItems: NavItem[] = [
+        {
+            title: 'Proposed',
+            href: allChanges.mine(),
+            icon: FileEdit,
+            group: 'Change',
+        },
+        {
+            title: 'Pending',
+            href: allChanges.pending(),
+            icon: FileEdit,
+            group: 'Change',
         },
     ];
 
@@ -98,15 +113,6 @@ export function AppSidebar() {
             title: 'My Assignments',
             href: ideas.review().url + '?tab=my-assignments',
             icon: ClipboardCheck as LucideIcon,
-            group: 'Review',
-        });
-    }
-
-    if (hasDecidePermission) {
-        reviewItems.push({
-            title: 'Pending Decisions',
-            href: ideas.review().url + '?tab=pending-decisions',
-            icon: Gavel as LucideIcon,
             group: 'Review',
         });
     }
@@ -147,7 +153,7 @@ export function AppSidebar() {
         });
     }
 
-    const mainNavItems = [...generalItems, ...reviewItems, ...collaborationItems];
+    const mainNavItems = [...generalItems, ...allChangesItems, ...collaborationItems, ...reviewItems];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
