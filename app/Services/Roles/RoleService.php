@@ -30,9 +30,22 @@ class RoleService
             ->all();
     }
 
+    private const TEAM_PERMISSIONS = [
+        'idea.view',
+        'idea.edit',
+        'idea.delete',
+        'idea.propose_changes',
+        'idea.approve_changes',
+        'idea.view_changes',
+        'idea.manage_contributors',
+    ];
+
     public function getFormPermissions(): array
     {
-        return Permission::orderBy('name')->get(['id', 'name'])->all();
+        return Permission::orderBy('name')
+            ->whereNotIn('name', self::TEAM_PERMISSIONS)
+            ->get(['id', 'name', 'description'])
+            ->all();
     }
 
     public function create(User $user, string $name, array $permissions = []): Role
@@ -43,9 +56,7 @@ class RoleService
             'team_id' => null,
         ]);
 
-        if (! empty($permissions)) {
-            $role->syncPermissions($permissions);
-        }
+        $role->syncPermissions(collect($permissions)->push('idea.create')->unique()->values()->all());
 
         $this->auditService->log($user, 'role_created', "Created role: {$role->name}");
 
@@ -81,9 +92,7 @@ class RoleService
             $role->update(['name' => $name]);
         }
 
-        if (! empty($permissions)) {
-            $role->syncPermissions($permissions);
-        }
+        $role->syncPermissions(collect($permissions)->push('idea.create')->unique()->values()->all());
 
         $this->auditService->log($user, 'role_updated', "Updated role: {$role->name}");
 

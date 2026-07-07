@@ -1,4 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { Info } from 'lucide-react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import routes from '@/routes/roles';
+
+type Permission = { id: number; name: string; description: string | null };
 
 export default function RoleEdit({
     role,
@@ -19,9 +23,12 @@ export default function RoleEdit({
         is_protected: boolean;
         permission_names: string[];
     };
-    permissions: { id: number; name: string }[];
+    permissions: Permission[];
 }) {
-    const groupedPermissions = permissions.reduce<Record<string, { id: number; name: string }[]>>((acc, p) => {
+    const createPermission = permissions.find((p) => p.name === 'idea.create');
+    const selectablePermissions = permissions.filter((p) => p.name !== 'idea.create');
+
+    const groupedPermissions = selectablePermissions.reduce<Record<string, Permission[]>>((acc, p) => {
         const group = p.name.split('.')[0];
 
         if (!acc[group]) {
@@ -74,6 +81,37 @@ acc[group] = [];
 
                                     <div className="space-y-4">
                                         <Label className="text-base font-medium">Permissions</Label>
+
+                                        {createPermission && (
+                                            <div className="space-y-2">
+                                                <Label className="text-sm font-medium capitalize text-muted-foreground">Required</Label>
+                                                <div className="rounded-lg border p-3">
+                                                    <label className="flex items-center gap-2 text-sm">
+                                                        <Checkbox
+                                                            name="permissions[]"
+                                                            value={createPermission.name}
+                                                            checked
+                                                            disabled
+                                                            className="cursor-not-allowed opacity-60"
+                                                        />
+                                                        <span className="text-muted-foreground">{createPermission.name}</span>
+                                                        {createPermission.description && (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <button type="button" className="inline-flex cursor-help">
+                                                                        <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
+                                                                    </button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent side="right" className="max-w-xs">
+                                                                    <p className="text-xs">{createPermission.description}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        )}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {Object.entries(groupedPermissions).map(([group, perms]) => (
                                             <div key={group} className="space-y-2">
                                                 <Label className="text-sm font-medium capitalize text-muted-foreground">{group}</Label>
@@ -89,6 +127,18 @@ acc[group] = [];
                                                                 defaultChecked={role.permission_names.includes(perm.name)}
                                                             />
                                                             <span>{perm.name}</span>
+                                                            {perm.description && (
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <button type="button" className="inline-flex cursor-help">
+                                                                            <Info className="h-3.5 w-3.5 text-muted-foreground/60" />
+                                                                        </button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="right" className="max-w-xs">
+                                                                        <p className="text-xs">{perm.description}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            )}
                                                         </label>
                                                     ))}
                                                 </div>
@@ -113,5 +163,3 @@ acc[group] = [];
         </>
     );
 }
-
-
