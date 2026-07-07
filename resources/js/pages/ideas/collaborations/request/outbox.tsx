@@ -1,9 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ExternalLink, Send } from 'lucide-react';
+import { ArrowLeft, Eye, FileEdit, Send } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type CollaborationRequest = {
@@ -89,11 +90,30 @@ export default function Outbox({ requests }: Props) {
                                                 {req.status}
                                             </Badge>
                                         </div>
-                                        <Button variant="ghost" size="icon" asChild className="shrink-0">
-                                            <Link href={ideas.show(req.idea.slug)}>
-                                                <ExternalLink className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" asChild>
+                                                        <Link href={ideas.show(req.idea.slug)}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>View Idea</TooltipContent>
+                                            </Tooltip>
+                                            {req.status === 'approved' && (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" asChild>
+                                                            <Link href={ideas.changes.create(req.idea.slug)}>
+                                                                <FileEdit className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Request Change</TooltipContent>
+                                                </Tooltip>
+                                            )}
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent>

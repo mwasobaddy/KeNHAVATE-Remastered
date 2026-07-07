@@ -1,9 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ExternalLink, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Eye, MessageSquare, UserCheck } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type CollaborationRequest = {
@@ -85,11 +86,28 @@ export default function Inbox({ requests }: Props) {
                                                 {req.status}
                                             </Badge>
                                         </div>
-                                        <Button variant="ghost" size="icon" asChild className="shrink-0">
-                                            <Link href={ideas.show(req.idea.slug)}>
-                                                <ExternalLink className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" asChild>
+                                                        <Link href={ideas.show(req.idea.slug)}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>View Idea</TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" asChild>
+                                                        <Link href={ideas.collaborations.index(req.idea.slug)}>
+                                                            <UserCheck className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Manage Collaboration</TooltipContent>
+                                            </Tooltip>
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
