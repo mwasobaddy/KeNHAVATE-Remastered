@@ -108,8 +108,8 @@ class IdeaController extends Controller
             : [];
         $canProgress = $user->can('idea.record_decision')
             && DecisionService::canProgress($idea);
-        $canRequestRevision = $idea->assigned_officer_id === $user->id
-            && in_array($idea->status, ['assigned', 'resubmitted'], true);
+        $canRequestRevision = $user->can('idea.record_decision')
+            && $idea->canBeRevised();
         $canResubmit = $idea->author_id === $user->id
             && $idea->status === 'revision_requested';
 

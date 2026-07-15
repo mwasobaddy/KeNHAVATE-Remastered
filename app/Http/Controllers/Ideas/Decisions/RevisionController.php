@@ -24,19 +24,19 @@ class RevisionController extends Controller
             abort(404);
         }
 
-        if ($idea->assigned_officer_id !== $request->user()->id) {
-            return redirect()->route('ideas.show', $idea->slug)
-                ->with('error', 'Only the assigned officer can request a revision.');
+        if (! $request->user()->can('idea.record_decision')) {
+            return back()
+                ->with('error', 'You do not have permission to request a revision.');
         }
 
-        if (! in_array($idea->status, ['assigned', 'resubmitted'], true)) {
-            return redirect()->route('ideas.show', $idea->slug)
+        if (! $idea->canBeRevised()) {
+            return back()
                 ->with('error', 'This idea cannot be sent for revision at this stage.');
         }
 
         $this->decisionService->requestRevision($idea, $request->user(), $request->notes);
 
-        return redirect()->route('ideas.show', $idea->slug)
+        return back()
             ->with('success', 'Revision requested. The author has been notified.');
     }
 
@@ -49,13 +49,13 @@ class RevisionController extends Controller
         }
 
         if ($idea->status !== 'revision_requested') {
-            return redirect()->route('ideas.show', $idea->slug)
+            return back()
                 ->with('error', 'This idea is not awaiting revision.');
         }
 
         $this->decisionService->resubmit($idea, $request->user(), $request->notes);
 
-        return redirect()->route('ideas.show', $idea->slug)
+        return back()
             ->with('success', 'Idea resubmitted successfully.');
     }
 }

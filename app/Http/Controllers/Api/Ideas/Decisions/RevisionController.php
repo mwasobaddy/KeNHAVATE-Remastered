@@ -17,6 +17,10 @@ class RevisionController extends Controller
 
     public function requestRevision(RequestRevisionRequest $request, Idea $idea): JsonResponse
     {
+        if (! $idea->canBeRevised()) {
+            return response()->json(['message' => 'This idea cannot be revised at this stage.'], 422);
+        }
+
         $this->decisionService->requestRevision(
             $idea,
             $request->user(),

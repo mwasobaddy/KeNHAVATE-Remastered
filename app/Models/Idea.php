@@ -131,7 +131,6 @@ class Idea extends Model
                 'idea.view',
                 'idea.edit',
                 'idea.delete',
-                'idea.propose_changes',
                 'idea.approve_changes',
                 'idea.view_changes',
                 'idea.manage_contributors',
@@ -172,6 +171,16 @@ class Idea extends Model
         app(PermissionRegistrar::class)->setPermissionsTeamId($previous);
 
         return $result;
+    }
+
+    public function isOpen(): bool
+    {
+        return in_array($this->status, ['draft', 'revision_requested']);
+    }
+
+    public function canBeRevised(): bool
+    {
+        return $this->status !== 'draft' && $this->status !== 'revision_requested';
     }
 
     public function userCan(User $user, string $permission): bool

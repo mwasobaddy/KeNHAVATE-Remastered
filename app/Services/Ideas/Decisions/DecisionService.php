@@ -40,7 +40,7 @@ class DecisionService
 
     public static function canDecide(Idea $idea): bool
     {
-        return $idea->status === 'classified'
+        return in_array($idea->status, ['classified', 'resubmitted'], true)
             && $idea->classification_id !== null
             && $idea->decided_at === null;
     }

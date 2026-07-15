@@ -3,20 +3,24 @@
 namespace App\Http\Requests\Ideas;
 
 use App\Models\Idea;
+use App\Services\Ideas\IdeaService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateIdeaRequest extends FormRequest
 {
-    protected function prepareForValidation(): void
-    {
-        $this->merge(['idea' => $this->route('idea')]);
-    }
-
     public function authorize(): bool
     {
-        $idea = $this->route('idea');
+        $slug = $this->route('slug');
 
-        return $idea instanceof Idea && $idea->userCan($this->user(), 'idea.edit');
+        if (! $slug) {
+            return false;
+        }
+
+        $idea = app(IdeaService::class)->findBySlug($slug);
+
+        return $idea instanceof Idea
+            && $idea->isOpen()
+            && $idea->userCan($this->user(), 'idea.edit');
     }
 
     public function rules(): array
@@ -36,6 +40,7 @@ class UpdateIdeaRequest extends FormRequest
             'patent_number' => ['nullable', 'string', 'max:255'],
             'consent_given' => ['sometimes', 'required', 'accepted'],
             'ip_documents.*' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+            'resubmit_notes' => ['nullable', 'string'],
         ];
     }
 }
