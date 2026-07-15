@@ -53,7 +53,7 @@ class CollaborationController extends Controller
             $validated['message'],
         );
 
-        return redirect()->route('ideas.show', $idea->slug)
+        return redirect()->back()
             ->with('success', 'Collaboration request sent to the idea author.');
     }
 

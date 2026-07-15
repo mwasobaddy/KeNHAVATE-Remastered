@@ -1,7 +1,8 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import { Eye, FileEdit, Pencil, RotateCcw, Search, SlidersHorizontal, Trash2, UserPlus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
@@ -118,8 +120,10 @@ function navigateWithFilters(currentTab: string, searchValue: string, activeFilt
 }
 
 export default function IdeaIndex({ ideas: ideasData, currentTab, categories, filters: initialFilters, search: initialSearch }: Props) {
+    const { auth } = usePage().props as { auth: { user: { id: number } } };
     const colSpan = currentTab === 'my-ideas' ? 5 : 7;
     const [deleteIdea, setDeleteIdea] = useState<Idea | null>(null);
+    const [collabIdeaSlug, setCollabIdeaSlug] = useState<string | null>(null);
     const [searchValue, setSearchValue] = useState(initialSearch ?? '');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
     const [filterOpen, setFilterOpen] = useState(false);
@@ -171,6 +175,18 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
     const clearSearch = () => {
         setSearchValue('');
     };
+
+    const canRequestCollaboration = (idea: Idea) => {
+        const isOpen = idea.status === 'draft' || idea.status === 'revision_requested';
+
+        return isOpen
+            && idea.collaboration_enabled
+            && idea.author?.id !== auth.user.id
+            && idea.collaboration_status !== 'pending'
+            && idea.collaboration_status !== 'approved';
+    };
+
+    const collabIdea = ideasData.data.find((i) => i.slug === collabIdeaSlug);
 
     const hasActiveFilters = Object.keys(activeFilters).length > 0;
     const hasSearch = searchValue.length > 0;
@@ -469,16 +485,31 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                                 </>
                                                             )}
 
-                                                            {currentTab === 'open-for-collaboration' && !idea.collaboration_status && (
+                                                            {currentTab === 'open-for-collaboration' && (
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button variant="ghost" size="icon" asChild>
-                                                                            <Link href={ideas.show(idea.slug)}>
+                                                                        <span tabIndex={0}>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                disabled={!canRequestCollaboration(idea)}
+                                                                                onClick={() => setCollabIdeaSlug(idea.slug)}
+                                                                            >
                                                                                 <UserPlus className="h-4 w-4" />
-                                                                            </Link>
-                                                                        </Button>
+                                                                            </Button>
+                                                                        </span>
                                                                     </TooltipTrigger>
-                                                                    <TooltipContent>Request to Collaborate</TooltipContent>
+                                                                    <TooltipContent>
+                                                                        {canRequestCollaboration(idea)
+                                                                            ? 'Request to Collaborate'
+                                                                            : idea.status !== 'draft' && idea.status !== 'revision_requested'
+                                                                                ? 'Idea is not open for collaboration'
+                                                                                : idea.collaboration_status === 'pending'
+                                                                                    ? 'Request already pending'
+                                                                                    : idea.collaboration_status === 'approved'
+                                                                                        ? 'Already a collaborator'
+                                                                                        : 'Cannot request collaboration'}
+                                                                    </TooltipContent>
                                                                 </Tooltip>
                                                             )}
                                                             {currentTab === 'open-for-collaboration' && idea.collaboration_status === 'approved' && (
@@ -564,6 +595,57 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                 Delete
                             </Button>
                         </div>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={collabIdeaSlug !== null} onOpenChange={(open) => {
+                    if (!open) {
+                        setCollabIdeaSlug(null);
+                    }
+                }}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Request to Collaborate</DialogTitle>
+                            {collabIdea && (
+                                <DialogDescription className="text-sm text-muted-foreground">
+                                    Send a request to collaborate on &ldquo;{collabIdea.title}&rdquo;
+                                </DialogDescription>
+                            )}
+                        </DialogHeader>
+                        {collabIdea && (
+                            <Form
+                                method="post"
+                                action={ideas.collaborations.store(collabIdea.slug)}
+                                resetOnSuccess={true}
+                                className="space-y-4"
+                            >
+                                {({ processing, errors }) => (
+                                    <>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="message">
+                                                Why do you want to collaborate?
+                                            </Label>
+                                            <Textarea
+                                                id="message"
+                                                name="message"
+                                                rows={4}
+                                                required
+                                                placeholder="Tell the author what skills or ideas you can contribute..."
+                                            />
+                                            <InputError message={errors.message} />
+                                        </div>
+                                        <div className="flex justify-end gap-3">
+                                            <Button type="button" variant="outline" onClick={() => setCollabIdeaSlug(null)}>
+                                                Cancel
+                                            </Button>
+                                            <Button type="submit" disabled={processing}>
+                                                {processing ? 'Sending...' : 'Send Request'}
+                                            </Button>
+                                        </div>
+                                    </>
+                                )}
+                            </Form>
+                        )}
                     </DialogContent>
                 </Dialog>
             </>
