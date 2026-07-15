@@ -156,7 +156,7 @@ export function AppSidebar() {
     const mainNavItems = [...generalItems, ...allChangesItems, ...collaborationItems, ...reviewItems];
 
     return (
-        <Sidebar collapsible="offcanvas">
+        <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

@@ -164,7 +164,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile, isHovering, setIsHovering } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, isHovering } = useSidebar()
 
   if (collapsible === "none") {
     return (
@@ -214,8 +214,6 @@ function Sidebar({
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
-       onMouseEnter={() => collapsible === "icon" && state === "collapsed" && setIsHovering(true)}
-       onMouseLeave={() => collapsible === "icon" && state === "collapsed" && setIsHovering(false)}
        data-hovering={isHovering ? "true" : undefined}
     >
       {/* This is what handles the sidebar gap on desktop */}
