@@ -25,7 +25,7 @@ class AssignmentController extends Controller
         }
 
         if ($idea->assigned_officer_id !== null) {
-            return redirect()->route('ideas.show', $idea->slug)
+            return back()
                 ->with('error', 'An officer has already been assigned to this idea.');
         }
 
@@ -33,7 +33,9 @@ class AssignmentController extends Controller
 
         $this->assignmentService->assign($idea, $officer, $request->user());
 
-        return redirect()->route('ideas.show', $idea->slug)
-            ->with('success', "{$officer->name} has been assigned as the RI&KM Officer.");
+        $name = $officer->name;
+
+        return back()
+            ->with('success', "{$name} has been assigned as the RI&KM Officer.");
     }
 }

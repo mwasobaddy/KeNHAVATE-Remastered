@@ -1,9 +1,25 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import ideas from '@/routes/ideas';
+
+type Officer = {
+    id: number;
+    name: string;
+    email: string;
+};
 
 type PaginatedData = {
     data: Array<{
@@ -16,7 +32,9 @@ type PaginatedData = {
         category: { id: number; name: string } | null;
         assigned_officer?: { id: number; name: string } | null;
     }>;
-    meta: { current_page: number; last_page: number; total: number };
+    current_page: number;
+    last_page: number;
+    total: number;
 };
 
 type Props = {
@@ -25,6 +43,7 @@ type Props = {
     myAssignments: PaginatedData | null;
     canAssign: boolean;
     canClassify: boolean;
+    officers: Officer[];
 };
 
 const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
@@ -34,7 +53,7 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'dest
 };
 
 const tabs = [
-    { key: 'pending-assignment', label: 'Pending Assignment', gate: 'canAssign' as const },
+    { key: 'assign-officer', label: 'Assign Officer', gate: 'canAssign' as const },
     { key: 'my-assignments', label: 'My Assignments', gate: 'canClassify' as const },
 ];
 
@@ -42,10 +61,11 @@ function switchTab(tab: string) {
     router.get(ideas.review(), { tab }, { preserveState: true, preserveScroll: true });
 }
 
-export default function ReviewIndex({ currentTab, pendingAssignment, myAssignments, canAssign, canClassify }: Props) {
+export default function ReviewIndex({ currentTab, pendingAssignment, myAssignments, canAssign, canClassify, officers }: Props) {
     const availableTabs = tabs.filter((t) => ({ canAssign, canClassify }[t.gate]));
-    const currentData = { 'pending-assignment': pendingAssignment, 'my-assignments': myAssignments }[currentTab] ?? null;
+    const currentData = { 'assign-officer': pendingAssignment, 'my-assignments': myAssignments }[currentTab] ?? null;
     const visibleTabs = availableTabs.length > 1;
+    const [assigningSlug, setAssigningSlug] = useState<string | null>(null);
 
     return (
         <>
@@ -76,46 +96,66 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
                 {currentData && currentData.data.length > 0 ? (
                     <div className="space-y-4">
                         {currentData.data.map((idea) => (
-                            <Card key={idea.id}>
-                                <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <CardTitle className="text-base">
-                                                <Link href={ideas.show(idea.slug)} className="hover:underline">
-                                                    {idea.title}
-                                                </Link>
-                                            </CardTitle>
-                                            <p className="mt-0.5 text-sm text-muted-foreground">
-                                                By {idea.author.name}
-                                                {idea.category ? ` • ${idea.category.name}` : ''}
-                                            </p>
+                            <AssignDialog
+                                key={idea.id}
+                                ideaSlug={idea.slug}
+                                ideaTitle={idea.title}
+                                officers={officers}
+                                open={assigningSlug === idea.slug}
+                                onOpenChange={(open) => setAssigningSlug(open ? idea.slug : null)}
+                            >
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <CardTitle className="text-base">
+                                                    <Link href={ideas.show(idea.slug)} className="hover:underline">
+                                                        {idea.title}
+                                                    </Link>
+                                                </CardTitle>
+                                                <p className="mt-0.5 text-sm text-muted-foreground">
+                                                    By {idea.author.name}
+                                                    {idea.category ? ` • ${idea.category.name}` : ''}
+                                                </p>
+                                            </div>
+                                            <Badge variant={statusVariants[idea.status] ?? 'outline'}>
+                                                {idea.status}
+                                            </Badge>
                                         </div>
-                                        <Badge variant={statusVariants[idea.status] ?? 'outline'}>
-                                            {idea.status}
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-muted-foreground">
-                                            Submitted {new Date(idea.created_at).toLocaleDateString()}
-                                        </span>
-                                        {idea.assigned_officer && (
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex items-center justify-between text-sm">
                                             <span className="text-muted-foreground">
-                                                Officer: {idea.assigned_officer.name}
+                                                Submitted {new Date(idea.created_at).toLocaleDateString()}
                                             </span>
-                                        )}
-                                        <Button variant="outline" size="sm" asChild>
-                                            <Link href={ideas.show(idea.slug)}>Review</Link>
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                            {idea.assigned_officer && (
+                                                <span className="text-muted-foreground">
+                                                    Officer: {idea.assigned_officer.name}
+                                                </span>
+                                            )}
+                                            <div className="flex gap-2">
+                                                {canAssign && currentTab === 'assign-officer' && (
+                                                    <Button
+                                                        variant="default"
+                                                        size="sm"
+                                                        onClick={() => setAssigningSlug(idea.slug)}
+                                                    >
+                                                        Assign
+                                                    </Button>
+                                                )}
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <Link href={ideas.reviewShow(idea.slug)}>Review</Link>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </AssignDialog>
                         ))}
 
-                        {currentData.meta.last_page > 1 && (
+                        {currentData.last_page > 1 && (
                             <div className="flex justify-center gap-2 text-sm">
-                                {currentData.meta.current_page > 1 && (
+                                {currentData.current_page > 1 && (
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -125,9 +165,9 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
                                     </Button>
                                 )}
                                 <span className="flex items-center text-muted-foreground">
-                                    Page {currentData.meta.current_page} of {currentData.meta.last_page}
+                                    Page {currentData.current_page} of {currentData.last_page}
                                 </span>
-                                {currentData.meta.current_page < currentData.meta.last_page && (
+                                {currentData.current_page < currentData.last_page && (
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -151,5 +191,81 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
                 )}
             </div>
         </>
+    );
+}
+
+function AssignDialog({
+    ideaSlug,
+    ideaTitle,
+    officers,
+    open,
+    onOpenChange,
+    children,
+}: {
+    ideaSlug: string;
+    ideaTitle: string;
+    officers: Officer[];
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    children: React.ReactNode;
+}) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        officer_id: undefined as number | undefined,
+    });
+
+    function handleAssign() {
+        post(ideas.assign(ideaSlug), {
+            preserveState: true,
+            onSuccess: () => {
+                onOpenChange(false);
+                reset();
+            },
+        });
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Assign RI&KM Officer</DialogTitle>
+                </DialogHeader>
+
+                <p className="text-sm text-muted-foreground">
+                    Assign an officer to review <span className="font-medium text-foreground">{ideaTitle}</span>.
+                </p>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="officer_id">Officer</Label>
+                    <select
+                        id="officer_id"
+                        name="officer_id"
+                        value={data.officer_id ?? ''}
+                        onChange={(e) => setData('officer_id', e.target.value === '' ? undefined : Number(e.target.value))}
+                        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        required
+                    >
+                        <option value="">Select an officer...</option>
+                        {officers.map((o) => (
+                            <option key={o.id} value={o.id}>
+                                {o.name} ({o.email})
+                            </option>
+                        ))}
+                    </select>
+                    <InputError message={errors.officer_id} />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => {
+ onOpenChange(false); reset(); 
+}}>
+                        Cancel
+                    </Button>
+                    <Button type="button" disabled={processing || !data.officer_id} onClick={handleAssign}>
+                        {processing ? 'Assigning...' : 'Assign Officer'}
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }

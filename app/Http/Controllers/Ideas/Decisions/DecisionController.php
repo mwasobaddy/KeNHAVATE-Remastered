@@ -25,14 +25,14 @@ class DecisionController extends Controller
         }
 
         if (! DecisionService::canDecide($idea)) {
-            return redirect()->route('ideas.show', $idea->slug)
+            return back()
                 ->with('error', 'This idea cannot accept a decision at this stage.');
         }
 
         $validDecisions = DecisionService::getValidDecisions($idea);
 
         if (! in_array($request->decision, $validDecisions, true)) {
-            return redirect()->route('ideas.show', $idea->slug)
+            return back()
                 ->with('error', 'Invalid decision for this classification type.');
         }
 
@@ -56,7 +56,7 @@ class DecisionController extends Controller
 
         $message = "Idea {$label}.";
 
-        return redirect()->route('ideas.show', $idea->slug)
+        return back()
             ->with('success', $message);
     }
 
@@ -69,14 +69,14 @@ class DecisionController extends Controller
         }
 
         if (! DecisionService::canProgress($idea)) {
-            return redirect()->route('ideas.show', $idea->slug)
+            return back()
                 ->with('error', 'This idea cannot be progressed from its current status.');
         }
 
         $nextStatus = DecisionService::getNextStatus($idea->status);
 
         if ($nextStatus === null) {
-            return redirect()->route('ideas.show', $idea->slug)
+            return back()
                 ->with('error', 'Unable to determine next status.');
         }
 
@@ -93,7 +93,7 @@ class DecisionController extends Controller
 
         $message = "Idea {$label}.";
 
-        return redirect()->route('ideas.show', $idea->slug)
+        return back()
             ->with('success', $message);
     }
 }

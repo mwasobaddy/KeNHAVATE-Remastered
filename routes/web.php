@@ -174,6 +174,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::get('/collaborations/outbox', [CollaborationRequestController::class, 'outbox'])->name('collaborations.outbox');
 
         Route::get('/{slug}', [IdeaController::class, 'show'])->name('show');
+        Route::get('/{slug}/review', [ReviewController::class, 'show'])->name('review-show');
         Route::get('/{slug}/edit', [IdeaController::class, 'edit'])->name('edit');
         Route::put('/{slug}', [IdeaController::class, 'update'])->name('update');
         Route::delete('/{slug}', [IdeaController::class, 'destroy'])->name('destroy');

@@ -60,14 +60,6 @@ class OnboardingService
         setPermissionsTeamId(null);
         $user->assignRole('user');
 
-        $newAccount = Point::where('name', 'New Account')
-            ->where('is_active', true)
-            ->first();
-
-        if ($newAccount) {
-            app(PointAwardService::class)->award($user, $newAccount);
-        }
-
         $redirectUrl = $this->processPendingInvitations($user);
 
         $this->auditService->log($user, 'onboarding_completed', 'Completed onboarding profile');

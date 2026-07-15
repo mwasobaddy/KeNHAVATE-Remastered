@@ -70,7 +70,7 @@ export default function Outbox({ requests }: Props) {
                                 Browse ideas open for collaboration and request to join.
                             </p>
                             <Button asChild size="sm">
-                                <Link href={ideas.index() + '?tab=open-for-collaboration'}>
+                                <Link href={ideas.index({ query: { tab: 'open-for-collaboration' } })}>
                                     Browse Open Ideas
                                 </Link>
                             </Button>

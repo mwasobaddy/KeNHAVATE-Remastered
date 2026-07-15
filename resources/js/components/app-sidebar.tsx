@@ -101,8 +101,8 @@ export function AppSidebar() {
 
     if (hasAssignPermission) {
         reviewItems.push({
-            title: 'Pending Assignment',
-            href: ideas.review().url + '?tab=pending-assignment',
+            title: 'Assign Officer',
+            href: ideas.review().url + '?tab=assign-officer',
             icon: ClipboardList as LucideIcon,
             group: 'Review',
         });

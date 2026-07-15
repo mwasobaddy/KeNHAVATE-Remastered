@@ -10,9 +10,13 @@ class UserObserver
 {
     public function created(User $user): void
     {
-        $newAccountPoint = Point::where('name', 'New Account')->first();
+        if ($user->pointTransactions()->whereHas('point', fn ($q) => $q->where('name', 'New Account'))->exists()) {
+            return;
+        }
 
-        if (! $newAccountPoint?->is_active) {
+        $newAccountPoint = Point::where('name', 'New Account')->where('is_active', true)->first();
+
+        if (! $newAccountPoint) {
             return;
         }
 

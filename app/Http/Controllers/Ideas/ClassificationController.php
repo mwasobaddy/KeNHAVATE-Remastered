@@ -25,7 +25,7 @@ class ClassificationController extends Controller
         }
 
         if ($idea->classification_id !== null) {
-            return redirect()->route('ideas.show', $idea->slug)
+            return back()
                 ->with('error', 'This idea has already been classified.');
         }
 
@@ -38,7 +38,9 @@ class ClassificationController extends Controller
             $request->safe()->only(['category_id', 'notes']),
         );
 
-        return redirect()->route('ideas.show', $idea->slug)
-            ->with('success', "Idea classified as {$classification->name}.");
+        $name = $classification->name;
+
+        return back()
+            ->with('success', "Idea classified as {$name}.");
     }
 }

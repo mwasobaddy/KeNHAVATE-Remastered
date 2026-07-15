@@ -47,7 +47,7 @@ class IdeaService
             'proposed_solution' => $data['proposed_solution'],
             'cost_benefit_analysis' => $data['cost_benefit_analysis'],
             'collaboration_enabled' => $data['collaboration_enabled'] ?? true,
-            'status' => $data['status'] ?? 'draft',
+            'status' => $data['status'] ?? 'submitted',
         ]);
 
         $idea->assignRole($user, 'author');
