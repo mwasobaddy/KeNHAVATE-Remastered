@@ -1,9 +1,16 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,16 +63,20 @@ type Props = {
 };
 
 export default function EditIdea({ idea, categories }: Props) {
+    const isResubmit = idea.status === 'revision_requested';
     const ipRight = idea.ip_right;
     const [hasIpProtection, setHasIpProtection] = useState<string>(ipRight?.has_ip_protection ? '1' : '0');
+    const [showResubmitDialog, setShowResubmitDialog] = useState(false);
+    const [resubmitNotes, setResubmitNotes] = useState('');
+    const [resubmitNotesError, setResubmitNotesError] = useState('');
 
     return (
         <>
-            <Head title={`Edit - ${idea.title}`} />
+            <Head title={isResubmit ? `Resubmit - ${idea.title}` : `Edit - ${idea.title}`} />
 
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <Heading
-                    title="Edit Idea"
+                    title={isResubmit ? 'Resubmit Idea' : 'Edit Idea'}
                     description={idea.title}
                 />
 
@@ -77,8 +88,21 @@ export default function EditIdea({ idea, categories }: Props) {
                             className="space-y-6"
                             encType="multipart/form-data"
                         >
-                            {({ processing, errors }) => (
+                            {({ processing, errors, submit }) => (
                                 <>
+                                    {isResubmit && (
+                                        <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                                            <div className="flex items-center gap-2 font-medium">
+                                                <RotateCcw className="h-4 w-4" />
+                                                Resubmission Required
+                                            </div>
+                                            <p className="mt-1">
+                                                The assigned officer has requested revisions. Make your changes
+                                                below, then resubmit for review.
+                                            </p>
+                                        </div>
+                                    )}
+
                                     <div className="grid gap-2">
                                         <Label htmlFor="title">Title</Label>
                                         <Input
@@ -319,10 +343,87 @@ export default function EditIdea({ idea, categories }: Props) {
                                         <InputError message={errors.collaboration_enabled} />
                                     </div>
 
+                                    <input type="hidden" name="resubmit_notes" value={resubmitNotes} />
+
                                     <div className="flex gap-4">
-                                        <Button type="submit" disabled={processing}>
-                                            {processing ? 'Saving...' : 'Save Changes'}
-                                        </Button>
+                                        {isResubmit ? (
+                                            <>
+                                                <Button
+                                                    type="button"
+                                                    disabled={processing}
+                                                    onClick={() => setShowResubmitDialog(true)}
+                                                >
+                                                    {processing ? 'Saving...' : 'Resubmit for Review'}
+                                                </Button>
+                                                <Dialog
+                                                    open={showResubmitDialog}
+                                                    onOpenChange={(open) => {
+                                                        setShowResubmitDialog(open);
+                                                        if (!open) {
+                                                            setResubmitNotesError('');
+                                                        }
+                                                    }}
+                                                >
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>Confirm Resubmission</DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="space-y-4">
+                                                            <p className="text-sm text-muted-foreground">
+                                                                The officer will be notified that your idea is ready.
+                                                                Describe what changes you made.
+                                                            </p>
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor="resubmit_notes_dialog">
+                                                                    Revision Notes <span className="text-destructive">*</span>
+                                                                </Label>
+                                                                <Textarea
+                                                                    id="resubmit_notes_dialog"
+                                                                    value={resubmitNotes}
+                                                                    onChange={(e) => {
+                                                                        setResubmitNotes(e.target.value);
+                                                                        setResubmitNotesError('');
+                                                                    }}
+                                                                    rows={3}
+                                                                    placeholder="Describe the changes you made and any notes for the officer..."
+                                                                />
+                                                                {resubmitNotesError && (
+                                                                    <InputError message={resubmitNotesError} />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex justify-end gap-3">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    onClick={() => {
+                                                                        setShowResubmitDialog(false);
+                                                                        setResubmitNotesError('');
+                                                                    }}
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (!resubmitNotes.trim()) {
+                                                                            setResubmitNotesError('Please describe your changes before resubmitting.');
+                                                                            return;
+                                                                        }
+                                                                        submit();
+                                                                    }}
+                                                                >
+                                                                    Confirm & Resubmit
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </>
+                                        ) : (
+                                            <Button type="submit" disabled={processing}>
+                                                {processing ? 'Saving...' : 'Save Changes'}
+                                            </Button>
+                                        )}
                                         <Button type="button" variant="outline" asChild>
                                             <Link href={ideas.show(idea.slug)}>Cancel</Link>
                                         </Button>

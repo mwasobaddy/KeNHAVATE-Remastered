@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, FileEdit, Pencil, Search, SlidersHorizontal, Trash2, UserPlus, X } from 'lucide-react';
+import { Eye, FileEdit, Pencil, RotateCcw, Search, SlidersHorizontal, Trash2, UserPlus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -421,16 +421,30 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
 
                                                             {currentTab === 'my-ideas' && (
                                                                 <>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger asChild>
-                                                                            <Button variant="ghost" size="icon" asChild>
-                                                                                <Link href={ideas.edit(idea.slug)}>
-                                                                                    <Pencil className="h-4 w-4" />
-                                                                                </Link>
-                                                                            </Button>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>Edit</TooltipContent>
-                                                                    </Tooltip>
+                                                                    {idea.status === 'draft' && (
+                                                                        <Tooltip>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Button variant="ghost" size="icon" asChild>
+                                                                                    <Link href={ideas.edit(idea.slug)}>
+                                                                                        <Pencil className="h-4 w-4" />
+                                                                                    </Link>
+                                                                                </Button>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>Edit</TooltipContent>
+                                                                        </Tooltip>
+                                                                    )}
+                                                                    {idea.status === 'revision_requested' && (
+                                                                        <Tooltip>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Button variant="ghost" size="icon" asChild>
+                                                                                    <Link href={ideas.edit(idea.slug)}>
+                                                                                        <RotateCcw className="h-4 w-4" />
+                                                                                    </Link>
+                                                                                </Button>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>Resubmit</TooltipContent>
+                                                                        </Tooltip>
+                                                                    )}
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
                                                                             <Button
