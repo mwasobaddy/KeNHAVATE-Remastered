@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
@@ -320,23 +321,31 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                         </Popover>
                     </div>
 
-                    <div className="flex gap-1 rounded-lg bg-muted p-1">
-                        {TABS.map((tab) => (
-                            <Link
-                                key={tab.key}
-                                href={ideas.index().url + (tab.key !== 'my-ideas' ? `?tab=${tab.key}` : '')}
-                                preserveState
-                                preserveScroll
-                                className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                                    currentTab === tab.key
-                                        ? 'bg-background text-foreground shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                {tab.label}
-                            </Link>
-                        ))}
-                    </div>
+                    <Tabs
+                        value={currentTab}
+                        onValueChange={(tab) => {
+                            const params = new URLSearchParams();
+
+                            if (tab !== 'my-ideas') {
+                                params.set('tab', tab);
+                            }
+
+                            const qs = params.toString();
+
+                            router.get(ideas.index().url + (qs ? `?${qs}` : ''), {}, {
+                                preserveState: true,
+                                preserveScroll: true,
+                            });
+                        }}
+                    >
+                        <TabsList className="w-full justify-start">
+                            {TABS.map((tab) => (
+                                <TabsTrigger key={tab.key} value={tab.key}>
+                                    {tab.label}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
 
                     <Card>
                         <CardHeader>
