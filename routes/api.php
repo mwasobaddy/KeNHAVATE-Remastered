@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [ApiIdeaController::class, 'store']);
         Route::get('/review', [ApiReviewController::class, 'index']);
         Route::get('/{slug}', [ApiIdeaController::class, 'show']);
+        Route::get('/{slug}/review', [ApiReviewController::class, 'show']);
         Route::put('/{slug}', [ApiIdeaController::class, 'update']);
         Route::delete('/{slug}', [ApiIdeaController::class, 'destroy']);
 
