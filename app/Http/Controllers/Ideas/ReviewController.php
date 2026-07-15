@@ -32,6 +32,10 @@ class ReviewController extends Controller
             ? $this->ideaService->getMyAssignments($user)
             : null;
 
+        $pendingDecisions = $user->can('idea.record_decision')
+            ? $this->ideaService->getPendingDecisions()
+            : null;
+
         $officers = $user->can('idea.assign_officer')
             ? User::orderBy('name')->get(['id', 'name', 'email'])
             : [];
@@ -40,8 +44,10 @@ class ReviewController extends Controller
             'currentTab' => $tab,
             'pendingAssignment' => $pendingAssignment,
             'myAssignments' => $myAssignments,
+            'pendingDecisions' => $pendingDecisions,
             'canAssign' => $user->can('idea.assign_officer'),
             'canClassify' => $user->can('idea.classify'),
+            'canRecordDecision' => $user->can('idea.record_decision'),
             'officers' => $officers,
         ]);
     }

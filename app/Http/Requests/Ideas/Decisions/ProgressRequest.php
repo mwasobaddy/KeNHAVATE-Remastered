@@ -2,22 +2,13 @@
 
 namespace App\Http\Requests\Ideas\Decisions;
 
-use App\Models\Idea;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ResubmitRequest extends FormRequest
+class ProgressRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $slug = $this->route('slug');
-
-        if (! $slug) {
-            return false;
-        }
-
-        $idea = Idea::where('slug', $slug)->first();
-
-        return $idea && $idea->author_id === $this->user()?->id;
+        return $this->user()?->can('idea.record_decision') ?? false;
     }
 
     public function rules(): array

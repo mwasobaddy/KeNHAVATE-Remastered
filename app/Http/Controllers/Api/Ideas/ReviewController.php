@@ -66,8 +66,8 @@ class ReviewController extends Controller
         $canRequestRevision = $user->can('idea.record_decision')
             && $idea->canBeRevised();
 
-        $canProposeChanges = $idea->userCan($user, 'idea.propose_changes');
-        $canApproveChanges = $idea->userCan($user, 'idea.approve_changes');
+        $canProposeChanges = $idea->isOpen() && $idea->userCan($user, 'idea.propose_changes');
+        $canApproveChanges = $idea->isOpen() && $idea->userCan($user, 'idea.approve_changes');
 
         $hasPendingCollaborationCount = CollaborationRequest::where('idea_id', $idea->id)
             ->where('status', 'pending')

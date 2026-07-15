@@ -41,8 +41,10 @@ type Props = {
     currentTab: string;
     pendingAssignment: PaginatedData | null;
     myAssignments: PaginatedData | null;
+    pendingDecisions: PaginatedData | null;
     canAssign: boolean;
     canClassify: boolean;
+    canRecordDecision: boolean;
     officers: Officer[];
 };
 
@@ -50,20 +52,22 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'dest
     submitted: 'default',
     assigned: 'secondary',
     resubmitted: 'warning' as any,
+    classified: 'default',
 };
 
 const tabs = [
     { key: 'assign-officer', label: 'Assign Officer', gate: 'canAssign' as const },
     { key: 'my-assignments', label: 'My Assignments', gate: 'canClassify' as const },
+    { key: 'pending-decisions', label: 'Pending Decisions', gate: 'canRecordDecision' as const },
 ];
 
 function switchTab(tab: string) {
     router.get(ideas.review(), { tab }, { preserveState: true, preserveScroll: true });
 }
 
-export default function ReviewIndex({ currentTab, pendingAssignment, myAssignments, canAssign, canClassify, officers }: Props) {
-    const availableTabs = tabs.filter((t) => ({ canAssign, canClassify }[t.gate]));
-    const currentData = { 'assign-officer': pendingAssignment, 'my-assignments': myAssignments }[currentTab] ?? null;
+export default function ReviewIndex({ currentTab, pendingAssignment, myAssignments, pendingDecisions, canAssign, canClassify, canRecordDecision, officers }: Props) {
+    const availableTabs = tabs.filter((t) => ({ canAssign, canClassify, canRecordDecision }[t.gate]));
+    const currentData = { 'assign-officer': pendingAssignment, 'my-assignments': myAssignments, 'pending-decisions': pendingDecisions }[currentTab] ?? null;
     const visibleTabs = availableTabs.length > 1;
     const [assigningSlug, setAssigningSlug] = useState<string | null>(null);
 
