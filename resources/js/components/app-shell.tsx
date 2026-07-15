@@ -14,8 +14,5 @@ export function AppShell({ children, variant = 'sidebar' }: Props) {
         );
     }
 
-    // Start collapsed on desktop, expand on hover
-    const defaultOpen = false;
-
-    return <SidebarProvider defaultOpen={defaultOpen}>{children}</SidebarProvider>;
+    return <SidebarProvider defaultOpen={true}>{children}</SidebarProvider>;
 }

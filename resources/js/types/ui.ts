@@ -7,3 +7,5 @@ export type NavItem = {
     badge?: number;
     group?: string;
 };
+
+export type AppVariant = 'sidebar' | 'header';
