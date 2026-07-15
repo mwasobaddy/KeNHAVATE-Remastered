@@ -13,7 +13,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ideas from '@/routes/ideas';
 
 type Officer = {
@@ -68,6 +68,7 @@ function switchTab(tab: string) {
 
 export default function ReviewIndex({ currentTab, pendingAssignment, myAssignments, pendingDecisions, canAssign, canClassify, canRecordDecision, officers }: Props) {
     const availableTabs = tabs.filter((t) => ({ canAssign, canClassify, canRecordDecision }[t.gate]));
+    const currentData = { 'assign-officer': pendingAssignment, 'my-assignments': myAssignments, 'pending-decisions': pendingDecisions }[currentTab] ?? null;
     const visibleTabs = availableTabs.length > 1;
     const [assigningSlug, setAssigningSlug] = useState<string | null>(null);
 
@@ -80,119 +81,111 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
 
                 {visibleTabs && (
                     <Tabs value={currentTab} onValueChange={switchTab}>
-                        <TabsList variant="line" className="w-full">
+                        <TabsList className="w-full justify-start">
                             {availableTabs.map((tab) => (
-                                <TabsTrigger key={tab.key} value={tab.key} className="flex-1">
+                                <TabsTrigger key={tab.key} value={tab.key}>
                                     {tab.label}
                                 </TabsTrigger>
                             ))}
                         </TabsList>
-
-                        {availableTabs.map((tab) => {
-                            const data = { 'assign-officer': pendingAssignment, 'my-assignments': myAssignments, 'pending-decisions': pendingDecisions }[tab.key] ?? null;
-
-                            return (
-                                <TabsContent key={tab.key} value={tab.key} className="mt-4">
-                                    {data && data.data.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {data.data.map((idea) => (
-                                                <AssignDialog
-                                                    key={idea.id}
-                                                    ideaSlug={idea.slug}
-                                                    ideaTitle={idea.title}
-                                                    officers={officers}
-                                                    open={assigningSlug === idea.slug}
-                                                    onOpenChange={(open) => setAssigningSlug(open ? idea.slug : null)}
-                                                >
-                                                    <Card>
-                                                        <CardHeader className="pb-3">
-                                                            <div className="flex items-start justify-between">
-                                                                <div>
-                                                                    <CardTitle className="text-base">
-                                                                        <Link href={ideas.show(idea.slug)} className="hover:underline">
-                                                                            {idea.title}
-                                                                        </Link>
-                                                                    </CardTitle>
-                                                                    <p className="mt-0.5 text-sm text-muted-foreground">
-                                                                        By {idea.author.name}
-                                                                        {idea.category ? ` • ${idea.category.name}` : ''}
-                                                                    </p>
-                                                                </div>
-                                                                <Badge variant={statusVariants[idea.status] ?? 'outline'}>
-                                                                    {idea.status}
-                                                                </Badge>
-                                                            </div>
-                                                        </CardHeader>
-                                                        <CardContent>
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-muted-foreground">
-                                                                    Submitted {new Date(idea.created_at).toLocaleDateString()}
-                                                                </span>
-                                                                {idea.assigned_officer && (
-                                                                    <span className="text-muted-foreground">
-                                                                        Officer: {idea.assigned_officer.name}
-                                                                    </span>
-                                                                )}
-                                                                <div className="flex gap-2">
-                                                                    {canAssign && currentTab === 'assign-officer' && (
-                                                                        <Button
-                                                                            variant="default"
-                                                                            size="sm"
-                                                                            onClick={() => setAssigningSlug(idea.slug)}
-                                                                        >
-                                                                            Assign
-                                                                        </Button>
-                                                                    )}
-                                                                    <Button variant="outline" size="sm" asChild>
-                                                                        <Link href={ideas.reviewShow(idea.slug)}>Review</Link>
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
-                                                        </CardContent>
-                                                    </Card>
-                                                </AssignDialog>
-                                            ))}
-
-                                            {data.last_page > 1 && (
-                                                <div className="flex justify-center gap-2 text-sm">
-                                                    {data.current_page > 1 && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => switchTab(tab.key)}
-                                                        >
-                                                            Previous
-                                                        </Button>
-                                                    )}
-                                                    <span className="flex items-center text-muted-foreground">
-                                                        Page {data.current_page} of {data.last_page}
-                                                    </span>
-                                                    {data.current_page < data.last_page && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => switchTab(tab.key)}
-                                                        >
-                                                            Next
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <Card>
-                                            <CardContent className="flex flex-col items-center gap-2 py-12">
-                                                <p className="text-lg font-medium">No ideas in this section</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Ideas will appear here when they reach this stage of the review pipeline.
-                                                </p>
-                                            </CardContent>
-                                        </Card>
-                                    )}
-                                </TabsContent>
-                            );
-                        })}
                     </Tabs>
+                )}
+
+                {currentData && currentData.data.length > 0 ? (
+                    <div className="space-y-4">
+                        {currentData.data.map((idea) => (
+                            <AssignDialog
+                                key={idea.id}
+                                ideaSlug={idea.slug}
+                                ideaTitle={idea.title}
+                                officers={officers}
+                                open={assigningSlug === idea.slug}
+                                onOpenChange={(open) => setAssigningSlug(open ? idea.slug : null)}
+                            >
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <CardTitle className="text-base">
+                                                    <Link href={ideas.show(idea.slug)} className="hover:underline">
+                                                        {idea.title}
+                                                    </Link>
+                                                </CardTitle>
+                                                <p className="mt-0.5 text-sm text-muted-foreground">
+                                                    By {idea.author.name}
+                                                    {idea.category ? ` • ${idea.category.name}` : ''}
+                                                </p>
+                                            </div>
+                                            <Badge variant={statusVariants[idea.status] ?? 'outline'}>
+                                                {idea.status}
+                                            </Badge>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">
+                                                Submitted {new Date(idea.created_at).toLocaleDateString()}
+                                            </span>
+                                            {idea.assigned_officer && (
+                                                <span className="text-muted-foreground">
+                                                    Officer: {idea.assigned_officer.name}
+                                                </span>
+                                            )}
+                                            <div className="flex gap-2">
+                                                {canAssign && currentTab === 'assign-officer' && (
+                                                    <Button
+                                                        variant="default"
+                                                        size="sm"
+                                                        onClick={() => setAssigningSlug(idea.slug)}
+                                                    >
+                                                        Assign
+                                                    </Button>
+                                                )}
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <Link href={ideas.reviewShow(idea.slug)}>Review</Link>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </AssignDialog>
+                        ))}
+
+                        {currentData.last_page > 1 && (
+                            <div className="flex justify-center gap-2 text-sm">
+                                {currentData.current_page > 1 && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => switchTab(currentTab)}
+                                    >
+                                        Previous
+                                    </Button>
+                                )}
+                                <span className="flex items-center text-muted-foreground">
+                                    Page {currentData.current_page} of {currentData.last_page}
+                                </span>
+                                {currentData.current_page < currentData.last_page && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => switchTab(currentTab)}
+                                    >
+                                        Next
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <Card>
+                        <CardContent className="flex flex-col items-center gap-2 py-12">
+                            <p className="text-lg font-medium">No ideas in this section</p>
+                            <p className="text-sm text-muted-foreground">
+                                Ideas will appear here when they reach this stage of the review pipeline.
+                            </p>
+                        </CardContent>
+                    </Card>
                 )}
             </div>
         </>
