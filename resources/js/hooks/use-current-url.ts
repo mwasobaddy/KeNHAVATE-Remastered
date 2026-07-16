@@ -4,22 +4,24 @@ import { useCallback, useMemo } from 'react';
 export function useCurrentUrl() {
     const { url } = usePage();
 
+    const currentPath = url.split('?')[0];
+
     const isCurrentUrl = useCallback(
         (href: string) => {
             const urlPath = new URL(href, window.location.origin).pathname;
 
-            return url === urlPath;
+            return currentPath === urlPath;
         },
-        [url],
+        [currentPath],
     );
 
     const isCurrentOrParentUrl = useCallback(
         (href: string) => {
             const urlPath = new URL(href, window.location.origin).pathname;
 
-            return url === urlPath || url.startsWith(urlPath + '/');
+            return currentPath === urlPath || currentPath.startsWith(urlPath + '/');
         },
-        [url],
+        [currentPath],
     );
 
     const whenCurrentUrl = useCallback(
