@@ -435,9 +435,9 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                         <div className="flex items-center gap-0.5">
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" asChild>
-                                                                        <Link href={ideas.show(idea.slug)}>
-                                                                            <Eye className="h-4 w-4" />
+                                                                <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
+                                                                    <Link href={ideas.show(idea.slug)}>
+                                                                        <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                                                         </Link>
                                                                     </Button>
                                                                 </TooltipTrigger>
@@ -450,14 +450,14 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                                         <TooltipTrigger asChild>
                                                                             <span tabIndex={0}>
                                                                                 {idea.status === 'draft' ? (
-                                                                                    <Button variant="ghost" size="icon" asChild>
+                                                                                    <Button variant="outline" size="icon" className="border-green-500/30" asChild>
                                                                                         <Link href={ideas.edit(idea.slug)}>
-                                                                                            <Pencil className="h-4 w-4" />
+                                                                                            <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
                                                                                         </Link>
                                                                                     </Button>
                                                                                 ) : (
-                                                                                    <Button variant="ghost" size="icon" disabled>
-                                                                                        <Pencil className="h-4 w-4" />
+                                                                                    <Button variant="outline" size="icon" className="border-green-500/30" disabled>
+                                                                                        <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
                                                                                     </Button>
                                                                                 )}
                                                                             </span>
@@ -470,14 +470,14 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                                         <TooltipTrigger asChild>
                                                                             <span tabIndex={0}>
                                                                                 {idea.status === 'revision_requested' ? (
-                                                                                    <Button variant="ghost" size="icon" asChild>
+                                                                                    <Button variant="outline" size="icon" className="border-amber-500/30" asChild>
                                                                                         <Link href={ideas.edit(idea.slug)}>
-                                                                                            <RotateCcw className="h-4 w-4" />
+                                                                                            <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                                                                         </Link>
                                                                                     </Button>
                                                                                 ) : (
-                                                                                    <Button variant="ghost" size="icon" disabled>
-                                                                                        <RotateCcw className="h-4 w-4" />
+                                                                                    <Button variant="outline" size="icon" className="border-amber-500/30" disabled>
+                                                                                        <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                                                                     </Button>
                                                                                 )}
                                                                             </span>
@@ -489,11 +489,12 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
                                                                             <Button
-                                                                                variant="ghost"
+                                                                                variant="outline"
                                                                                 size="icon"
+                                                                                className="border-red-500/30"
                                                                                 onClick={() => setDeleteIdea(idea)}
                                                                             >
-                                                                                <Trash2 className="h-4 w-4" />
+                                                                                <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                                                                             </Button>
                                                                         </TooltipTrigger>
                                                                         <TooltipContent>Delete</TooltipContent>
@@ -506,12 +507,13 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                                     <TooltipTrigger asChild>
                                                                         <span tabIndex={0}>
                                                                             <Button
-                                                                                variant="ghost"
+                                                                                variant="outline"
                                                                                 size="icon"
+                                                                                className="border-teal-500/30"
                                                                                 disabled={!canRequestCollaboration(idea)}
                                                                                 onClick={() => setCollabIdeaSlug(idea.slug)}
                                                                             >
-                                                                                <UserPlus className="h-4 w-4" />
+                                                                                <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                                                                             </Button>
                                                                         </span>
                                                                     </TooltipTrigger>
@@ -531,9 +533,9 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                             {currentTab === 'open-for-collaboration' && idea.collaboration_status === 'approved' && (
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button variant="ghost" size="icon" asChild>
+                                                                        <Button variant="outline" size="icon" className="border-purple-500/30" asChild>
                                                                             <Link href={ideas.changes.create(idea.slug)}>
-                                                                                <FileEdit className="h-4 w-4" />
+                                                                                <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                                                                             </Link>
                                                                         </Button>
                                                                     </TooltipTrigger>
