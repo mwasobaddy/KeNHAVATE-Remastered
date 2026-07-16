@@ -1,5 +1,5 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, FileEdit, Gavel, GitCompareArrows, LayoutDashboard, Pencil, RotateCcw, Send, Tags, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, FileEdit, Gavel, GitCompareArrows, LayoutDashboard, Pencil, RotateCcw, Tags, UserPlus, Users } from 'lucide-react';
 import {  useState } from 'react';
 import type {ReactNode} from 'react';
 import Heading from '@/components/heading';
@@ -184,8 +184,50 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
 
                     {(canAssign || canClassify) && iconButton(<LayoutDashboard className="h-4 w-4" />, 'Review Dashboard', ideas.review().url)}
 
-                    {canEdit && iconButton(<Pencil className="h-4 w-4" />, 'Edit Idea', ideas.edit(idea.slug).url)}
-                    {canResubmit && iconButton(<RotateCcw className="h-4 w-4" />, 'Resubmit', ideas.edit(idea.slug).url)}
+                    {isAuthor && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span tabIndex={0}>
+                                    {canEdit ? (
+                                        <Button variant="outline" size="icon" asChild>
+                                            <Link href={ideas.edit(idea.slug).url}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    ) : (
+                                        <Button variant="outline" size="icon" disabled>
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {canEdit ? 'Edit Idea' : 'Only available for draft ideas'}
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                    {isAuthor && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span tabIndex={0}>
+                                    {canResubmit ? (
+                                        <Button variant="outline" size="icon" asChild>
+                                            <Link href={ideas.edit(idea.slug).url}>
+                                                <RotateCcw className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    ) : (
+                                        <Button variant="outline" size="icon" disabled>
+                                            <RotateCcw className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {canResubmit ? 'Resubmit' : 'Only available when revision is requested'}
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
 
                     {isAuthor && (
                         <Tooltip>
