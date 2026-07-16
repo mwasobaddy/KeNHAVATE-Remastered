@@ -289,8 +289,8 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon">
-                                            <RotateCcw className="h-4 w-4" />
+                                        <Button variant="outline" size="icon" className="border-amber-500/30">
+                                            <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                         </Button>
                                     </DialogTrigger>
                                 </TooltipTrigger>
@@ -337,8 +337,8 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon">
-                                            <Gavel className="h-4 w-4" />
+                                        <Button variant="outline" size="icon" className="border-amber-500/30">
+                                            <Gavel className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                         </Button>
                                     </DialogTrigger>
                                 </TooltipTrigger>
@@ -400,8 +400,8 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                             {({ processing }) => (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button type="submit" variant="outline" size="icon" disabled={processing}>
-                                            <ArrowRight className="h-4 w-4" />
+                                        <Button type="submit" variant="outline" size="icon" className="border-sky-500/30" disabled={processing}>
+                                            <ArrowRight className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Advance Status</TooltipContent>
