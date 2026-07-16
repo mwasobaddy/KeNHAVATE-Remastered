@@ -1,8 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { Pencil, Power, PowerOff, Trash2 } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import routes from '@/routes/points';
 
 type Point = {
@@ -93,31 +95,49 @@ export default function PointIndex({ points }: Props) {
                                                 {point.created_by?.name ?? '—'}
                                             </td>
                                             <td className="py-3 pr-4">
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        asChild
-                                                    >
-                                                        <Link href={routes.edit({ point: point.id })}>
-                                                            Edit
-                                                        </Link>
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleToggle(point)}
-                                                    >
-                                                        {point.is_active ? 'Deactivate' : 'Activate'}
-                                                    </Button>
+                                                <div className="flex items-center gap-0.5">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="outline" size="icon" className="border-green-500/30" asChild>
+                                                                 <Link href={routes.edit({ point: point.id })}>
+                                                                     <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                                </Link>
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Edit</TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className={point.is_active ? 'border-amber-500/30' : 'border-green-500/30'}
+                                                                onClick={() => handleToggle(point)}
+                                                            >
+                                                                {point.is_active
+                                                                    ? <PowerOff className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                                    : <Power className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                                }
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {point.is_active ? 'Deactivate' : 'Activate'}
+                                                        </TooltipContent>
+                                                    </Tooltip>
                                                     {!point.deleted_at && (
-                                                        <Button
-                                                            variant="destructive"
-                                                            size="sm"
-                                                            onClick={() => handleDelete(point)}
-                                                        >
-                                                            Delete
-                                                        </Button>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                            <Button
+                                                                 variant="outline"
+                                                                 size="icon"
+                                                                 className="border-red-500/30"
+                                                                 onClick={() => handleDelete(point)}
+                                                             >
+                                                                 <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Delete</TooltipContent>
+                                                        </Tooltip>
                                                     )}
                                                 </div>
                                             </td>
