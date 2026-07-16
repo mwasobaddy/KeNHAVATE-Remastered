@@ -89,9 +89,9 @@ export default function Inbox({ requests }: Props) {
                                         <div className="flex items-center gap-1 shrink-0">
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" asChild>
+                                                    <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
                                                         <Link href={ideas.show(req.idea.slug)}>
-                                                            <Eye className="h-4 w-4" />
+                                                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                                         </Link>
                                                     </Button>
                                                 </TooltipTrigger>
@@ -99,9 +99,9 @@ export default function Inbox({ requests }: Props) {
                                             </Tooltip>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" asChild>
+                                                    <Button variant="outline" size="icon" className="border-teal-500/30" asChild>
                                                         <Link href={ideas.collaborations.index(req.idea.slug)}>
-                                                            <UserCheck className="h-4 w-4" />
+                                                            <UserCheck className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                                                         </Link>
                                                     </Button>
                                                 </TooltipTrigger>
