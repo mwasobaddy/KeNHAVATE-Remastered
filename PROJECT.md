@@ -834,6 +834,67 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 
 ---
 
+## Brand Identity
+
+### KeNHA Brand Colors
+
+The application uses KeNHA's official brand colors defined as CSS custom properties in `app.css`:
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--kenha-black` | `#231F20` | Sidebar background (dark mode), sidebar foreground text (light mode), primary interactive elements |
+| `--kenha-gray` | `#9B9EA4` | Sidebar group labels, secondary text in logo area |
+| `--kenha-beige` | `#F8EBD5` | Sidebar background (light mode) — warm, approachable, evokes paper/institutional feel |
+| `--kenha-yellow` | `#FFF200` | Active nav indicator (3px left border), focus ring, toggle button when collapsed, logo mark background |
+
+### Sidebar Theming
+
+The sidebar uses separate CSS variables in `:root` (light) and `.dark` to map brand colors:
+
+**Light mode** (`--sidebar` variables in `:root`):
+- Background: `#F8EBD5` (Beige) — warm, clearly separates nav from white page content
+- Foreground: `#231F20` (Black) — maximum contrast on beige  
+- Accent (hover/active): `#EDDCC0` — slightly darker beige, keeps palette cohesive
+- Active indicator: 3px yellow left border via `::before` pseudo-element
+- Group labels: `#9B9EA4` (Gray) — muted secondary text
+
+**Dark mode** (`--sidebar` variables in `.dark`):
+- Background: `#231F20` (Black) — brand black as canvas, feels intentional
+- Foreground: `#F8EBD5` (Beige) — warm text, reduces eye strain vs pure white
+- Accent (hover/active): `#2E2A22` — beige-tinted dark for subtle hover states
+- Active indicator: same 3px yellow left border — pops on black
+- Group labels: `#9B9EA4` (Gray)
+
+**Logo area** (yellow `#FFF200` square with black "K" letter):
+- Acts as the brand anchor at the top of the sidebar
+- Below it: "KeNHA" in sidebar foreground color, "Innovation Portal" in brand gray
+
+**Sidebar toggle**: Icon turns yellow (`#FFF200`) when sidebar is collapsed to signal "click to expand"
+
+### Visual Hierarchy in the Sidebar
+
+```
+[K  KeNHA                    ← Yellow bg + black "K", KeNHA in black, subtitle in gray
+    Innovation Portal]
+────────────────────────────────
+General                       ← gray group label
+  📊 Dashboard                ← black icon + text; active: yellow indicator + accent bg
+  💡 Ideas
+  🏆 Leaderboard
+────────────────────────────────
+Review                        ← gray group label
+  📋 Assign Officer           ← permission-gated items
+  📝 My Assignments
+  ... 
+────────────────────────────────
+Collaboration                 ← gray group label
+  📥 Inbox
+  📤 Sent Requests
+────────────────────────────────
+👤 User Name                  ← bordered footer area
+   email@kenha.co.ke
+```
+
 ## Frontend Structure
 
 ### Pages
@@ -853,22 +914,22 @@ resources/js/pages/
 │   ├── security.tsx       → 2FA management
 │   └── appearance.tsx
 ├── points/
-│   ├── index.tsx          → Table of point actions with status/toggle/edit/delete
+│   ├── index.tsx          → Table of point actions with colored icon buttons (Pencil green, Power amber, Trash2 red)
 │   ├── create.tsx         → Form to define a new point action
 │   ├── edit.tsx           → Edit an existing point action
 │   └── transactions.tsx   → Paginated audit log of all point awards
 ├── ideas/
-│   ├── index.tsx          → Paginated table with 3 tabs (My Ideas / Open for Collaboration / My Contributions). Action icons with Lucide + Tooltips (Eye, Pencil, Trash2 with delete dialog, UserPlus). Tab state via ?tab= query param (default: my-ideas).
-│   ├── review.tsx         → Review dashboard with tabbed sections (Pending Assignment, My Assignments, Pending Decisions). Each tab gated by permission (idea.assign_officer, idea.classify, idea.dg_decision).
+│   ├── index.tsx          → Paginated table with 3 tabs (My Ideas / Open for Collaboration / My Contributions). Colored action icons with matching borders (Eye blue, Pencil green, RotateCcw amber, Trash2 red, UserPlus teal, FileEdit purple). Tab state via ?tab= query param (default: my-ideas).
+│   ├── review.tsx         → Review dashboard with tabbed sections (Pending Assignment, My Assignments, Pending Decisions). Each tab gated by permission (idea.assign_officer, idea.classify, idea.dg_decision). UserPlus teal + Eye blue icon buttons.
 │   ├── create.tsx         → Full form with file uploads, category select, team emails input, IP section (radio + conditional fields + required consent checkbox)
 │   ├── edit.tsx           → Pre-populated form with existing IP data, document management, consent checkbox
-│   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog
+│   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog. Author-only buttons (Pencil, RotateCcw) show disabled with contextual tooltip when status condition not met; permission-based buttons (Tags, Gavel, ArrowRight, etc.) hidden without permission
 │   ├── invitation.tsx     → Invitation acceptance page (idea title, inviter, sign-in prompt)
 │   ├── collaborations/
 │   │   ├── index.tsx      → Pending collaboration request list with inline approve/reject forms (per-idea)
 │   │   └── request/
 │   │       ├── inbox.tsx  → Collaboration requests from users wanting to collaborate on MY ideas. Shows requester name, idea title, message, status badge, feedback, reviewer info. Paginated. Links to idea detail page.
-│   │       └── outbox.tsx → Collaboration requests I sent. Shows idea title, author, message, status, feedback. Paginated. Quick link to browse open ideas when empty.
+│   │       └── outbox.tsx → Collaboration requests I sent. Shows idea title, author, message, status, feedback. Paginated. Quick link to browse open ideas when empty. FileEdit button shows disabled with tooltip when request not yet approved.
 │   └── changes/
 │       ├── index.tsx      → List of change requests with status badges
 │       ├── create.tsx     → Select fields to edit, enter new values against originals
@@ -1033,7 +1094,7 @@ On each login event, it:
 
 ### Sidebar Navigation
 
-The sidebar (`resources/js/components/app-sidebar.tsx`) has three groups:
+The sidebar uses `<Sidebar collapsible="icon" variant="inset">` with `defaultOpen={true}` on `<SidebarProvider>`. Hover-to-expand is removed — the toggle button exclusively controls open/close. The sidebar has three groups:
 
 | Group | Items | Access |
 |-------|-------|--------|
@@ -1152,10 +1213,10 @@ API counterparts use standard `apiResource` at `api/roles` and `api/users`.
 
 | Page | File | Description |
 |------|------|-------------|
-| Role List | `roles/index.tsx` | Table with Shield icon, user/permission counts, Protected badge, Edit/Delete actions |
+| Role List | `roles/index.tsx` | Table with Shield icon, user/permission counts, Protected badge, Pencil green + Trash2 red icon buttons |
 | Create Role | `roles/create.tsx` | Form with permission checkboxes grouped by prefix |
 | Edit Role | `roles/edit.tsx` | Same form pre-filled; name disabled for protected roles |
-| User List | `users/index.tsx` | Table with role badge, staff indicator, Edit/Delete |
+| User List | `users/index.tsx` | Table with role badge, staff indicator, Pencil green + Trash2 red icon buttons |
 | Create User | `users/create.tsx` | Full form with cascade selects for region→directorate→department |
 | Edit User | `users/edit.tsx` | Same form pre-filled with existing data |
 
@@ -1415,10 +1476,20 @@ This keeps each feature self-contained, avoids the `admin` word, and mirrors the
 - The inbox/outbox model is familiar (email-like) and works better as standalone pages with their own pagination and filtering
 - Keeps the ideas index clean and focused on its core purpose
 
-### Why Action Buttons Changed to Icons with Tooltips?
+### Why Action Buttons Use Colored Icons + Matching Borders?
 
-- Reduces visual clutter in the ideas table row
-- Lucide icons (Eye, Pencil, Trash2, UserPlus) are universally recognized
-- Radix UI Tooltip provides on-hover labels for clarity
-- Delete confirmation uses a Dialog to prevent accidental deletion
-- Consistent with modern table UI patterns
+All action icon buttons follow a consistent visual convention across the app:
+
+- **`variant="outline" size="icon"`** — every action button uses the outline variant with matching colored border at `/30` opacity
+- **Trash2 (red)** — destructive actions (delete user, role, point action, idea)
+- **Eye (blue)** — view/review actions (view idea, review page)
+- **Pencil (green)** — edit actions (edit idea, role, user, point action)
+- **RotateCcw (amber)** — resubmit/revision actions (resubmit for review, request revision)
+- **Power (amber)** — toggle actions (activate/deactivate point action)
+- **FileEdit (purple)** — propose changes (change requests)
+- **UserPlus / UserCheck (teal)** — collaboration actions (request/manage collaboration)
+- **Gavel (amber)** — DG decision actions (record decision)
+- **ArrowRight (sky)** — advance status actions (progress idea through pipeline)
+- **Disabled buttons** — rendered with same icon color + border but dimmed via `opacity-50`; wrapped in `<span tabIndex={0}>` with a Tooltip explaining why the action is unavailable
+- **Permission-based buttons** — remain completely hidden when the user lacks the permission
+- Consistent with modern UI patterns and provides instant visual cues for each action type
