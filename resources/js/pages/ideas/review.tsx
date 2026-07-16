@@ -1,4 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Eye, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Officer = {
@@ -131,19 +133,32 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
                                                     Officer: {idea.assigned_officer.name}
                                                 </span>
                                             )}
-                                            <div className="flex gap-2">
+                                            <div className="flex items-center gap-0.5">
                                                 {canAssign && currentTab === 'assign-officer' && (
-                                                    <Button
-                                                        variant="default"
-                                                        size="sm"
-                                                        onClick={() => setAssigningSlug(idea.slug)}
-                                                    >
-                                                        Assign
-                                                    </Button>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className="border-teal-500/30"
+                                                                onClick={() => setAssigningSlug(idea.slug)}
+                                                            >
+                                                                <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Assign Officer</TooltipContent>
+                                                    </Tooltip>
                                                 )}
-                                                <Button variant="outline" size="sm" asChild>
-                                                    <Link href={ideas.reviewShow(idea.slug)}>Review</Link>
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
+                                                            <Link href={ideas.reviewShow(idea.slug)}>
+                                                                <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                            </Link>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Review</TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     </CardContent>
