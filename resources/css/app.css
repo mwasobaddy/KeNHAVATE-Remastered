@@ -92,19 +92,19 @@
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --sidebar: #FFF200;
+    --sidebar-foreground: #231F20;
+    --sidebar-primary: #231F20;
+    --sidebar-primary-foreground: #FFF200;
+    --sidebar-accent: #E6D900;
+    --sidebar-accent-foreground: #231F20;
+    --sidebar-border: #D4C800;
+    --sidebar-ring: #231F20;
     
     /* KeNHA Brand Colors */
     --kenha-black: #231F20;
     --kenha-gray: #9B9EA4;
-    --kenha-yellow: #FFF212;
+    --kenha-yellow: #FFF200;
     --kenha-beige: #F8EBD5;
 }
 
@@ -133,19 +133,19 @@
     --chart-3: oklch(0.769 0.188 70.08);
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --sidebar: #231F20;
+    --sidebar-foreground: #F8EBD5;
+    --sidebar-primary: #F8EBD5;
+    --sidebar-primary-foreground: #231F20;
+    --sidebar-accent: #2E2A22;
+    --sidebar-accent-foreground: #F8EBD5;
+    --sidebar-border: #3A362E;
+    --sidebar-ring: #FFF200;
     
     /* KeNHA Brand Colors */
     --kenha-black: #231F20;
     --kenha-gray: #9B9EA4;
-    --kenha-yellow: #FFF212;
+    --kenha-yellow: #FFF200;
     --kenha-beige: #2A2620;
 }
 
@@ -184,5 +184,36 @@
         opacity: 1 !important;
         pointer-events: auto !important;
         margin-top: 0 !important;
+    }
+
+    /* Active nav item: left border indicator */
+    [data-slot="sidebar-menu-button"][data-active="true"] {
+        position: relative;
+    }
+
+    [data-slot="sidebar-menu-button"][data-active="true"]::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 4px;
+        bottom: 4px;
+        width: 3px;
+        border-radius: 0 2px 2px 0;
+        background-color: var(--sidebar-ring);
+    }
+
+    /* Sidebar group labels: use brand gray */
+    [data-slot="sidebar-group-label"] {
+        color: #9B9EA4 !important;
+    }
+
+    /* Sidebar toggle icon when collapsed */
+    [data-slot="sidebar"][data-state="collapsed"] [data-slot="sidebar-trigger"] svg {
+        color: var(--sidebar-ring);
+    }
+
+    /* Footer user area: subtle top border */
+    [data-slot="sidebar-footer"] {
+        border-top: 1px solid var(--sidebar-border);
     }
 }
