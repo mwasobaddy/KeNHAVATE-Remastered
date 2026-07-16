@@ -189,14 +189,14 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                             <TooltipTrigger asChild>
                                 <span tabIndex={0}>
                                     {canEdit ? (
-                                        <Button variant="outline" size="icon" asChild>
+                                        <Button variant="outline" size="icon" className="border-green-500/30" asChild>
                                             <Link href={ideas.edit(idea.slug).url}>
-                                                <Pencil className="h-4 w-4" />
+                                                <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
                                             </Link>
                                         </Button>
                                     ) : (
-                                        <Button variant="outline" size="icon" disabled>
-                                            <Pencil className="h-4 w-4" />
+<Button variant="outline" size="icon" className="border-green-500/30" disabled>
+                                    <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
                                         </Button>
                                     )}
                                 </span>
@@ -211,14 +211,14 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                             <TooltipTrigger asChild>
                                 <span tabIndex={0}>
                                     {canResubmit ? (
-                                        <Button variant="outline" size="icon" asChild>
+                                        <Button variant="outline" size="icon" className="border-amber-500/30" asChild>
                                             <Link href={ideas.edit(idea.slug).url}>
-                                                <RotateCcw className="h-4 w-4" />
+                                                <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                             </Link>
                                         </Button>
                                     ) : (
-                                        <Button variant="outline" size="icon" disabled>
-                                            <RotateCcw className="h-4 w-4" />
+<Button variant="outline" size="icon" className="border-amber-500/30" disabled>
+                                    <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                         </Button>
                                     )}
                                 </span>
@@ -350,7 +350,7 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon">
+                                        <Button variant="outline" size="icon" className="border-amber-500/30">
                                             <Gavel className="h-4 w-4" />
                                         </Button>
                                     </DialogTrigger>
@@ -426,8 +426,8 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                             {({ processing }) => (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button type="submit" variant="outline" size="icon" disabled={processing}>
-                                            <ArrowRight className="h-4 w-4" />
+<Button type="submit" variant="outline" size="icon" className="border-sky-500/30" disabled={processing}>
+                                    <ArrowRight className="h-4 w-4" />
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Advance Status</TooltipContent>
@@ -441,8 +441,8 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon">
-                                            <RotateCcw className="h-4 w-4" />
+                                        <Button variant="outline" size="icon" className="border-amber-500/30">
+                                            <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                         </Button>
                                     </DialogTrigger>
                                 </TooltipTrigger>
@@ -496,15 +496,26 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
 
                     {(canProposeChanges || canApproveChanges) && iconButton(<GitCompareArrows className="h-4 w-4" />, 'Change Requests', ideas.changes.index(idea.slug).url)}
 
-                    {!isAuthor && canProposeChanges && iconButton(<FileEdit className="h-4 w-4" />, 'Propose Changes', ideas.changes.create(idea.slug).url)}
+                    {!isAuthor && canProposeChanges && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" className="border-purple-500/30" asChild>
+                                    <Link href={ideas.changes.create(idea.slug).url}>
+                                        <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Propose Changes</TooltipContent>
+                        </Tooltip>
+                    )}
 
                     {canRequestCollaboration && (
                         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon">
-                                            <UserPlus className="h-4 w-4" />
+                                        <Button variant="outline" size="icon" className="border-teal-500/30">
+                                            <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                                         </Button>
                                     </DialogTrigger>
                                 </TooltipTrigger>
