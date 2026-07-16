@@ -93,26 +93,38 @@ export default function Outbox({ requests }: Props) {
                                         <div className="flex items-center gap-1 shrink-0">
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" asChild>
+                                                    <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
                                                         <Link href={ideas.show(req.idea.slug)}>
-                                                            <Eye className="h-4 w-4" />
+                                                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                                         </Link>
                                                     </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>View Idea</TooltipContent>
                                             </Tooltip>
-                                            {req.status === 'approved' && (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" asChild>
-                                                            <Link href={ideas.changes.create(req.idea.slug)}>
-                                                                <FileEdit className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Request Change</TooltipContent>
-                                                </Tooltip>
-                                            )}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span tabIndex={0}>
+                                                        {req.status === 'approved' ? (
+                                                            <Button variant="outline" size="icon" className="border-purple-500/30" asChild>
+                                                                <Link href={ideas.changes.create(req.idea.slug)}>
+                                                                    <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                                </Link>
+                                                            </Button>
+                                                        ) : (
+                                                            <Button variant="outline" size="icon" className="border-purple-500/30" disabled>
+                                                                <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                            </Button>
+                                                        )}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {req.status === 'approved'
+                                                        ? 'Request Change'
+                                                        : req.status === 'pending'
+                                                            ? 'Awaiting approval before you can propose changes'
+                                                            : 'Request was rejected'}
+                                                </TooltipContent>
+                                            </Tooltip>
                                         </div>
                                     </div>
                                 </CardHeader>
