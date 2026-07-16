@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Shield } from 'lucide-react';
+import { Pencil, Shield, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import routes from '@/routes/roles';
 import type { Auth } from '@/types/auth';
 
@@ -102,22 +103,33 @@ return;
                                             <td className="py-3 pr-4">{role.users_count}</td>
                                             <td className="py-3 pr-4">{role.permissions_count}</td>
                                             <td className="py-3 pr-4">
-                                                <div className="flex gap-2">
+                                                <div className="flex items-center gap-0.5">
                                                     {permissions.includes('role.edit') && (
-                                                        <Button variant="outline" size="sm" asChild>
-                                                            <Link href={routes.edit({ role: role.id })}>
-                                                                Edit
-                                                            </Link>
-                                                        </Button>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button variant="outline" size="icon" className="border-green-500/30" asChild>
+                                                                     <Link href={routes.edit({ role: role.id })}>
+                                                                         <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                                    </Link>
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Edit</TooltipContent>
+                                                        </Tooltip>
                                                     )}
                                                     {permissions.includes('role.delete') && !role.is_protected && (
-                                                        <Button
-                                                            variant="destructive"
-                                                            size="sm"
-                                                            onClick={() => setDeletingRole(role)}
-                                                        >
-                                                            Delete
-                                                        </Button>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                     variant="outline"
+                                                                     size="icon"
+                                                                     className="border-red-500/30"
+                                                                     onClick={() => setDeletingRole(role)}
+                                                                 >
+                                                                     <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Delete</TooltipContent>
+                                                        </Tooltip>
                                                     )}
                                                 </div>
                                             </td>
