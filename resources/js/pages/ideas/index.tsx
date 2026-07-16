@@ -446,30 +446,46 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
 
                                                             {currentTab === 'my-ideas' && (
                                                                 <>
-                                                                    {idea.status === 'draft' && (
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                                <Button variant="ghost" size="icon" asChild>
-                                                                                    <Link href={ideas.edit(idea.slug)}>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <span tabIndex={0}>
+                                                                                {idea.status === 'draft' ? (
+                                                                                    <Button variant="ghost" size="icon" asChild>
+                                                                                        <Link href={ideas.edit(idea.slug)}>
+                                                                                            <Pencil className="h-4 w-4" />
+                                                                                        </Link>
+                                                                                    </Button>
+                                                                                ) : (
+                                                                                    <Button variant="ghost" size="icon" disabled>
                                                                                         <Pencil className="h-4 w-4" />
-                                                                                    </Link>
-                                                                                </Button>
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>Edit</TooltipContent>
-                                                                        </Tooltip>
-                                                                    )}
-                                                                    {idea.status === 'revision_requested' && (
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                                <Button variant="ghost" size="icon" asChild>
-                                                                                    <Link href={ideas.edit(idea.slug)}>
+                                                                                    </Button>
+                                                                                )}
+                                                                            </span>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            {idea.status === 'draft' ? 'Edit' : 'Only available for draft ideas'}
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <span tabIndex={0}>
+                                                                                {idea.status === 'revision_requested' ? (
+                                                                                    <Button variant="ghost" size="icon" asChild>
+                                                                                        <Link href={ideas.edit(idea.slug)}>
+                                                                                            <RotateCcw className="h-4 w-4" />
+                                                                                        </Link>
+                                                                                    </Button>
+                                                                                ) : (
+                                                                                    <Button variant="ghost" size="icon" disabled>
                                                                                         <RotateCcw className="h-4 w-4" />
-                                                                                    </Link>
-                                                                                </Button>
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>Resubmit</TooltipContent>
-                                                                        </Tooltip>
-                                                                    )}
+                                                                                    </Button>
+                                                                                )}
+                                                                            </span>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            {idea.status === 'revision_requested' ? 'Resubmit' : 'Only available when revision is requested'}
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
                                                                             <Button
