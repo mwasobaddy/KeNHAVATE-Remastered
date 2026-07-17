@@ -8,6 +8,7 @@ use App\Http\Requests\Ideas\UpdateIdeaRequest;
 use App\Models\CollaborationRequest;
 use App\Models\IdeaClassification;
 use App\Models\IdeaDocument;
+use App\Models\IdeaInvitation;
 use App\Models\IdeaIpDocument;
 use App\Models\User;
 use App\Services\AuditService;
@@ -49,12 +50,27 @@ class IdeaController extends Controller
             default => $this->ideaService->getAll($search, $filters),
         };
 
+        $ideasCollection = $user->authoredIdeas()->select('status')->get();
+
         return inertia('ideas/index', [
             'ideas' => $ideas,
             'currentTab' => $tab,
             'categories' => $this->ideaCategoryService->getAll(),
             'filters' => $filters,
             'search' => $search,
+            'ideaStats' => [
+                'total' => $ideasCollection->count(),
+                'drafts' => $ideasCollection->where('status', 'draft')->count(),
+                'under_review' => $ideasCollection->whereIn('status', ['submitted', 'under_review'])->count(),
+                'approved' => $ideasCollection->where('status', 'approved')->count(),
+                'contributions' => IdeaInvitation::where(function ($q) use ($user) {
+                    $q->where('email', $user->email)
+                        ->orWhere('user_id', $user->id);
+                })
+                    ->where('role', 'contributor')
+                    ->where('status', 'accepted')
+                    ->count(),
+            ],
         ]);
     }
 
@@ -146,7 +162,7 @@ class IdeaController extends Controller
                 ? $this->ideaCategoryService->getAll()
                 : [],
             'officers' => $canAssign && ! $idea->assigned_officer_id
-                ? User::select('id', 'name', 'email')->orderBy('name')->get()
+                ? User::permission('idea.review')->select('id', 'name', 'email')->orderBy('name')->get()
                 : [],
             'canRecordDecision' => $canRecordDecision,
             'validDecisions' => $validDecisions,
