@@ -1,4 +1,5 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,14 @@ const fieldLabels: Record<string, string> = {
 };
 
 export default function ReviewChange({ idea, changeRequest, canReview }: Props) {
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit(ideas.changes.index(idea.slug));
+        }
+    };
+
     const isPending = changeRequest.status === 'pending';
 
     return (
@@ -179,9 +188,12 @@ export default function ReviewChange({ idea, changeRequest, canReview }: Props) 
                 )}
 
                 <div className="flex gap-4">
-                    <Button variant="outline" asChild>
-                        <Link href={ideas.changes.index(idea.slug)}>Back to Changes</Link>
-                    </Button>
+                    <div className="flex flex-col items-center gap-1 self-start">
+                        <Button size="icon" variant="info" onClick={goBack}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
                     <Button variant="outline" asChild>
                         <Link href={ideas.show(idea.slug)}>View Idea</Link>
                     </Button>
