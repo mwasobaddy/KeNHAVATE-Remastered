@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             PointSeeder::class,
             IdeaCategorySeeder::class,
             IdeaClassificationSeeder::class,
+            IdeaDemoSeeder::class,
         ]);
     }
 }
