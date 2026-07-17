@@ -227,10 +227,40 @@ class IdeaService
             ->appends(request()->query());
     }
 
-    public function getPendingDecisions(int $perPage = 15): LengthAwarePaginator
+    public function getMyQueue(User $user, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = Idea::with(['author', 'category', 'assignedOfficer']);
+
+        $query->where(function ($q) use ($user) {
+            $hasClassify = $user->can('idea.classify');
+            $hasDecide = $user->can('idea.record_decision');
+
+            if ($hasClassify && $hasDecide) {
+                $q->where(function ($sub) use ($user) {
+                    $sub->where('assigned_officer_id', $user->id)
+                        ->whereIn('status', ['assigned', 'resubmitted']);
+                })->orWhere(function ($sub) {
+                    $sub->whereIn('status', ['classified', 'resubmitted']);
+                });
+            } elseif ($hasClassify) {
+                $q->where('assigned_officer_id', $user->id)
+                    ->whereIn('status', ['assigned', 'resubmitted']);
+            } elseif ($hasDecide) {
+                $q->whereIn('status', ['classified', 'resubmitted']);
+            }
+        });
+
+        return $query->latest()
+            ->paginate($perPage)
+            ->appends(request()->query());
+    }
+
+    public function getReviewed(User $user, int $perPage = 15): LengthAwarePaginator
     {
         return Idea::with(['author', 'category', 'assignedOfficer'])
-            ->where('status', 'dg_review')
+            ->whereHas('reviews', function ($q) use ($user) {
+                $q->where('reviewer_id', $user->id);
+            })
             ->latest()
             ->paginate($perPage)
             ->appends(request()->query());
