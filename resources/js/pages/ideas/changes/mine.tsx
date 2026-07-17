@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, EyeOff, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, MessageSquare } from 'lucide-react';
 import { useMemo } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -120,11 +120,29 @@ export default function Mine({ changeRequests }: Props) {
         [changeRequests],
     );
 
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit(ideas.index().url);
+        }
+    };
+
     return (
         <>
             <Head title="My Change Requests" />
 
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+                {/* Top bar */}
+                <div className="flex items-center gap-2">
+                    <div className="flex flex-col items-center gap-1">
+                        <Button size="icon" variant="info" onClick={goBack}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+                </div>
+
                 <Heading
                     title="My Change Requests"
                     description="Changes you have proposed"
@@ -146,10 +164,6 @@ export default function Mine({ changeRequests }: Props) {
                         ))}
                     </div>
                 )}
-
-                <Button variant="outline" asChild className="self-start">
-                    <Link href={ideas.index()}>Back to Ideas</Link>
-                </Button>
             </div>
         </>
     );
