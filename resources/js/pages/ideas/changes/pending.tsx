@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, EyeOff, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, MessageSquare } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -126,24 +126,37 @@ export default function Pending({ pending, all }: Props) {
         [items],
     );
 
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit(ideas.index().url);
+        }
+    };
+
     return (
         <>
             <Head title="Pending Review" />
 
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
-                <div className="flex items-start justify-between">
-                    <Heading
-                        title="Pending Review"
-                        description="Change requests awaiting your review"
-                    />
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowAll(!showAll)}
-                    >
+                {/* Top bar */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col items-center gap-1">
+                        <Button size="icon" variant="info" onClick={goBack}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+
+                    <Button variant="outline" size="sm" onClick={() => setShowAll(!showAll)}>
                         {showAll ? 'Show pending only' : 'Show all'}
                     </Button>
                 </div>
+
+                <Heading
+                    title="Pending Review"
+                    description="Change requests awaiting your review"
+                />
 
                 {sorted.length === 0 ? (
                     <Card>
@@ -163,10 +176,6 @@ export default function Pending({ pending, all }: Props) {
                         ))}
                     </div>
                 )}
-
-                <Button variant="outline" asChild className="self-start">
-                    <Link href={ideas.index()}>Back to Ideas</Link>
-                </Button>
             </div>
         </>
     );
