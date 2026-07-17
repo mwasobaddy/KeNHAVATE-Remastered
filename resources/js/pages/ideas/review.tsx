@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Officer = {
@@ -43,34 +42,50 @@ type PaginatedData = {
 type Props = {
     currentTab: string;
     pendingAssignment: PaginatedData | null;
-    myAssignments: PaginatedData | null;
-    pendingDecisions: PaginatedData | null;
+    myQueue: PaginatedData | null;
+    reviewed: PaginatedData | null;
     canAssign: boolean;
     canClassify: boolean;
     canRecordDecision: boolean;
     officers: Officer[];
 };
 
-const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+const statusVariants: Record<string, string> = {
     submitted: 'default',
     assigned: 'secondary',
-    resubmitted: 'warning' as any,
     classified: 'default',
+    resubmitted: 'warning',
+    revision_requested: 'warning',
+    approved: 'success',
+    declined: 'destructive',
+    deferred: 'warning',
+    budget_logged: 'info',
+    in_progress: 'info',
+    completed: 'success',
+    implemented: 'success',
+    closed: 'gray',
 };
 
 const tabs = [
     { key: 'assign-officer', label: 'Assign Officer', gate: 'canAssign' as const },
-    { key: 'my-assignments', label: 'My Assignments', gate: 'canClassify' as const },
-    { key: 'pending-decisions', label: 'Pending Decisions', gate: 'canRecordDecision' as const },
+    { key: 'my-queue', label: 'My Queue', gate: 'canClassify' as const },
+    { key: 'reviewed', label: 'Reviewed', gate: 'canClassify' as const },
 ];
 
 function switchTab(tab: string) {
     router.get(ideas.review(), { tab }, { preserveState: true, preserveScroll: true });
 }
 
-export default function ReviewIndex({ currentTab, pendingAssignment, myAssignments, pendingDecisions, canAssign, canClassify, canRecordDecision, officers }: Props) {
-    const availableTabs = tabs.filter((t) => ({ canAssign, canClassify, canRecordDecision }[t.gate]));
-    const currentData = { 'assign-officer': pendingAssignment, 'my-assignments': myAssignments, 'pending-decisions': pendingDecisions }[currentTab] ?? null;
+export default function ReviewIndex({ currentTab, pendingAssignment, myQueue, reviewed, canAssign, canClassify, canRecordDecision, officers }: Props) {
+    const canQueue = canClassify || canRecordDecision;
+    const availableTabs = tabs.filter((t) => {
+        if (t.key === 'assign-officer') {
+            return canAssign;
+        }
+
+        return canQueue;
+    });
+    const currentData = { 'assign-officer': pendingAssignment, 'my-queue': myQueue, reviewed }[currentTab] ?? null;
     const visibleTabs = availableTabs.length > 1;
     const [assigningSlug, setAssigningSlug] = useState<string | null>(null);
 
@@ -109,7 +124,7 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <CardTitle className="text-base">
-                                                    <Link href={ideas.show(idea.slug)} className="hover:underline">
+                                                    <Link href={ideas.reviewShow(idea.slug)} className="hover:underline">
                                                         {idea.title}
                                                     </Link>
                                                 </CardTitle>
@@ -118,8 +133,8 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
                                                     {idea.category ? ` • ${idea.category.name}` : ''}
                                                 </p>
                                             </div>
-                                            <Badge variant={statusVariants[idea.status] ?? 'outline'}>
-                                                {idea.status}
+                                            <Badge variant={(statusVariants[idea.status] ?? 'outline') as any}>
+                                                {idea.status.replace(/_/g, ' ')}
                                             </Badge>
                                         </div>
                                     </CardHeader>
@@ -133,32 +148,19 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
                                                     Officer: {idea.assigned_officer.name}
                                                 </span>
                                             )}
-                                            <div className="flex items-center gap-0.5">
+                                            <div className="flex items-center gap-1.5">
                                                 {canAssign && currentTab === 'assign-officer' && (
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="icon"
-                                                                className="border-teal-500/30"
-                                                                onClick={() => setAssigningSlug(idea.slug)}
-                                                            >
-                                                                <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>Assign Officer</TooltipContent>
-                                                    </Tooltip>
+                                                    <Button variant="outline" size="sm" className="gap-1.5 border-teal-500/30" onClick={() => setAssigningSlug(idea.slug)}>
+                                                        <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                        <span>Assign</span>
+                                                    </Button>
                                                 )}
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
-                                                            <Link href={ideas.reviewShow(idea.slug)}>
-                                                                <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                            </Link>
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Review</TooltipContent>
-                                                </Tooltip>
+                                                <Button variant="outline" size="sm" className="gap-1.5 border-blue-500/30" asChild>
+                                                    <Link href={ideas.reviewShow(idea.slug)}>
+                                                        <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                        <span>Review</span>
+                                                    </Link>
+                                                </Button>
                                             </div>
                                         </div>
                                     </CardContent>
@@ -197,7 +199,11 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myAssignmen
                         <CardContent className="flex flex-col items-center gap-2 py-12">
                             <p className="text-lg font-medium">No ideas in this section</p>
                             <p className="text-sm text-muted-foreground">
-                                Ideas will appear here when they reach this stage of the review pipeline.
+                                {currentTab === 'my-queue'
+                                    ? 'Ideas assigned to you or needing your decision will appear here.'
+                                    : currentTab === 'reviewed'
+                                      ? 'Ideas you have reviewed will appear here.'
+                                      : 'Ideas will appear here when they reach this stage of the review pipeline.'}
                             </p>
                         </CardContent>
                     </Card>
