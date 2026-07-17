@@ -84,7 +84,7 @@ class ReviewController extends Controller
                 ? $this->ideaCategoryService->getAll()
                 : [],
             'officers' => $canAssign && ! $idea->assigned_officer_id
-                ? User::select('id', 'name', 'email')->orderBy('name')->get()
+                ? User::permission('idea.review')->select('id', 'name', 'email')->orderBy('name')->get()
                 : [],
             'can_record_decision' => $canRecordDecision,
             'valid_decisions' => $validDecisions,
