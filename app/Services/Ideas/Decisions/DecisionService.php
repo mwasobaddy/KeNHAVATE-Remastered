@@ -133,7 +133,7 @@ class DecisionService
             'notes' => $notes,
         ]);
 
-        Mail::to($idea->author)->send(new IdeaStatusUpdated($idea, 'revision_requested'));
+        Mail::to($idea->author)->send(new IdeaStatusUpdated($idea, 'revision_requested', $notes));
 
         $this->auditService->log(
             $user,
@@ -157,7 +157,7 @@ class DecisionService
         ]);
 
         if ($idea->assignedOfficer) {
-            Mail::to($idea->assignedOfficer)->send(new IdeaStatusUpdated($idea, 'resubmitted'));
+            Mail::to($idea->assignedOfficer)->send(new IdeaStatusUpdated($idea, 'resubmitted', $notes));
         }
 
         $this->auditService->log(
