@@ -26,6 +26,7 @@ class LeaderboardController extends Controller
             'users' => $leaderboard,
             'currentUserRank' => $currentUserRank !== false ? $currentUserRank + 1 : null,
             'currentUserPoints' => $currentUser->points_balance,
+            'systemStats' => $this->pointAwardService->getSystemStats(),
         ]);
     }
 }
