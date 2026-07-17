@@ -16,6 +16,7 @@ class IdeaStatusUpdated extends Mailable
     public function __construct(
         public Idea $idea,
         public string $newStatus,
+        public ?string $notes = null,
     ) {}
 
     public function envelope(): Envelope
