@@ -24,6 +24,11 @@ Your idea **{{ $idea->title }}** has been updated.
 
 **New Status:** {{ $label }}
 
+@isset($notes)
+**Revision Notes:** {{ $notes }}
+
+@endisset
+
 <x-mail::button :url="$url">
 View Your Idea
 </x-mail::button>
