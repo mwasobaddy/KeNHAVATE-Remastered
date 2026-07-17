@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -39,6 +39,14 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destr
 };
 
 export default function ChangeRequestIndex({ idea, changeRequests }: Props) {
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit(ideas.show(idea.slug));
+        }
+    };
+
     const user = (usePage().props as { auth?: Auth }).auth?.user;
     const [deletingCr, setDeletingCr] = useState<ChangeRequest | null>(null);
     const [deletePassword, setDeletePassword] = useState('');
@@ -183,9 +191,12 @@ export default function ChangeRequestIndex({ idea, changeRequests }: Props) {
                     </div>
                 )}
 
-                <Button variant="outline" asChild>
-                    <Link href={ideas.show(idea.slug)}>Back to Idea</Link>
-                </Button>
+                <div className="flex flex-col items-center gap-1 self-start">
+                    <Button size="icon" variant="info" onClick={goBack}>
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                    <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                </div>
             </div>
 
             <Dialog open={deletingCr !== null} onOpenChange={(open) => {
