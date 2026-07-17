@@ -1,9 +1,9 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import Heading from '@/components/heading';
+import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { dashboard } from '@/routes';
 
 type AuditLog = {
     id: number;
@@ -44,6 +44,14 @@ function actionBadge(action: string) {
 }
 
 export default function AuditIndex({ logs }: Props) {
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit('/dashboard');
+        }
+    };
+
     return (
         <>
             <Head title="Audit Log" />
@@ -137,10 +145,11 @@ export default function AuditIndex({ logs }: Props) {
                     </CardContent>
                 </Card>
 
-                <div className="flex justify-start">
-                    <Button variant="outline" asChild>
-                        <Link href={dashboard()}>Back to Dashboard</Link>
+                <div className="flex flex-col items-center gap-1 self-start">
+                    <Button size="icon" variant="info" onClick={goBack}>
+                        <ArrowLeft className="h-5 w-5" />
                     </Button>
+                    <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                 </div>
             </div>
         </>
