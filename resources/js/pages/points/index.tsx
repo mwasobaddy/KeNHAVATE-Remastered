@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Power, PowerOff, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Power, PowerOff, Trash2 } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,9 +46,14 @@ export default function PointIndex({ points }: Props) {
                         title="Point Actions"
                         description="Manage actions that award points to users"
                     />
-                    <Button asChild>
-                        <Link href={routes.create()}>Create New</Link>
-                    </Button>
+                    <div className="flex flex-col items-center gap-1">
+                        <Button size="icon" asChild>
+                            <Link href={routes.create()}>
+                                <Plus className="h-5 w-5" />
+                            </Link>
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">New Action</span>
+                    </div>
                 </div>
 
                 <Card>
