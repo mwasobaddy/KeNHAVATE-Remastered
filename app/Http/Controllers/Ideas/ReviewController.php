@@ -22,32 +22,44 @@ class ReviewController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $tab = $request->query('tab', 'assign-officer');
+        $canAssign = $user->can('idea.assign_officer');
+        $canClassify = $user->can('idea.classify');
+        $canRecordDecision = $user->can('idea.record_decision');
+        $hasQueueAccess = $canClassify || $canRecordDecision;
+        $hasReviewAccess = $hasQueueAccess || $user->hasPermissionTo('idea.review');
 
-        $pendingAssignment = $user->can('idea.assign_officer')
+        $defaultTab = match (true) {
+            $canAssign => 'assign-officer',
+            $hasQueueAccess => 'my-queue',
+            $hasReviewAccess => 'reviewed',
+            default => 'assign-officer',
+        };
+        $tab = $request->query('tab', $defaultTab);
+
+        $pendingAssignment = $canAssign
             ? $this->ideaService->getPendingAssignment()
             : null;
 
-        $myAssignments = $user->can('idea.classify')
-            ? $this->ideaService->getMyAssignments($user)
+        $myQueue = $hasQueueAccess
+            ? $this->ideaService->getMyQueue($user)
             : null;
 
-        $pendingDecisions = $user->can('idea.record_decision')
-            ? $this->ideaService->getPendingDecisions()
+        $reviewed = $hasReviewAccess
+            ? $this->ideaService->getReviewed($user)
             : null;
 
-        $officers = $user->can('idea.assign_officer')
-            ? User::orderBy('name')->get(['id', 'name', 'email'])
+        $officers = $canAssign
+            ? User::permission('idea.review')->orderBy('name')->get(['id', 'name', 'email'])
             : [];
 
         return inertia('ideas/review', [
             'currentTab' => $tab,
             'pendingAssignment' => $pendingAssignment,
-            'myAssignments' => $myAssignments,
-            'pendingDecisions' => $pendingDecisions,
-            'canAssign' => $user->can('idea.assign_officer'),
-            'canClassify' => $user->can('idea.classify'),
-            'canRecordDecision' => $user->can('idea.record_decision'),
+            'myQueue' => $myQueue,
+            'reviewed' => $reviewed,
+            'canAssign' => $canAssign,
+            'canClassify' => $canClassify,
+            'canRecordDecision' => $canRecordDecision,
             'officers' => $officers,
         ]);
     }
@@ -96,7 +108,7 @@ class ReviewController extends Controller
                 ? $this->ideaCategoryService->getAll()
                 : [],
             'officers' => $canAssign && ! $idea->assigned_officer_id
-                ? User::select('id', 'name', 'email')->orderBy('name')->get()
+                ? User::permission('idea.review')->select('id', 'name', 'email')->orderBy('name')->get()
                 : [],
             'canRecordDecision' => $canRecordDecision,
             'validDecisions' => $validDecisions,
