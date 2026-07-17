@@ -1,5 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Eye, FileEdit, Send } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft, Eye, FileEdit, Inbox, Send } from 'lucide-react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,28 +36,42 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
 };
 
 export default function Outbox({ requests }: Props) {
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit(ideas.index().url);
+        }
+    };
+
     return (
         <>
             <Head title="Sent Collaboration Requests" />
 
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
-                <div className="flex items-start justify-between">
-                    <Heading
-                        title="Sent Requests"
-                        description="Collaboration requests you have sent to idea authors"
-                    />
-                    <div className="flex gap-2">
-                        <Button variant="outline" asChild>
+                {/* Top bar */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col items-center gap-1">
+                        <Button size="icon" variant="info" onClick={goBack}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1">
+                        <Button size="icon" variant="outline" asChild>
                             <Link href={ideas.collaborations.inbox()}>
-                                <ArrowLeft className="mr-1 h-4 w-4" />
-                                Go to Inbox
+                                <Inbox className="h-5 w-5" />
                             </Link>
                         </Button>
-                        <Button variant="outline" asChild>
-                            <Link href={ideas.index()}>Back to Ideas</Link>
-                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Inbox</span>
                     </div>
                 </div>
+
+                <Heading
+                    title="Sent Requests"
+                    description="Collaboration requests you have sent to idea authors"
+                />
 
                 {requests.data.length === 0 ? (
                     <Card>
