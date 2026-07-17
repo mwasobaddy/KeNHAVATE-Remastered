@@ -1,5 +1,5 @@
 import { Form, Head, Link, router, usePage } from '@inertiajs/react';
-import { Eye, FileEdit, Pencil, RotateCcw, Search, SlidersHorizontal, Trash2, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ChevronDown, ChevronUp, ClipboardCheck, Eye, FileEdit, Lightbulb, Pencil, Plus, RotateCcw, Search, SlidersHorizontal, Trash2, UserPlus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,12 +47,21 @@ type Category = {
     name: string;
 };
 
+type IdeaStats = {
+    total: number;
+    drafts: number;
+    under_review: number;
+    approved: number;
+    contributions: number;
+};
+
 type Props = {
     ideas: PaginatedData;
     currentTab: string;
     categories: Category[];
     filters: Record<string, string>;
     search: string | null;
+    ideaStats: IdeaStats;
 };
 
 const IDEA_STATUSES = [
@@ -72,11 +82,22 @@ const IDEA_STATUSES = [
     'implemented',
 ] as const;
 
-const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-    draft: 'outline',
-    submitted: 'default',
-    approved: 'secondary',
-    rejected: 'destructive',
+const statusStyles: Record<string, string> = {
+    draft: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+    submitted: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+    assigned: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800',
+    revision_requested: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+    resubmitted: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
+    classified: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800',
+    dg_review: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
+    approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+    declined: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+    deferred: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800',
+    planned: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800',
+    closed: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+    in_progress: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800',
+    completed: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+    implemented: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
 };
 
 const collabVariants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
@@ -119,7 +140,7 @@ function navigateWithFilters(currentTab: string, searchValue: string, activeFilt
     router.get(ideas.index().url + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
 }
 
-export default function IdeaIndex({ ideas: ideasData, currentTab, categories, filters: initialFilters, search: initialSearch }: Props) {
+export default function IdeaIndex({ ideas: ideasData, currentTab, categories, filters: initialFilters, search: initialSearch, ideaStats }: Props) {
     const { auth } = usePage().props as { auth: { user: { id: number } } };
     const colSpan = currentTab === 'my-ideas' ? 5 : 7;
     const [deleteIdea, setDeleteIdea] = useState<Idea | null>(null);
@@ -128,6 +149,14 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
     const [filterOpen, setFilterOpen] = useState(false);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit('/dashboard');
+        }
+    };
 
     useEffect(() => {
         if (debounceRef.current) {
@@ -208,15 +237,99 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                 <Head title="Ideas" />
 
                 <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
-                    <div className="flex items-start justify-between">
-                        <Heading
-                            title="Ideas"
-                            description="Browse and manage innovation ideas"
-                        />
-                        <Button asChild>
-                            <Link href={ideas.create()}>Submit New Idea</Link>
-                        </Button>
+
+                    {/* Top bar */}
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col items-center gap-1">
+                            <Button size="icon" variant="info" onClick={goBack}>
+                                <ArrowLeft className="h-5 w-5" />
+                            </Button>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-1">
+                            <Button size="icon" asChild>
+                                <Link href={ideas.create()}>
+                                    <Plus className="h-5 w-5" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">New Idea</span>
+                        </div>
                     </div>
+
+                    <Heading
+                        title="Ideas"
+                        description="Browse and manage innovation ideas"
+                    />
+
+                    <Collapsible className="group/collapsible">
+                        <CollapsibleTrigger asChild>
+                            <button className="flex w-full items-center gap-2 rounded-lg p-2 text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground">
+                                <Lightbulb className="h-4 w-4" />
+                                Overview
+                                <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+                                    {ideaStats.total} ideas &middot; {ideaStats.drafts} drafts &middot; {ideaStats.under_review} in review
+                                </span>
+                                <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:hidden" />
+                                <ChevronUp className="h-4 w-4 transition-transform duration-200 group-data-[state=closed]/collapsible:hidden" />
+                            </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <div className="mt-3 grid gap-4 grid-cols-2 lg:grid-cols-4">
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                        <CardTitle className="text-sm font-medium">Total Ideas</CardTitle>
+                                        <div className="rounded-full bg-sky-500/10 p-2">
+                                            <Lightbulb className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xl font-bold lg:text-2xl">{ideaStats.total}</div>
+                                        <p className="hidden text-xs text-muted-foreground lg:block">Ideas submitted</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                        <CardTitle className="text-sm font-medium">Drafts</CardTitle>
+                                        <div className="rounded-full bg-amber-500/10 p-2">
+                                            <Pencil className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xl font-bold lg:text-2xl">{ideaStats.drafts}</div>
+                                        <p className="hidden text-xs text-muted-foreground lg:block">Awaiting submission</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                        <CardTitle className="text-sm font-medium">Under Review</CardTitle>
+                                        <div className="rounded-full bg-violet-500/10 p-2">
+                                            <ClipboardCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xl font-bold lg:text-2xl">{ideaStats.under_review}</div>
+                                        <p className="hidden text-xs text-muted-foreground lg:block">Awaiting decision</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                        <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                                        <div className="rounded-full bg-emerald-500/10 p-2">
+                                            <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-xl font-bold lg:text-2xl">{ideaStats.approved}</div>
+                                        <p className="hidden text-xs text-muted-foreground lg:block">Ideas approved</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </CollapsibleContent>
+                    </Collapsible>
 
                     <div className="flex items-center gap-2">
                         <div className="relative flex-1">
@@ -394,8 +507,13 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                         {ideasData.data.length > 0 ? (
                                             ideasData.data.map((idea) => (
                                                 <tr key={idea.id} className="border-b last:border-0">
-                                                    <td className="py-3 pr-4 font-medium">
-                                                        {idea.title}
+                                                    <td className="py-3 pr-4">
+                                                        <Link
+                                                            href={ideas.show(idea.slug)}
+                                                            className="font-medium hover:text-sky-600 dark:hover:text-sky-400"
+                                                        >
+                                                            {idea.title}
+                                                        </Link>
                                                     </td>
                                                     <td className="py-3 pr-4 text-muted-foreground">
                                                         {idea.category?.name ?? 'Uncategorized'}
@@ -406,7 +524,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                         </td>
                                                     )}
                                                     <td className="py-3 pr-4">
-                                                        <Badge variant={statusVariants[idea.status] ?? 'outline'}>
+                                                        <Badge variant="outline" className={statusStyles[idea.status] ?? ''}>
                                                             {idea.status.replace(/_/g, ' ')}
                                                         </Badge>
                                                     </td>
@@ -429,15 +547,15 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                         </td>
                                                     )}
                                                     <td className="py-3 pr-4 whitespace-nowrap text-muted-foreground">
-                                                        {new Date(idea.created_at).toLocaleDateString()}
+                                                        {formatDate(idea.created_at)}
                                                     </td>
                                                     <td className="py-3">
                                                         <div className="flex items-center gap-0.5">
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
-                                                                    <Link href={ideas.show(idea.slug)}>
-                                                                        <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                                    <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
+                                                                        <Link href={ideas.show(idea.slug)}>
+                                                                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                                                         </Link>
                                                                     </Button>
                                                                 </TooltipTrigger>
@@ -548,14 +666,31 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={colSpan} className="py-8 text-center text-muted-foreground">
-                                                    {hasSearch || hasActiveFilters
-                                                        ? 'No ideas match your search or filters.'
-                                                        : currentTab === 'my-ideas'
-                                                            ? "You haven't submitted any ideas yet."
-                                                            : currentTab === 'open-for-collaboration'
-                                                                ? 'No ideas open for collaboration right now.'
-                                                                : "You haven't been invited as a contributor to any ideas."}
+                                                <td colSpan={colSpan} className="py-12 text-center text-muted-foreground">
+                                                    {hasSearch || hasActiveFilters ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <Search className="h-8 w-8 text-muted-foreground/50" />
+                                                            <p>No ideas match your search or filters.</p>
+                                                        </div>
+                                                    ) : currentTab === 'my-ideas' ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <Lightbulb className="h-8 w-8 text-muted-foreground/50" />
+                                                            <p>You haven't submitted any ideas yet.</p>
+                                                            <Button size="sm" className="mt-2" asChild>
+                                                                <Link href={ideas.create()}>Submit Your First Idea</Link>
+                                                            </Button>
+                                                        </div>
+                                                    ) : currentTab === 'open-for-collaboration' ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <UserPlus className="h-8 w-8 text-muted-foreground/50" />
+                                                            <p>No ideas open for collaboration right now.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <UserPlus className="h-8 w-8 text-muted-foreground/50" />
+                                                            <p>You haven't been invited as a contributor to any ideas.</p>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
                                         )}
@@ -669,4 +804,18 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
             </>
         </TooltipProvider>
     );
+}
+
+function formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
