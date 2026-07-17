@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Pencil, Trash2, User as UserIcon } from 'lucide-react';
+import { Pencil, Plus, Trash2, User as UserIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -56,9 +56,14 @@ return;
                         description="Create, edit, and delete users with role assignments"
                     />
                     {permissions.includes('user.create') && (
-                        <Button asChild>
-                            <Link href={routes.create()}>Create User</Link>
-                        </Button>
+                        <div className="flex flex-col items-center gap-1">
+                            <Button size="icon" asChild>
+                                <Link href={routes.create()}>
+                                    <Plus className="h-5 w-5" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">New User</span>
+                        </div>
                     )}
                 </div>
 
