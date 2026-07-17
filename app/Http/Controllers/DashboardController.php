@@ -15,9 +15,22 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
+        $ideas = $user->authoredIdeas()->select('status')->get();
+
         $data = [
             'pointsBalance' => $this->pointAwardService->getBalance($user),
             'recentTransactions' => $this->pointAwardService->getRecentTransactions($user),
+            'userIdeaStats' => [
+                'total' => $ideas->count(),
+                'drafts' => $ideas->where('status', 'draft')->count(),
+                'under_review' => $ideas->whereIn('status', ['submitted', 'under_review'])->count(),
+                'approved' => $ideas->where('status', 'approved')->count(),
+            ],
+            'pendingInvitations' => $user->pendingInvitations()
+                ->with(['idea:id,title,slug', 'invitedBy:id,name'])
+                ->latest()
+                ->take(5)
+                ->get(),
         ];
 
         if ($user->can('points.view')) {
