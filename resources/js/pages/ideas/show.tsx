@@ -1,7 +1,6 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, FileEdit, Gavel, GitCompareArrows, LayoutDashboard, Pencil, RotateCcw, Tags, UserPlus, Users } from 'lucide-react';
-import {  useState } from 'react';
-import type {ReactNode} from 'react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +15,6 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Document = {
@@ -125,37 +123,19 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'dest
 };
 
 export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPendingCollaborationCount, canProposeChanges, canApproveChanges, canAssign, canClassify, classifications, categories, officers, canRecordDecision, validDecisions, canProgress, canRequestRevision, canResubmit }: Props) {
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit(ideas.index().url);
+        }
+    };
+
     const { auth } = usePage().props as { auth: { user: { id: number } } };
     const proposal = idea.documents.find((d) => d.type === 'proposal');
     const supportingDocs = idea.documents.filter((d) => d.type === 'supporting');
     const isAuthor = auth.user.id === idea.author.id;
     const [dialogOpen, setDialogOpen] = useState(false);
-
-    const iconButton = (icon: ReactNode, label: string, href?: string) => {
-        if (href) {
-            return (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" asChild>
-                            <Link href={href}>{icon}</Link>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{label}</TooltipContent>
-                </Tooltip>
-            );
-        }
-
-        return (
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon">
-                        {icon}
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>{label}</TooltipContent>
-            </Tooltip>
-        );
-    };
 
     return (
         <>
@@ -180,82 +160,84 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                    {iconButton(<ArrowLeft className="h-4 w-4" />, 'Back to Ideas', ideas.index().url)}
+                    <div className="flex flex-col items-center gap-1">
+                        <Button variant="info" size="icon" onClick={goBack}>
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
 
-                    {(canAssign || canClassify) && iconButton(<LayoutDashboard className="h-4 w-4" />, 'Review Dashboard', ideas.review().url)}
-
-                    {isAuthor && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span tabIndex={0}>
-                                    {canEdit ? (
-                                        <Button variant="outline" size="icon" className="border-green-500/30" asChild>
-                                            <Link href={ideas.edit(idea.slug).url}>
-                                                <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                            </Link>
-                                        </Button>
-                                    ) : (
-<Button variant="outline" size="icon" className="border-green-500/30" disabled>
-                                    <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                        </Button>
-                                    )}
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {canEdit ? 'Edit Idea' : 'Only available for draft ideas'}
-                            </TooltipContent>
-                        </Tooltip>
-                    )}
-                    {isAuthor && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span tabIndex={0}>
-                                    {canResubmit ? (
-                                        <Button variant="outline" size="icon" className="border-amber-500/30" asChild>
-                                            <Link href={ideas.edit(idea.slug).url}>
-                                                <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                            </Link>
-                                        </Button>
-                                    ) : (
-<Button variant="outline" size="icon" className="border-amber-500/30" disabled>
-                                    <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                        </Button>
-                                    )}
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {canResubmit ? 'Resubmit' : 'Only available when revision is requested'}
-                            </TooltipContent>
-                        </Tooltip>
+                    {(canAssign || canClassify) && (
+                        <div className="flex flex-col items-center gap-1">
+                            <Button variant="outline" size="icon" asChild>
+                                <Link href={ideas.review().url}>
+                                    <LayoutDashboard className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Review</span>
+                        </div>
                     )}
 
                     {isAuthor && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon" asChild>
-                                    <Link href={ideas.collaborations.index(idea.slug)}>
-                                        <Users className="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                Collaborations{hasPendingCollaborationCount > 0 ? ` (${hasPendingCollaborationCount})` : ''}
-                            </TooltipContent>
-                        </Tooltip>
+                        <div className="flex flex-col items-center gap-1">
+                            <span tabIndex={0}>
+                                {canEdit ? (
+                                    <Button variant="outline" size="icon" className="border-green-500/30" asChild>
+                                        <Link href={ideas.edit(idea.slug).url}>
+                                            <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <Button variant="outline" size="icon" className="border-green-500/30" disabled>
+                                        <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                    </Button>
+                                )}
+                            </span>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Edit</span>
+                        </div>
+                    )}
+                    {isAuthor && (
+                        <div className="flex flex-col items-center gap-1">
+                            <span tabIndex={0}>
+                                {canResubmit ? (
+                                    <Button variant="outline" size="icon" className="border-amber-500/30" asChild>
+                                        <Link href={ideas.edit(idea.slug).url}>
+                                            <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <Button variant="outline" size="icon" className="border-amber-500/30" disabled>
+                                        <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                    </Button>
+                                )}
+                            </span>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Resubmit</span>
+                        </div>
+                    )}
+
+                    {isAuthor && (
+                        <div className="flex flex-col items-center gap-1">
+                            <Button variant="outline" size="icon" asChild>
+                                <Link href={ideas.collaborations.index(idea.slug)}>
+                                    <Users className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">
+                                Collab{hasPendingCollaborationCount > 0 ? ` (${hasPendingCollaborationCount})` : ''}
+                            </span>
+                        </div>
                     )}
 
                     {canClassify && (
                         <Dialog>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon">
-                                            <Tags className="h-4 w-4" />
-                                        </Button>
-                                    </DialogTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Classify Idea</TooltipContent>
-                            </Tooltip>
+                            <div className="flex flex-col items-center gap-1">
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="icon">
+                                        <Tags className="h-4 w-4" />
+                                    </Button>
+                                </DialogTrigger>
+                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Classify</span>
+                            </div>
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Classify Idea</DialogTitle>
@@ -347,16 +329,14 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
 
                     {canRecordDecision && (
                         <Dialog>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon" className="border-amber-500/30">
-                                            <Gavel className="h-4 w-4" />
-                                        </Button>
-                                    </DialogTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Record Decision</TooltipContent>
-                            </Tooltip>
+                            <div className="flex flex-col items-center gap-1">
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="icon" className="border-amber-500/30">
+                                        <Gavel className="h-4 w-4" />
+                                    </Button>
+                                </DialogTrigger>
+                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Decision</span>
+                            </div>
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Record DG Decision</DialogTitle>
@@ -424,30 +404,26 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                             action={ideas.progress(idea.slug)}
                         >
                             {({ processing }) => (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-<Button type="submit" variant="outline" size="icon" className="border-sky-500/30" disabled={processing}>
-                                    <ArrowRight className="h-4 w-4" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Advance Status</TooltipContent>
-                                </Tooltip>
+                                <div className="flex flex-col items-center gap-1">
+                                    <Button type="submit" variant="outline" size="icon" className="border-sky-500/30" disabled={processing}>
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Button>
+                                    <span className="text-[10px] leading-tight text-muted-foreground text-center">Advance</span>
+                                </div>
                             )}
                         </Form>
                     )}
 
                     {canRequestRevision && (
                         <Dialog>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon" className="border-amber-500/30">
-                                            <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                        </Button>
-                                    </DialogTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Request Revision</TooltipContent>
-                            </Tooltip>
+                            <div className="flex flex-col items-center gap-1">
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="icon" className="border-amber-500/30">
+                                        <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                    </Button>
+                                </DialogTrigger>
+                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Revision</span>
+                            </div>
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Request Revision</DialogTitle>
@@ -494,33 +470,38 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                         </Dialog>
                     )}
 
-                    {(canProposeChanges || canApproveChanges) && iconButton(<GitCompareArrows className="h-4 w-4" />, 'Change Requests', ideas.changes.index(idea.slug).url)}
+                    {(canProposeChanges || canApproveChanges) && (
+                        <div className="flex flex-col items-center gap-1">
+                            <Button variant="outline" size="icon" asChild>
+                                <Link href={ideas.changes.index(idea.slug).url}>
+                                    <GitCompareArrows className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Changes</span>
+                        </div>
+                    )}
 
                     {!isAuthor && canProposeChanges && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon" className="border-purple-500/30" asChild>
-                                    <Link href={ideas.changes.create(idea.slug).url}>
-                                        <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Propose Changes</TooltipContent>
-                        </Tooltip>
+                        <div className="flex flex-col items-center gap-1">
+                            <Button variant="outline" size="icon" className="border-purple-500/30" asChild>
+                                <Link href={ideas.changes.create(idea.slug).url}>
+                                    <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Propose</span>
+                        </div>
                     )}
 
                     {canRequestCollaboration && (
                         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon" className="border-teal-500/30">
-                                            <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                                        </Button>
-                                    </DialogTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Request to Collaborate</TooltipContent>
-                            </Tooltip>
+                            <div className="flex flex-col items-center gap-1">
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="icon" className="border-teal-500/30">
+                                        <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                    </Button>
+                                </DialogTrigger>
+                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Collab</span>
+                            </div>
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Request to Collaborate</DialogTitle>
