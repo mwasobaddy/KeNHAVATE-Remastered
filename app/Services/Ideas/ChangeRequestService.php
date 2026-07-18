@@ -141,7 +141,7 @@ class ChangeRequestService
         return $query->latest()->paginate($perPage);
     }
 
-    public function getForReviewAll(User $user): array
+    public function getForReviewAll(User $user, string $search = '', bool $showAll = false, array $filters = []): array
     {
         $hiddenSub = DB::table('change_request_hidden_users')
             ->whereColumn('change_request_id', 'change_requests.id')
@@ -149,10 +149,27 @@ class ChangeRequestService
             ->selectRaw('1')
             ->limit(1);
 
-        $all = ChangeRequest::with(['idea', 'proposer', 'reviewer'])
+        $query = ChangeRequest::with(['idea', 'proposer', 'reviewer'])
             ->where('user_id', '!=', $user->id)
-            ->whereHas('idea', fn ($q) => $q->where('author_id', $user->id))
-            ->addSelect(['hidden_by_user' => clone $hiddenSub])
+            ->whereHas('idea', fn ($q) => $q->where('author_id', $user->id));
+
+        if (! $showAll) {
+            $query->where('status', 'pending');
+        }
+
+        if (($filters['status'] ?? null) && ! $showAll) {
+            $query->whereIn('status', explode(',', $filters['status']));
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('idea', fn ($q) => $q->where('title', 'like', "%{$search}%"))
+                    ->orWhereHas('proposer', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhere('status', 'like', "%{$search}%");
+            });
+        }
+
+        $all = $query->addSelect(['hidden_by_user' => clone $hiddenSub])
             ->latest()
             ->get();
 
@@ -164,7 +181,7 @@ class ChangeRequestService
         ];
     }
 
-    public function getForUser(User $user): array
+    public function getForUser(User $user, string $search = '', array $filters = []): array
     {
         $hiddenSub = DB::table('change_request_hidden_users')
             ->whereColumn('change_request_id', 'change_requests.id')
@@ -174,6 +191,13 @@ class ChangeRequestService
 
         $proposed = ChangeRequest::with(['idea', 'proposer', 'reviewer'])
             ->where('user_id', $user->id)
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                $q->whereHas('idea', fn ($q) => $q->where('title', 'like', "%{$search}%"))
+                    ->orWhereHas('proposer', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhere('status', 'like', "%{$search}%");
+            }))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->whereIn('status', explode(',', $status))
+            )
             ->addSelect(['hidden_by_user' => clone $hiddenSub])
             ->latest()
             ->get();
@@ -182,6 +206,11 @@ class ChangeRequestService
             ->where('status', 'pending')
             ->where('user_id', '!=', $user->id)
             ->whereHas('idea', fn ($q) => $q->where('author_id', $user->id))
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                $q->whereHas('idea', fn ($q) => $q->where('title', 'like', "%{$search}%"))
+                    ->orWhereHas('proposer', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhere('status', 'like', "%{$search}%");
+            }))
             ->addSelect(['hidden_by_user' => clone $hiddenSub])
             ->latest()
             ->get();
