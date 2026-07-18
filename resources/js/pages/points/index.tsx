@@ -1,6 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus, Power, PowerOff, Trash2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, Power, PowerOff, Search, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
+import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,11 +24,90 @@ type Point = {
 type Props = {
     points: {
         data: Point[];
-        meta: any;
+        current_page: number;
+        last_page: number;
+        from: number;
+        to: number;
+        total: number;
+        links: { url: string | null; label: string; active: boolean }[];
     };
+    search: string | null;
+    filters: Record<string, string>;
 };
 
-export default function PointIndex({ points }: Props) {
+const POINT_STATUSES = ['active', 'inactive'] as const;
+
+export default function PointIndex({ points, filters: initialFilters, search: initialSearch }: Props) {
+    const [searchValue, setSearchValue] = useState(initialSearch ?? '');
+    const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
+        const params = new URLSearchParams();
+        const filters = filterOverrides ?? activeFilters;
+
+        if (searchVal) {
+            params.set('search', searchVal);
+        }
+
+        for (const [key, value] of Object.entries(filters)) {
+            if (value) {
+                params.set(key, value);
+            }
+        }
+
+        const qs = params.toString();
+        router.get(window.location.pathname + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleSearchChange = (value: string) => {
+        setSearchValue(value);
+
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+
+        searchDebounceRef.current = setTimeout(() => navigateWithFilters(value), 300);
+    };
+
+    const updateFilter = (key: string, value: string) => {
+        const next = { ...activeFilters };
+
+        if (value) {
+            next[key] = value;
+        } else {
+            delete next[key];
+        }
+
+        setActiveFilters(next);
+        navigateWithFilters(searchValue, next);
+    };
+
+    const clearFilters = () => {
+        const cleared: Record<string, string> = {};
+        setActiveFilters(cleared);
+        navigateWithFilters(searchValue, cleared);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        };
+    }, []);
+
+    const hasSearch = searchValue.length > 0;
+    const hasActiveFilters = Object.keys(activeFilters).length > 0;
+
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit('/dashboard');
+        }
+    };
+
     const handleDelete = (point: Point) => {
         if (confirm(`Are you sure you want to delete "${point.name}"?`)) {
             router.delete(routes.destroy({ point: point.id }));
@@ -40,12 +122,16 @@ export default function PointIndex({ points }: Props) {
         <>
             <Head title="Point Actions" />
 
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <Heading
-                        title="Point Actions"
-                        description="Manage actions that award points to users"
-                    />
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+                {/* Top bar */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col items-center gap-1">
+                        <Button size="icon" variant="info" onClick={goBack}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+
                     <div className="flex flex-col items-center gap-1">
                         <Button size="icon" asChild>
                             <Link href={routes.create()}>
@@ -54,6 +140,27 @@ export default function PointIndex({ points }: Props) {
                         </Button>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">New Action</span>
                     </div>
+                </div>
+
+                <Heading
+                    title="Point Actions"
+                    description="Manage actions that award points to users"
+                />
+
+                <div className="flex items-center gap-2">
+                    <SearchInput
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        placeholder="Search by name or description..."
+                    />
+                    <FilterModal
+                        statuses={POINT_STATUSES}
+                        categories={[]}
+                        filters={activeFilters}
+                        onFilterChange={updateFilter}
+                        onClear={clearFilters}
+                        hasActiveFilters={hasActiveFilters}
+                    />
                 </div>
 
                 <Card>
@@ -73,84 +180,133 @@ export default function PointIndex({ points }: Props) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {points.data.map((point) => (
-                                        <tr key={point.id} className="border-b last:border-0">
-                                            <td className="py-3 pr-4">
-                                                <div className="font-medium">{point.name}</div>
-                                                {point.description && (
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {point.description}
-                                                    </div>
-                                                )}
-                                                {point.deleted_at && (
-                                                    <Badge variant="outline" className="mt-1 text-xs">
-                                                        Deleted
+                                    {points.data.length > 0 ? (
+                                        points.data.map((point) => (
+                                            <tr key={point.id} className="border-b last:border-0">
+                                                <td className="py-3 pr-4">
+                                                    <div className="font-medium">{point.name}</div>
+                                                    {point.description && (
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {point.description}
+                                                        </div>
+                                                    )}
+                                                    {point.deleted_at && (
+                                                        <Badge variant="outline" className="mt-1 text-xs">
+                                                            Deleted
+                                                        </Badge>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 pr-4">{point.points}</td>
+                                                <td className="py-3 pr-4">
+                                                    <Badge
+                                                        variant={point.is_active ? 'default' : 'secondary'}
+                                                    >
+                                                        {point.is_active ? 'Active' : 'Inactive'}
                                                     </Badge>
-                                                )}
-                                            </td>
-                                            <td className="py-3 pr-4">{point.points}</td>
-                                            <td className="py-3 pr-4">
-                                                <Badge
-                                                    variant={point.is_active ? 'default' : 'secondary'}
-                                                >
-                                                    {point.is_active ? 'Active' : 'Inactive'}
-                                                </Badge>
-                                            </td>
-                                            <td className="py-3 pr-4 text-muted-foreground">
-                                                {point.created_by?.name ?? '—'}
-                                            </td>
-                                            <td className="py-3 pr-4">
-                                                <div className="flex items-center gap-0.5">
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button variant="outline" size="icon" className="border-green-500/30" asChild>
-                                                                 <Link href={routes.edit({ point: point.id })}>
-                                                                     <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                                </Link>
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>Edit</TooltipContent>
-                                                    </Tooltip>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="icon"
-                                                                className={point.is_active ? 'border-amber-500/30' : 'border-green-500/30'}
-                                                                onClick={() => handleToggle(point)}
-                                                            >
-                                                                {point.is_active
-                                                                    ? <PowerOff className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                                                    : <Power className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                                }
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            {point.is_active ? 'Deactivate' : 'Activate'}
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                    {!point.deleted_at && (
+                                                </td>
+                                                <td className="py-3 pr-4 text-muted-foreground">
+                                                    {point.created_by?.name ?? '—'}
+                                                </td>
+                                                <td className="py-3 pr-4">
+                                                    <div className="flex items-center gap-0.5">
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                            <Button
-                                                                 variant="outline"
-                                                                 size="icon"
-                                                                 className="border-red-500/30"
-                                                                 onClick={() => handleDelete(point)}
-                                                             >
-                                                                 <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                                <Button variant="outline" size="icon" className="border-green-500/30" asChild>
+                                                                     <Link href={routes.edit({ point: point.id })}>
+                                                                         <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                                    </Link>
                                                                 </Button>
                                                             </TooltipTrigger>
-                                                            <TooltipContent>Delete</TooltipContent>
+                                                            <TooltipContent>Edit</TooltipContent>
                                                         </Tooltip>
-                                                    )}
-                                                </div>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className={point.is_active ? 'border-amber-500/30' : 'border-green-500/30'}
+                                                                    onClick={() => handleToggle(point)}
+                                                                >
+                                                                    {point.is_active
+                                                                        ? <PowerOff className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                                        : <Power className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                                    }
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                {point.is_active ? 'Deactivate' : 'Activate'}
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                        {!point.deleted_at && (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                <Button
+                                                                     variant="outline"
+                                                                     size="icon"
+                                                                     className="border-red-500/30"
+                                                                     onClick={() => handleDelete(point)}
+                                                                 >
+                                                                     <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>Delete</TooltipContent>
+                                                            </Tooltip>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                                                {hasSearch || hasActiveFilters ? (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <Search className="h-8 w-8 text-muted-foreground/50" />
+                                                        <p>No point actions match your search.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <p>No point actions found.</p>
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
+
+                        {points.last_page > 1 && (
+                            <div className="mt-4 flex items-center justify-between">
+                                <p className="text-sm text-muted-foreground">
+                                    {hasSearch || hasActiveFilters
+                                        ? `Showing ${points.data.length} entries`
+                                        : `Showing ${points.from} to ${points.to} of ${points.total} entries`
+                                    }
+                                </p>
+                                {!hasSearch && !hasActiveFilters && (
+                                    <div className="flex gap-2">
+                                        {points.links.map((link, i) => {
+                                            if (!link.url || link.label === '...') {
+                                                return (
+                                                    <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
+                                                        {link.label}
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
+                                                    <Link href={link.url} preserveState preserveScroll>
+                                                        {link.label}
+                                                    </Link>
+                                                </Button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
