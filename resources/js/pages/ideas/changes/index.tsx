@@ -264,3 +264,11 @@ export default function ChangeRequestIndex({ idea, changeRequests }: Props) {
         </>
     );
 }
+
+ChangeRequestIndex.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Changes', href: '#' },
+    ],
+};
