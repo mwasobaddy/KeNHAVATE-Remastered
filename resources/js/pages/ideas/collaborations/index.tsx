@@ -179,3 +179,11 @@ export default function CollaborationIndex({ idea, collaborationRequests }: Prop
         </>
     );
 }
+
+CollaborationIndex.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Collaborations', href: '#' },
+    ],
+};
