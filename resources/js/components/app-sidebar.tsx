@@ -110,7 +110,7 @@ export function AppSidebar() {
 
     if (hasClassifyPermission) {
         reviewItems.push({
-            title: 'My Assignments',
+            title: 'My Queue',
             href: ideas.review().url + '?tab=my-assignments',
             icon: ClipboardCheck as LucideIcon,
             group: 'Review',
