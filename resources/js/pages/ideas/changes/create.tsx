@@ -150,3 +150,11 @@ export default function ProposeChanges({ idea }: Props) {
         </>
     );
 }
+
+ProposeChanges.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Propose Changes', href: '#' },
+    ],
+};
