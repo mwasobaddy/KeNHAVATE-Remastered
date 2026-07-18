@@ -34,14 +34,28 @@ class ChangeRequestController extends Controller
     public function mine(Request $request): Response
     {
         return inertia('ideas/changes/mine', [
-            'changeRequests' => $this->changeRequestService->getForUser($request->user())['proposed'],
+            'changeRequests' => $this->changeRequestService->getForUser(
+                $request->user(),
+                $request->get('search', ''),
+                $request->only(['search', 'status', 'date_from', 'date_to']),
+            )['proposed'],
+            'filters' => $request->only(['search', 'status', 'date_from', 'date_to']),
+            'search' => $request->get('search', ''),
         ]);
     }
 
     public function pending(Request $request): Response
     {
         return inertia('ideas/changes/pending',
-            $this->changeRequestService->getForReviewAll($request->user()),
+            $this->changeRequestService->getForReviewAll(
+                $request->user(),
+                $request->get('search', ''),
+                $request->boolean('show_all', false),
+                $request->only(['search', 'status', 'date_from', 'date_to']),
+            ) + [
+                'filters' => $request->only(['search', 'status', 'date_from', 'date_to']),
+                'search' => $request->get('search', ''),
+            ],
         );
     }
 
