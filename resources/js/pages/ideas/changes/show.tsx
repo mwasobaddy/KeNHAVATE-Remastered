@@ -202,3 +202,11 @@ export default function ReviewChange({ idea, changeRequest, canReview }: Props) 
         </>
     );
 }
+
+ReviewChange.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Change Request', href: '#' },
+    ],
+};
