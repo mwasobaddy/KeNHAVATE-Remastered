@@ -293,3 +293,11 @@ export default function CreateIdea({ categories }: Props) {
         </>
     );
 }
+
+CreateIdea.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Submit Idea', href: '/ideas/create' },
+    ],
+};
