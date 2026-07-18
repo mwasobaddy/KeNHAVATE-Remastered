@@ -675,7 +675,7 @@ The idea review process follows the KeNHA RI&KM policy (section 2.3.1):
 [Idea submitted] → status: submitted
     ↓ (appears in "Pending Assignment" on review dashboard)
 [DD assigns RI&KM Officer] → status: assigned
-    ↓ (appears in officer's "My Assignments" on review dashboard)
+    ↓ (appears in officer's "My Queue" on review dashboard)
     ↓
 [Officer reviews, may request revision ↔ author resubmits]
     → revision_requested ↔ resubmitted (loop as needed)
@@ -703,10 +703,10 @@ A dedicated review dashboard (`/ideas/review`) surfaces ideas at each stage of t
 | Section | Shows | Permission |
 |---------|-------|------------|
 | **Pending Assignment** | Submitted ideas with no officer assigned | `idea.assign_officer` |
-| **My Assignments** | Ideas assigned to the current officer (status: assigned, resubmitted) | `idea.classify` |
+| **My Queue** | Ideas assigned to the current officer (status: assigned, resubmitted) | `idea.classify` |
 | **Pending Decisions** | Ideas in dg_review status awaiting DG decision | `idea.dg_decision` |
 
-Ideas **move between views** as they progress through the workflow — a submitted idea appears in Pending Assignment, then moves to My Assignments once assigned, then to Pending Decisions once classified as Innovation. Each section shows the ideas status, author, category, submission date, and assigned officer with a direct link to the idea detail page.
+Ideas **move between views** as they progress through the workflow — a submitted idea appears in Pending Assignment, then moves to My Queue once assigned, then to Pending Decisions once classified as Innovation. Each section shows the ideas status, author, category, submission date, and assigned officer with a direct link to the idea detail page.
 
 The sidebar has individual navigation links under the **Review** group for each section, each gated by its respective permission. A "Back to Review Dashboard" button appears on the idea show page when the user has any review permission.
 
@@ -884,7 +884,7 @@ General                       ← gray group label
 ────────────────────────────────
 Review                        ← gray group label
   📋 Assign Officer           ← permission-gated items
-  📝 My Assignments
+  📝 My Queue
   ... 
 ────────────────────────────────
 Collaboration                 ← gray group label
@@ -920,7 +920,7 @@ resources/js/pages/
 │   └── transactions.tsx   → Paginated audit log of all point awards
 ├── ideas/
 │   ├── index.tsx          → Paginated table with 3 tabs (My Ideas / Open for Collaboration / My Contributions). Colored action icons with matching borders (Eye blue, Pencil green, RotateCcw amber, Trash2 red, UserPlus teal, FileEdit purple). Tab state via ?tab= query param (default: my-ideas).
-│   ├── review.tsx         → Review dashboard with tabbed sections (Pending Assignment, My Assignments, Pending Decisions). Each tab gated by permission (idea.assign_officer, idea.classify, idea.dg_decision). UserPlus teal + Eye blue icon buttons.
+│   ├── review.tsx         → Review dashboard with tabbed sections (Pending Assignment, My Queue, Pending Decisions). Each tab gated by permission (idea.assign_officer, idea.classify, idea.dg_decision). UserPlus teal + Eye blue icon buttons.
 │   ├── create.tsx         → Full form with file uploads, category select, team emails input, IP section (radio + conditional fields + required consent checkbox)
 │   ├── edit.tsx           → Pre-populated form with existing IP data, document management, consent checkbox
 │   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog. Author-only buttons (Pencil, RotateCcw) show disabled with contextual tooltip when status condition not met; permission-based buttons (Tags, Gavel, ArrowRight, etc.) hidden without permission
@@ -1099,12 +1099,12 @@ The sidebar uses `<Sidebar collapsible="icon" variant="inset">` with `defaultOpe
 | Group | Items | Access |
 |-------|-------|--------|
 | **General** | Dashboard, Ideas, Leaderboard | All authenticated users |
-| **Review** | Pending Assignment, My Assignments, Pending Decisions, Points, Role Management, User Management, Audit Log | Gated by permission |
+| **Review** | Pending Assignment, My Queue, Pending Decisions, Points, Role Management, User Management, Audit Log | Gated by permission |
 | **Collaboration** | Inbox, Sent Requests | All authenticated users |
 
 **Review group** items:
 - **Pending Assignment** — `idea.assign_officer` permission (DD)
-- **My Assignments** — `idea.classify` permission (Officer)
+- **My Queue** — `idea.classify` permission (Officer)
 - **Pending Decisions** — `idea.dg_decision` permission (DG)
 - **Points** — `points.view` permission
 - **Role Management** — `role.manage` permission
@@ -1465,7 +1465,7 @@ This keeps each feature self-contained, avoids the `admin` word, and mirrors the
 ### Why Dedicated Review Dashboard Instead of an Index Tab?
 
 - **Permission-based structure** — Each review section maps to a specific permission (`idea.assign_officer`, `idea.classify`, `idea.dg_decision`). Users with multiple permissions see all relevant sections in one place without mixing unrelated content
-- **Ideas flow between views** — A submitted idea appears in "Pending Assignment", moves to "My Assignments" when the DD assigns an officer, then to "Pending Decisions" when sent to DG. This natural pipeline prevents duplication
+- **Ideas flow between views** — A submitted idea appears in "Pending Assignment", moves to "My Queue" when the DD assigns an officer, then to "Pending Decisions" when sent to DG. This natural pipeline prevents duplication
 - **Sidebar shortcut per section** — Each section gets its own sidebar nav item with a `?tab=` query param for direct access, while the dashboard page keeps all sections discoverable
 - **Gated by `idea.review`** — The sidebar items and dashboard respect individual permissions so each user only sees what they can act on
 
