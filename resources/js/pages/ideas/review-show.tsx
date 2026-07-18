@@ -158,14 +158,14 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
 
                     <div className="flex flex-wrap items-center gap-2">
                         {canAssign && !idea.assigned_officer && (
-                            <AssignOfficerDialog ideaSlug={idea.slug} ideaTitle={idea.title} officers={officers} />
+                            <AssignOfficerDialog ideaSlug={idea.slug} ideaTitle={idea.title} officers={officers} authorId={idea.author.id} />
                         )}
 
                         {canClassify && (
                             <Dialog>
                                 <div className="flex flex-col items-center gap-1">
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon">
+                                        <Button size="icon">
                                             <Tags className="h-4 w-4" />
                                         </Button>
                                     </DialogTrigger>
@@ -254,8 +254,8 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                             <Dialog>
                                 <div className="flex flex-col items-center gap-1">
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon" className="border-amber-500/30">
-                                            <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        <Button size="icon">
+                                            <RotateCcw className="h-4 w-4" />
                                         </Button>
                                     </DialogTrigger>
                                     <span className="text-[10px] leading-tight text-muted-foreground text-center">Revision</span>
@@ -300,8 +300,8 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                             <Dialog>
                                 <div className="flex flex-col items-center gap-1">
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" size="icon" className="border-amber-500/30">
-                                            <Gavel className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        <Button size="icon">
+                                            <Gavel className="h-4 w-4" />
                                         </Button>
                                     </DialogTrigger>
                                     <span className="text-[10px] leading-tight text-muted-foreground text-center">Decision</span>
@@ -361,8 +361,8 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                             <Form method="post" action={ideas.progress(idea.slug)}>
                                 {({ processing }) => (
                                     <div className="flex flex-col items-center gap-1">
-                                        <Button type="submit" variant="outline" size="icon" className="border-sky-500/30" disabled={processing}>
-                                            <ArrowRight className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                                        <Button type="submit" variant="success" size="icon" className="border-sky-500/30" disabled={processing}>
+                                            <ArrowRight className="h-4 w-4" />
                                         </Button>
                                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Advance</span>
                                     </div>
@@ -587,17 +587,30 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
     );
 }
 
+ReviewShow.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Review Dashboard', href: '/ideas/review' },
+        { title: 'Review Idea', href: '#' },
+    ],
+};
+
 /* ---------- Assign Dialog (standalone, not nested) ---------- */
 
 function AssignOfficerDialog({
     ideaSlug,
     ideaTitle,
     officers,
+    authorId,
 }: {
     ideaSlug: string;
     ideaTitle: string;
     officers: Officer[];
+    authorId: number;
 }) {
+    const availableOfficers = officers.filter((o) => o.id !== authorId);
+
     return (
         <Dialog>
             <div className="flex flex-col items-center gap-1">
@@ -636,7 +649,7 @@ function AssignOfficerDialog({
                                     required
                                 >
                                     <option value="">Select an officer...</option>
-                                    {officers.map((o) => (
+                                    {availableOfficers.map((o) => (
                                         <option key={o.id} value={o.id}>
                                             {o.name} ({o.email})
                                         </option>
