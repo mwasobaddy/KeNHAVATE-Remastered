@@ -1,6 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Eye, MessageSquare, Send, UserCheck } from 'lucide-react';
+import { ArrowLeft, Eye, MessageSquare, Search, Send, UserCheck } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
+import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +31,8 @@ type Props = {
         total: number;
         links: { url: string | null; label: string; active: boolean }[];
     };
+    search: string | null;
+    filters: Record<string, string>;
 };
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
@@ -36,7 +41,72 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
     rejected: 'destructive',
 };
 
-export default function Inbox({ requests }: Props) {
+const REQUEST_STATUSES = ['pending', 'approved', 'rejected'] as const;
+
+export default function Inbox({ requests, filters: initialFilters, search: initialSearch }: Props) {
+    const [searchValue, setSearchValue] = useState(initialSearch ?? '');
+    const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
+        const params = new URLSearchParams();
+        const filters = filterOverrides ?? activeFilters;
+
+        if (searchVal) {
+            params.set('search', searchVal);
+        }
+
+        for (const [key, value] of Object.entries(filters)) {
+            if (value) {
+                params.set(key, value);
+            }
+        }
+
+        const qs = params.toString();
+        router.get(window.location.pathname + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleSearchChange = (value: string) => {
+        setSearchValue(value);
+
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+
+        searchDebounceRef.current = setTimeout(() => navigateWithFilters(value), 300);
+    };
+
+    const updateFilter = (key: string, value: string) => {
+        const next = { ...activeFilters };
+
+        if (value) {
+            next[key] = value;
+        } else {
+            delete next[key];
+        }
+
+        setActiveFilters(next);
+        navigateWithFilters(searchValue, next);
+    };
+
+    const clearFilters = () => {
+        const cleared: Record<string, string> = {};
+        setActiveFilters(cleared);
+        navigateWithFilters(searchValue, cleared);
+    };
+
+    const hasActiveFilters = Object.keys(activeFilters).length > 0;
+
+    useEffect(() => {
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        };
+    }, []);
+
+    const isFiltering = searchValue.length > 0 || hasActiveFilters;
+
     const goBack = () => {
         if (window.history.length > 2) {
             window.history.back();
@@ -74,16 +144,43 @@ export default function Inbox({ requests }: Props) {
                     description="Requests from users who want to collaborate on your ideas"
                 />
 
+                <div className="flex items-center gap-2">
+                    <SearchInput
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        placeholder="Search by user, idea, or status..."
+                    />
+                    <FilterModal
+                        statuses={REQUEST_STATUSES}
+                        categories={[]}
+                        filters={activeFilters}
+                        onFilterChange={updateFilter}
+                        onClear={clearFilters}
+                        hasActiveFilters={hasActiveFilters}
+                    />
+                </div>
+
                 {requests.data.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-12">
-                            <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
-                            <p className="text-sm text-muted-foreground">
-                                No collaboration requests received yet.
-                            </p>
-                            <p className="text-xs text-muted-foreground/60">
-                                When users request to collaborate on your ideas, they will appear here.
-                            </p>
+                            {searchValue || hasActiveFilters ? (
+                                <>
+                                    <Search className="h-10 w-10 text-muted-foreground/40" />
+                                    <p className="text-sm text-muted-foreground">
+                                        No requests match your search.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
+                                    <p className="text-sm text-muted-foreground">
+                                        No collaboration requests received yet.
+                                    </p>
+                                    <p className="text-xs text-muted-foreground/60">
+                                        When users request to collaborate on your ideas, they will appear here.
+                                    </p>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
                 ) : (
@@ -149,7 +246,11 @@ export default function Inbox({ requests }: Props) {
                             </Card>
                         ))}
 
-                        {requests.last_page > 1 && (
+                        {isFiltering ? (
+                            <p className="text-sm text-muted-foreground">
+                                Showing {requests.data.length} {requests.data.length === 1 ? 'entry' : 'entries'}
+                            </p>
+                        ) : requests.last_page > 1 && (
                             <div className="flex items-center justify-between">
                                 <p className="text-sm text-muted-foreground">
                                     Showing {requests.from} to {requests.to} of {requests.total} entries
@@ -181,3 +282,11 @@ export default function Inbox({ requests }: Props) {
         </>
     );
 }
+
+Inbox.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Collaboration Inbox', href: '/ideas/collaborations/request/inbox' },
+    ],
+};
