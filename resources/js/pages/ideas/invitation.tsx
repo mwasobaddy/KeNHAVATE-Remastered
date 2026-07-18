@@ -48,3 +48,11 @@ export default function IdeaInvitation({ invitation }: Props) {
         </>
     );
 }
+
+IdeaInvitation.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Invitation', href: '#' },
+    ],
+};
