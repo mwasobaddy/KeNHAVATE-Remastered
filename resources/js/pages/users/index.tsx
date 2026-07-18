@@ -1,8 +1,10 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Pencil, Plus, Trash2, User as UserIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { ArrowLeft, Pencil, Plus, Search, Trash2, User as UserIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,19 +15,113 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import routes from '@/routes/users';
 import type { Auth } from '@/types/auth';
 
-export default function UserIndex({ users }: { users: { id: number; name: string; email: string; role: string; is_staff: boolean; created_at: string }[] }) {
+type User = {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    is_staff: boolean;
+    created_at: string;
+};
+
+type Props = {
+    users: {
+        data: User[];
+        current_page: number;
+        last_page: number;
+        from: number;
+        to: number;
+        total: number;
+        links: { url: string | null; label: string; active: boolean }[];
+    };
+    search: string | null;
+    filters: Record<string, string>;
+};
+
+export default function UserIndex({ users, filters: initialFilters, search: initialSearch }: Props) {
     const user = (usePage().props as { auth?: Auth }).auth?.user;
     const permissions = user?.permissions ?? [];
-    const [deletingUser, setDeletingUser] = useState<typeof users[0] | null>(null);
+    const [deletingUser, setDeletingUser] = useState<User | null>(null);
     const [deletePassword, setDeletePassword] = useState('');
     const [deleteError, setDeleteError] = useState('');
     const [deleting, setDeleting] = useState(false);
+    const [searchValue, setSearchValue] = useState(initialSearch ?? '');
+    const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const passwordInput = useRef<HTMLInputElement>(null);
+
+    const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
+        const params = new URLSearchParams();
+        const filters = filterOverrides ?? activeFilters;
+
+        if (searchVal) {
+            params.set('search', searchVal);
+        }
+
+        for (const [key, value] of Object.entries(filters)) {
+            if (value) {
+                params.set(key, value);
+            }
+        }
+
+        const qs = params.toString();
+
+        router.get(window.location.pathname + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleSearchChange = (value: string) => {
+        setSearchValue(value);
+
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+
+        searchDebounceRef.current = setTimeout(() => navigateWithFilters(value), 300);
+    };
+
+    const updateFilter = (key: string, value: string) => {
+        const next = { ...activeFilters };
+
+        if (value) {
+            next[key] = value;
+        } else {
+            delete next[key];
+        }
+
+        setActiveFilters(next);
+        navigateWithFilters(searchValue, next);
+    };
+
+    const clearFilters = () => {
+        const cleared: Record<string, string> = {};
+        setActiveFilters(cleared);
+        navigateWithFilters(searchValue, cleared);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        };
+    }, []);
+
+    const hasSearch = searchValue.length > 0;
+    const hasActiveFilters = Object.keys(activeFilters).length > 0;
+
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit('/dashboard');
+        }
+    };
 
     const handleDelete = async () => {
         if (!deletingUser) {
-return;
-}
+            return;
+        }
 
         setDeleting(true);
         setDeleteError('');
@@ -49,12 +145,16 @@ return;
         <>
             <Head title="User Management" />
 
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <Heading
-                        title="User Management"
-                        description="Create, edit, and delete users with role assignments"
-                    />
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+                {/* Top bar */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col items-center gap-1">
+                        <Button size="icon" variant="info" onClick={goBack}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+
                     {permissions.includes('user.create') && (
                         <div className="flex flex-col items-center gap-1">
                             <Button size="icon" asChild>
@@ -65,6 +165,27 @@ return;
                             <span className="text-[10px] leading-tight text-muted-foreground text-center">New User</span>
                         </div>
                     )}
+                </div>
+
+                <Heading
+                    title="User Management"
+                    description="Create, edit, and delete users with role assignments"
+                />
+
+                <div className="flex items-center gap-2">
+                    <SearchInput
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        placeholder="Search by name, email, or role..."
+                    />
+                    <FilterModal
+                        statuses={[]}
+                        categories={[]}
+                        filters={activeFilters}
+                        onFilterChange={updateFilter}
+                        onClear={clearFilters}
+                        hasActiveFilters={hasActiveFilters}
+                    />
                 </div>
 
                 <Card>
@@ -84,60 +205,109 @@ return;
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map((u) => (
-                                        <tr key={u.id} className="border-b last:border-0">
-                                            <td className="py-3 pr-4">
-                                                <div className="flex items-center gap-2">
-                                                    <UserIcon className="h-4 w-4 text-muted-foreground" />
-                                                    <div>
-                                                        <div className="font-medium">{u.name}</div>
-                                                        <div className="text-xs text-muted-foreground">{u.email}</div>
+                                    {users.data.length > 0 ? (
+                                        users.data.map((u) => (
+                                            <tr key={u.id} className="border-b last:border-0">
+                                                <td className="py-3 pr-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <UserIcon className="h-4 w-4 text-muted-foreground" />
+                                                        <div>
+                                                            <div className="font-medium">{u.name}</div>
+                                                            <div className="text-xs text-muted-foreground">{u.email}</div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 pr-4">
-                                                <Badge variant="outline">{u.role}</Badge>
-                                            </td>
-                                            <td className="py-3 pr-4">
-                                                {u.is_staff ? <Badge>Staff</Badge> : <span className="text-muted-foreground">—</span>}
-                                            </td>
-                                            <td className="py-3 pr-4 text-muted-foreground">{u.created_at}</td>
-                                            <td className="py-3 pr-4">
-                                                <div className="flex items-center gap-0.5">
-                                                    {permissions.includes('user.edit') && (
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button variant="outline" size="icon" className="border-green-500/30" asChild>
-                                                                     <Link href={routes.edit({ user: u.id })}>
-                                                                         <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                                    </Link>
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>Edit</TooltipContent>
-                                                        </Tooltip>
-                                                    )}
-                                                    {permissions.includes('user.delete') && (
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                     variant="outline"
-                                                                     size="icon"
-                                                                     className="border-red-500/30"
-                                                                     onClick={() => setDeletingUser(u)}
-                                                                 >
-                                                                     <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>Delete</TooltipContent>
-                                                        </Tooltip>
-                                                    )}
-                                                </div>
+                                                </td>
+                                                <td className="py-3 pr-4">
+                                                    <Badge variant="outline">{u.role}</Badge>
+                                                </td>
+                                                <td className="py-3 pr-4">
+                                                    {u.is_staff ? <Badge>Staff</Badge> : <span className="text-muted-foreground">—</span>}
+                                                </td>
+                                                <td className="py-3 pr-4 text-muted-foreground">{u.created_at}</td>
+                                                <td className="py-3 pr-4">
+                                                    <div className="flex items-center gap-0.5">
+                                                        {permissions.includes('user.edit') && (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button variant="outline" size="icon" className="border-green-500/30" asChild>
+                                                                         <Link href={routes.edit({ user: u.id })}>
+                                                                             <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                                        </Link>
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>Edit</TooltipContent>
+                                                            </Tooltip>
+                                                        )}
+                                                        {permissions.includes('user.delete') && (
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button
+                                                                         variant="outline"
+                                                                         size="icon"
+                                                                         className="border-red-500/30"
+                                                                         onClick={() => setDeletingUser(u)}
+                                                                     >
+                                                                         <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>Delete</TooltipContent>
+                                                            </Tooltip>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                                                {hasSearch || hasActiveFilters ? (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <Search className="h-8 w-8 text-muted-foreground/50" />
+                                                        <p>No users match your search.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <p>No users found.</p>
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
+
+                        {users.last_page > 1 && (
+                            <div className="mt-4 flex items-center justify-between">
+                                <p className="text-sm text-muted-foreground">
+                                    {hasSearch || hasActiveFilters
+                                        ? `Showing ${users.data.length} entries`
+                                        : `Showing ${users.from} to ${users.to} of ${users.total} entries`
+                                    }
+                                </p>
+                                {!hasSearch && !hasActiveFilters && (
+                                    <div className="flex gap-2">
+                                        {users.links.map((link, i) => {
+                                            if (!link.url || link.label === '...') {
+                                                return (
+                                                    <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
+                                                        {link.label}
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
+                                                    <Link href={link.url} preserveState preserveScroll>
+                                                        {link.label}
+                                                    </Link>
+                                                </Button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
