@@ -8,6 +8,7 @@ use App\Http\Requests\Points\UpdatePointRequest;
 use App\Models\Point;
 use App\Services\Points\PointService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Response;
 
 class PointController extends Controller
@@ -16,10 +17,15 @@ class PointController extends Controller
         private PointService $pointService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return inertia('points/index', [
-            'points' => $this->pointService->list(),
+            'points' => $this->pointService->list(
+                $request->get('search', ''),
+                $request->only(['search', 'status', 'date_from', 'date_to']),
+            ),
+            'filters' => $request->only(['search', 'status', 'date_from', 'date_to']),
+            'search' => $request->get('search', ''),
         ]);
     }
 
