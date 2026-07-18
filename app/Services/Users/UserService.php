@@ -7,6 +7,7 @@ use App\Models\Region;
 use App\Models\Staff;
 use App\Models\User;
 use App\Services\AuditService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -17,20 +18,26 @@ class UserService
         private AuditService $auditService,
     ) {}
 
-    public function getAll(): array
+    public function getAll(string $search = '', array $filters = []): LengthAwarePaginator
     {
         return User::with('roles', 'staff')
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('work_email', 'like', "%{$search}%");
+            }))
+            ->when($filters['role'] ?? null, fn ($q, $role) => $q->whereHas('roles', fn ($q) => $q->where('name', $role))
+            )
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn ($user) => [
+            ->paginate(20)
+            ->through(fn ($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email ?? $user->work_email,
                 'role' => $user->roles->first()?->name,
                 'is_staff' => $user->staff !== null,
                 'created_at' => $user->created_at->toDateString(),
-            ])
-            ->all();
+            ]);
     }
 
     public function getFormData(): array
