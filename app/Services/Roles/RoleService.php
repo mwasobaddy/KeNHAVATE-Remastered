@@ -4,6 +4,7 @@ namespace App\Services\Roles;
 
 use App\Models\User;
 use App\Services\AuditService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -13,21 +14,22 @@ class RoleService
         private AuditService $auditService,
     ) {}
 
-    public function getAll(): array
+    public function getAll(string $search = ''): LengthAwarePaginator
     {
         return Role::whereNull('team_id')
             ->withCount('users')
             ->with('permissions')
-            ->get()
-            ->map(fn ($role) => [
+            ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ->orderBy('name')
+            ->paginate(20)
+            ->through(fn ($role) => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'guard_name' => $role->guard_name,
                 'users_count' => $role->users_count,
                 'permissions_count' => $role->permissions->count(),
                 'is_protected' => in_array($role->name, ['admin', 'user']),
-            ])
-            ->all();
+            ]);
     }
 
     private const TEAM_PERMISSIONS = [
