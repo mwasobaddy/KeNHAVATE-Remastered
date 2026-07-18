@@ -207,27 +207,19 @@ class IdeaService
         return $query->paginate($perPage)->appends(request()->query());
     }
 
-    public function getPendingAssignment(int $perPage = 15): LengthAwarePaginator
+    public function getPendingAssignment(?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Idea::with(['author', 'category'])
+        $query = Idea::with(['author', 'category'])
             ->where('status', 'submitted')
             ->whereNull('assigned_officer_id')
-            ->latest()
-            ->paginate($perPage)
-            ->appends(request()->query());
+            ->latest();
+
+        $query = $this->applySearchAndFilters($query, $search, $filters);
+
+        return $query->paginate($perPage)->appends(request()->query());
     }
 
-    public function getMyAssignments(User $user, int $perPage = 15): LengthAwarePaginator
-    {
-        return Idea::with(['author', 'category'])
-            ->where('assigned_officer_id', $user->id)
-            ->whereIn('status', ['assigned', 'resubmitted'])
-            ->latest()
-            ->paginate($perPage)
-            ->appends(request()->query());
-    }
-
-    public function getMyQueue(User $user, int $perPage = 15): LengthAwarePaginator
+    public function getMyQueue(User $user, ?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = Idea::with(['author', 'category', 'assignedOfficer']);
 
@@ -239,29 +231,36 @@ class IdeaService
                 $q->where(function ($sub) use ($user) {
                     $sub->where('assigned_officer_id', $user->id)
                         ->whereIn('status', ['assigned', 'resubmitted']);
-                })->orWhere(function ($sub) {
-                    $sub->whereIn('status', ['classified', 'resubmitted']);
+                })->orWhere(function ($sub) use ($user) {
+                    $sub->where('assigned_officer_id', $user->id)
+                        ->whereIn('status', ['classified', 'resubmitted']);
                 });
             } elseif ($hasClassify) {
                 $q->where('assigned_officer_id', $user->id)
                     ->whereIn('status', ['assigned', 'resubmitted']);
             } elseif ($hasDecide) {
-                $q->whereIn('status', ['classified', 'resubmitted']);
+                $q->where('assigned_officer_id', $user->id)
+                    ->whereIn('status', ['classified', 'resubmitted']);
             }
         });
+
+        $query = $this->applySearchAndFilters($query, $search, $filters);
 
         return $query->latest()
             ->paginate($perPage)
             ->appends(request()->query());
     }
 
-    public function getReviewed(User $user, int $perPage = 15): LengthAwarePaginator
+    public function getReviewed(User $user, ?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Idea::with(['author', 'category', 'assignedOfficer'])
-            ->whereHas('reviews', function ($q) use ($user) {
+        $query = Idea::with(['author', 'category', 'assignedOfficer'])
+            ->withWhereHas('reviews', function ($q) use ($user) {
                 $q->where('reviewer_id', $user->id);
-            })
-            ->latest()
+            });
+
+        $query = $this->applySearchAndFilters($query, $search, $filters);
+
+        return $query->latest()
             ->paginate($perPage)
             ->appends(request()->query());
     }
