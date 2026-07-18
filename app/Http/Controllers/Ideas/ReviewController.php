@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Ideas;
 
 use App\Http\Controllers\Controller;
-use App\Models\CollaborationRequest;
+use App\Models\Idea;
 use App\Models\IdeaClassification;
 use App\Models\User;
 use App\Services\Ideas\Decisions\DecisionService;
@@ -28,29 +28,49 @@ class ReviewController extends Controller
         $hasQueueAccess = $canClassify || $canRecordDecision;
         $hasReviewAccess = $hasQueueAccess || $user->hasPermissionTo('idea.review');
 
-        $defaultTab = match (true) {
+        $tab = $request->query('tab', match (true) {
             $canAssign => 'assign-officer',
             $hasQueueAccess => 'my-queue',
             $hasReviewAccess => 'reviewed',
             default => 'assign-officer',
-        };
-        $tab = $request->query('tab', $defaultTab);
+        });
+
+        $search = $request->query('search');
+        $filters = $request->only(['status', 'category_id', 'date_from', 'date_to']);
+        $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
+
+        if (! empty($filters['status'])) {
+            $filters['status'] = explode(',', $filters['status']);
+        }
 
         $pendingAssignment = $canAssign
-            ? $this->ideaService->getPendingAssignment()
+            ? $this->ideaService->getPendingAssignment($search, $filters)
             : null;
 
         $myQueue = $hasQueueAccess
-            ? $this->ideaService->getMyQueue($user)
+            ? $this->ideaService->getMyQueue($user, $search, $filters)
             : null;
 
         $reviewed = $hasReviewAccess
-            ? $this->ideaService->getReviewed($user)
+            ? $this->ideaService->getReviewed($user, $search, $filters)
             : null;
 
         $officers = $canAssign
             ? User::permission('idea.review')->orderBy('name')->get(['id', 'name', 'email'])
             : [];
+
+        $categories = $this->ideaCategoryService->getAll();
+
+        $reviewStats = [
+            'in_pipeline' => Idea::whereIn('status', ['submitted', 'assigned', 'classified', 'resubmitted'])->count(),
+            'pending_assignment' => Idea::where('status', 'submitted')->whereNull('assigned_officer_id')->count(),
+            'in_queue' => $hasQueueAccess
+                ? $this->ideaService->getMyQueue($user, null, [], 1)->total()
+                : 0,
+            'reviewed' => $hasReviewAccess
+                ? $this->ideaService->getReviewed($user, null, [], 1)->total()
+                : 0,
+        ];
 
         return inertia('ideas/review', [
             'currentTab' => $tab,
@@ -61,6 +81,10 @@ class ReviewController extends Controller
             'canClassify' => $canClassify,
             'canRecordDecision' => $canRecordDecision,
             'officers' => $officers,
+            'categories' => $categories,
+            'filters' => $filters,
+            'search' => $search,
+            'reviewStats' => $reviewStats,
         ]);
     }
 
@@ -77,23 +101,25 @@ class ReviewController extends Controller
         $user = $request->user();
 
         $canAssign = $user->can('idea.assign_officer');
-        $canClassify = $user->can('idea.classify') && $idea->classification_id === null
+        $isAssignedOfficer = $idea->assigned_officer_id === $user->id;
+        $canClassify = $user->can('idea.classify') && $isAssignedOfficer
+            && $idea->classification_id === null
             && in_array($idea->status, ['assigned', 'resubmitted']);
         $notClassified = $idea->classification_id === null && in_array($idea->status, ['assigned', 'resubmitted']);
-        $canRecordDecision = $user->can('idea.record_decision')
+        $canRecordDecision = $user->can('idea.record_decision') && $isAssignedOfficer
             && DecisionService::canDecide($idea);
         $validDecisions = $user->can('idea.record_decision')
             ? DecisionService::getValidDecisions($idea)
             : [];
-        $canProgress = $user->can('idea.record_decision')
+        $canProgress = $user->can('idea.record_decision') && $isAssignedOfficer
             && DecisionService::canProgress($idea);
-        $canRequestRevision = $user->can('idea.record_decision')
+        $canRequestRevision = $user->can('idea.record_decision') && $isAssignedOfficer
             && $idea->canBeRevised();
 
         $canProposeChanges = $idea->isOpen() && $idea->userCan($user, 'idea.propose_changes');
         $canApproveChanges = $idea->isOpen() && $idea->userCan($user, 'idea.approve_changes');
 
-        $hasPendingCollaborationCount = CollaborationRequest::where('idea_id', $idea->id)
+        $hasPendingCollaborationCount = $idea->collaborationRequests()
             ->where('status', 'pending')
             ->count();
 
