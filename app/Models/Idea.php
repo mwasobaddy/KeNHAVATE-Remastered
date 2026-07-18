@@ -175,7 +175,7 @@ class Idea extends Model
 
     public function isOpen(): bool
     {
-        return in_array($this->status, ['draft', 'revision_requested']);
+        return in_array($this->status, ['draft', 'submitted', 'revision_requested']);
     }
 
     public function canBeRevised(): bool
