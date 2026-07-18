@@ -1,6 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import Heading from '@/components/heading';
 import { ArrowLeft } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import FilterModal from '@/components/filter-modal';
+import Heading from '@/components/heading';
+import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +31,15 @@ type Props = {
     logs: PaginatedData;
 };
 
+const AUDIT_ACTIONS = [
+    'otp_requested',
+    'login',
+    'account_created',
+    'onboarding_completed',
+    'terms_accepted',
+    'point_awarded',
+] as const;
+
 const actionLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
     otp_requested: { label: 'OTP Requested', variant: 'outline' },
     login: { label: 'Login', variant: 'default' },
@@ -44,6 +56,75 @@ function actionBadge(action: string) {
 }
 
 export default function AuditIndex({ logs }: Props) {
+    const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get('search') || '');
+
+    const updateSearch = (value: string) => {
+        setSearch(value);
+        const params = new URLSearchParams(window.location.search);
+
+        if (value) {
+params.set('search', value);
+} else {
+params.delete('search');
+}
+
+        const qs = params.toString();
+        window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+    };
+
+    const [activeFilters, setActiveFilters] = useState<Record<string, string>>(() => {
+        const p = new URLSearchParams(window.location.search);
+        const f: Record<string, string> = {};
+        const status = p.get('status');
+        const date_from = p.get('date_from');
+        const date_to = p.get('date_to');
+
+        if (status) {
+f.status = status;
+}
+
+        if (date_from) {
+f.date_from = date_from;
+}
+
+        if (date_to) {
+f.date_to = date_to;
+}
+
+        return f;
+    });
+
+    const filtered = useMemo(() => {
+        let result = logs.data;
+
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            result = result.filter(
+                (log) => log.user.name.toLowerCase().includes(q)
+                    || (log.description && log.description.toLowerCase().includes(q))
+                    || log.action.toLowerCase().includes(q),
+            );
+        }
+
+        if (activeFilters.status) {
+            const selected = activeFilters.status.split(',');
+            result = result.filter((log) => selected.includes(log.action));
+        }
+
+        if (activeFilters.date_from) {
+            const from = new Date(activeFilters.date_from);
+            result = result.filter((log) => new Date(log.created_at) >= from);
+        }
+
+        if (activeFilters.date_to) {
+            const to = new Date(activeFilters.date_to);
+            to.setHours(23, 59, 59, 999);
+            result = result.filter((log) => new Date(log.created_at) <= to);
+        }
+
+        return result;
+    }, [logs.data, search, activeFilters]);
+
     const goBack = () => {
         if (window.history.length > 2) {
             window.history.back();
@@ -52,15 +133,87 @@ export default function AuditIndex({ logs }: Props) {
         }
     };
 
+    const syncFiltersUrl = (filters: Record<string, string>) => {
+        const params = new URLSearchParams(window.location.search);
+
+        for (const [k, v] of Object.entries(filters)) {
+            if (v) {
+params.set(k, v);
+} else {
+params.delete(k);
+}
+        }
+
+        const qs = params.toString();
+        window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+    };
+
+    const updateFilter = (key: string, value: string) => {
+        setActiveFilters((prev) => {
+            const next = { ...prev };
+
+            if (value) {
+                next[key] = value;
+            } else {
+                delete next[key];
+            }
+
+            syncFiltersUrl(next);
+
+            return next;
+        });
+    };
+
+    const clearFilters = () => {
+        setActiveFilters({});
+        const params = new URLSearchParams(window.location.search);
+        params.delete('status');
+        params.delete('date_from');
+        params.delete('date_to');
+        params.delete('search');
+        const qs = params.toString();
+        window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+    };
+
+    const hasActiveFilters = Object.keys(activeFilters).length > 0;
+    const isFiltering = !!search.trim() || hasActiveFilters;
+
     return (
         <>
             <Head title="Audit Log" />
 
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+                {/* Top bar */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col items-center gap-1">
+                        <Button size="icon" variant="info" onClick={goBack}>
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+                </div>
+
                 <Heading
                     title="Audit Log"
                     description="System-wide activity trail"
                 />
+
+                <div className="flex items-center gap-2">
+                    <SearchInput
+                        value={search}
+                        onChange={updateSearch}
+                        placeholder="Search by user, action, or details..."
+                    />
+
+                    <FilterModal
+                        statuses={AUDIT_ACTIONS}
+                        categories={[]}
+                        filters={activeFilters}
+                        onFilterChange={updateFilter}
+                        onClear={clearFilters}
+                        hasActiveFilters={hasActiveFilters}
+                    />
+                </div>
 
                 <Card>
                     <CardHeader>
@@ -78,8 +231,8 @@ export default function AuditIndex({ logs }: Props) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {logs.data.length > 0 ? (
-                                        logs.data.map((log) => (
+                                    {filtered.length > 0 ? (
+                                        filtered.map((log) => (
                                             <tr key={log.id} className="border-b last:border-0">
                                                 <td className="py-3 pr-4">
                                                     <div className="font-medium">{log.user.name}</div>
@@ -99,7 +252,9 @@ export default function AuditIndex({ logs }: Props) {
                                     ) : (
                                         <tr>
                                             <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                                                No activity recorded yet.
+                                                {search || hasActiveFilters
+                                                    ? 'No activity matches your search or filters.'
+                                                    : 'No activity recorded yet.'}
                                             </td>
                                         </tr>
                                     )}
@@ -107,7 +262,11 @@ export default function AuditIndex({ logs }: Props) {
                             </table>
                         </div>
 
-                        {logs.last_page > 1 && (
+                        {isFiltering ? (
+                            <p className="mt-4 text-sm text-muted-foreground">
+                                Showing {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+                            </p>
+                        ) : logs.last_page > 1 && (
                             <div className="mt-4 flex items-center justify-between">
                                 <p className="text-sm text-muted-foreground">
                                     Showing {logs.from} to {logs.to} of {logs.total} entries
@@ -144,13 +303,6 @@ export default function AuditIndex({ logs }: Props) {
                         )}
                     </CardContent>
                 </Card>
-
-                <div className="flex flex-col items-center gap-1 self-start">
-                    <Button size="icon" variant="info" onClick={goBack}>
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
-                </div>
             </div>
         </>
     );
