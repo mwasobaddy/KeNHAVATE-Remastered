@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Eye, EyeOff, MessageSquare } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ArrowLeft, Eye, EyeOff, MessageSquare, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
+import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +28,8 @@ type ChangeRequest = {
 type Props = {
     pending: ChangeRequest[];
     all: ChangeRequest[];
+    search: string | null;
+    filters: Record<string, string>;
 };
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
@@ -33,6 +37,8 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destr
     approved: 'secondary',
     rejected: 'destructive',
 };
+
+const CHANGE_STATUSES = ['pending', 'approved', 'rejected'] as const;
 
 function ChangeRequestCard({ cr }: { cr: ChangeRequest }) {
     const handleHide = () => {
@@ -116,15 +122,95 @@ function ChangeRequestCard({ cr }: { cr: ChangeRequest }) {
     );
 }
 
-export default function Pending({ pending, all }: Props) {
-    const [showAll, setShowAll] = useState(false);
+export default function Pending({ pending, all, filters: initialFilters, search: initialSearch }: Props) {
+    const [showAll, setShowAll] = useState(() => new URLSearchParams(window.location.search).get('show_all') === 'true');
+    const [searchValue, setSearchValue] = useState(initialSearch ?? '');
+    const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const items = showAll ? all : pending;
+    const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
+        const params = new URLSearchParams();
+        const filters = filterOverrides ?? activeFilters;
 
-    const sorted = useMemo(
-        () => [...items].sort((a, b) => Number(a.hidden_by_user) - Number(b.hidden_by_user)),
-        [items],
-    );
+        if (searchVal) {
+            params.set('search', searchVal);
+        }
+
+        if (showAll) {
+            params.set('show_all', 'true');
+        }
+
+        for (const [key, value] of Object.entries(filters)) {
+            if (value) {
+                params.set(key, value);
+            }
+        }
+
+        const qs = params.toString();
+        router.get(window.location.pathname + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleSearchChange = (value: string) => {
+        setSearchValue(value);
+
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+
+        searchDebounceRef.current = setTimeout(() => navigateWithFilters(value), 300);
+    };
+
+    const updateFilter = (key: string, value: string) => {
+        const next = { ...activeFilters };
+
+        if (value) {
+            next[key] = value;
+        } else {
+            delete next[key];
+        }
+
+        setActiveFilters(next);
+        navigateWithFilters(searchValue, next);
+    };
+
+    const clearFilters = () => {
+        const cleared: Record<string, string> = {};
+        setActiveFilters(cleared);
+        navigateWithFilters(searchValue, cleared);
+    };
+
+    const hasActiveFilters = Object.keys(activeFilters).length > 0;
+
+    useEffect(() => {
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        };
+    }, []);
+
+    const handleToggleShowAll = () => {
+        const newShowAll = !showAll;
+        setShowAll(newShowAll);
+        const params = new URLSearchParams();
+
+        if (newShowAll) {
+            params.set('show_all', 'true');
+        }
+
+        if (searchValue) {
+            params.set('search', searchValue);
+        }
+
+        for (const [key, value] of Object.entries(activeFilters)) {
+            if (value) {
+                params.set(key, value);
+            }
+        }
+
+        const qs = params.toString();
+        router.get(window.location.pathname + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
+    };
 
     const goBack = () => {
         if (window.history.length > 2) {
@@ -133,6 +219,8 @@ export default function Pending({ pending, all }: Props) {
             router.visit(ideas.index().url);
         }
     };
+
+    const items = showAll ? all : pending;
 
     return (
         <>
@@ -148,7 +236,7 @@ export default function Pending({ pending, all }: Props) {
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
 
-                    <Button variant="outline" size="sm" onClick={() => setShowAll(!showAll)}>
+                    <Button variant="outline" size="sm" onClick={handleToggleShowAll}>
                         {showAll ? 'Show pending only' : 'Show all'}
                     </Button>
                 </div>
@@ -158,20 +246,47 @@ export default function Pending({ pending, all }: Props) {
                     description="Change requests awaiting your review"
                 />
 
-                {sorted.length === 0 ? (
+                <div className="flex items-center gap-2">
+                    <SearchInput
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        placeholder="Search by idea, status, or proposer..."
+                    />
+                    <FilterModal
+                        statuses={CHANGE_STATUSES}
+                        categories={[]}
+                        filters={activeFilters}
+                        onFilterChange={updateFilter}
+                        onClear={clearFilters}
+                        hasActiveFilters={hasActiveFilters}
+                    />
+                </div>
+
+                {items.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-12">
-                            <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
-                            <p className="text-sm text-muted-foreground">
-                                {showAll
-                                    ? 'No change requests for your ideas.'
-                                    : 'No change requests pending your review.'}
-                            </p>
+                            {searchValue || hasActiveFilters ? (
+                                <>
+                                    <Search className="h-10 w-10 text-muted-foreground/40" />
+                                    <p className="text-sm text-muted-foreground">
+                                        No changes match your search.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
+                                    <p className="text-sm text-muted-foreground">
+                                        {showAll
+                                            ? 'No change requests for your ideas.'
+                                            : 'No change requests pending your review.'}
+                                    </p>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
                 ) : (
                     <div className="space-y-4">
-                        {sorted.map((cr) => (
+                        {items.map((cr) => (
                             <ChangeRequestCard key={cr.id} cr={cr} />
                         ))}
                     </div>
@@ -180,3 +295,11 @@ export default function Pending({ pending, all }: Props) {
         </>
     );
 }
+
+Pending.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Pending Review', href: '/ideas/changes/pending' },
+    ],
+};
