@@ -7,10 +7,16 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class PointService
 {
-    public function list(): LengthAwarePaginator
+    public function list(string $search = '', array $filters = []): LengthAwarePaginator
     {
         return Point::with('createdBy')
             ->withTrashed()
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            }))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('is_active', $status === 'active')
+            )
             ->latest()
             ->paginate(20);
     }
