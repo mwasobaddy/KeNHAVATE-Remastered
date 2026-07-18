@@ -437,3 +437,11 @@ export default function EditIdea({ idea, categories }: Props) {
         </>
     );
 }
+
+EditIdea.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'Edit Idea', href: '#' },
+    ],
+};
