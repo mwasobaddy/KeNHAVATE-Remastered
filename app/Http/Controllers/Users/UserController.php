@@ -17,10 +17,15 @@ class UserController extends Controller
         private UserService $userService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return inertia('users/index', [
-            'users' => $this->userService->getAll(),
+            'users' => $this->userService->getAll(
+                $request->get('search', ''),
+                $request->only(['search', 'role', 'date_from', 'date_to']),
+            ),
+            'filters' => $request->only(['search', 'role', 'date_from', 'date_to']),
+            'search' => $request->get('search', ''),
         ]);
     }
 
