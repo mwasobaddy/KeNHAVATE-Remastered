@@ -112,19 +112,33 @@ class CollaborationRequestService
             ->paginate(20);
     }
 
-    public function getInbox(User $user, int $perPage = 15): LengthAwarePaginator
+    public function getInbox(User $user, string $search = '', array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         return CollaborationRequest::with(['user', 'idea', 'reviewer'])
             ->whereHas('idea', fn (Builder $q) => $q->where('author_id', $user->id))
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                $q->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('idea', fn ($q) => $q->where('title', 'like', "%{$search}%"))
+                    ->orWhere('status', 'like', "%{$search}%");
+            }))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->whereIn('status', explode(',', $status))
+            )
             ->latest()
             ->paginate($perPage)
             ->appends(request()->query());
     }
 
-    public function getOutbox(User $user, int $perPage = 15): LengthAwarePaginator
+    public function getOutbox(User $user, string $search = '', array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         return CollaborationRequest::with(['idea.author', 'reviewer'])
             ->where('user_id', $user->id)
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                $q->whereHas('idea', fn ($q) => $q->where('title', 'like', "%{$search}%"))
+                    ->orWhereHas('idea.author', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhere('status', 'like', "%{$search}%");
+            }))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->whereIn('status', explode(',', $status))
+            )
             ->latest()
             ->paginate($perPage)
             ->appends(request()->query());
