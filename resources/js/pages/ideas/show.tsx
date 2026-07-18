@@ -1,5 +1,5 @@
-import { Form, Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, FileEdit, Gavel, GitCompareArrows, LayoutDashboard, Pencil, RotateCcw, Tags, UserPlus, Users } from 'lucide-react';
+import { Form, Head, router, usePage } from '@inertiajs/react';
+import { ArrowLeft, FileEdit, GitCompareArrows, Pencil, RotateCcw, UserPlus, Users } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -11,10 +11,10 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Document = {
@@ -25,12 +25,6 @@ type Document = {
 };
 
 type AssignedOfficer = {
-    id: number;
-    name: string;
-    email: string;
-};
-
-type Officer = {
     id: number;
     name: string;
     email: string;
@@ -93,15 +87,6 @@ type Props = {
     hasPendingCollaborationCount: number;
     canProposeChanges: boolean;
     canApproveChanges: boolean;
-    canAssign: boolean;
-    canClassify: boolean;
-    classifications: Classification[];
-    categories: { id: number; name: string }[];
-    officers: Officer[];
-    canRecordDecision: boolean;
-    validDecisions: string[];
-    canProgress: boolean;
-    canRequestRevision: boolean;
     canResubmit: boolean;
 };
 
@@ -122,7 +107,7 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'dest
     implemented: 'secondary',
 };
 
-export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPendingCollaborationCount, canProposeChanges, canApproveChanges, canAssign, canClassify, classifications, categories, officers, canRecordDecision, validDecisions, canProgress, canRequestRevision, canResubmit }: Props) {
+export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPendingCollaborationCount, canProposeChanges, canApproveChanges, canResubmit }: Props) {
     const goBack = () => {
         if (window.history.length > 2) {
             window.history.back();
@@ -131,17 +116,156 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
         }
     };
 
-    const { auth } = usePage().props as { auth: { user: { id: number } } };
     const proposal = idea.documents.find((d) => d.type === 'proposal');
     const supportingDocs = idea.documents.filter((d) => d.type === 'supporting');
+    const { auth } = usePage().props as { auth: { user: { id: number } } };
     const isAuthor = auth.user.id === idea.author.id;
     const [dialogOpen, setDialogOpen] = useState(false);
 
     return (
         <>
-            <Head title={idea.title} />
-
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-col items-center gap-1">
+                        <Button variant="info" size="icon" onClick={goBack}>
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+                    <div className="flex flex-row items-center gap-1">
+                        <TooltipProvider delayDuration={0}>
+                            {/* Changes — everyone */}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span tabIndex={0}>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            disabled={!canProposeChanges && !canApproveChanges}
+                                            onClick={() => router.visit(ideas.changes.index(idea.slug).url)}
+                                        >
+                                            <GitCompareArrows className="h-4 w-4" />
+                                        </Button>
+                                    </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {!canProposeChanges && !canApproveChanges
+                                        ? 'Cannot view changes at this stage'
+                                        : 'View Changes'}
+                                </TooltipContent>
+                            </Tooltip>
+
+                            {isAuthor && (
+                                <>
+                                    {/* Edit — author, disabled if stage blocks */}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span tabIndex={0}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="border-green-500/30"
+                                                    disabled={!canEdit}
+                                                    onClick={() => router.visit(ideas.edit(idea.slug).url)}
+                                                >
+                                                    <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {canEdit ? 'Edit idea' : 'Editing not available at this stage'}
+                                        </TooltipContent>
+                                    </Tooltip>
+
+                                    {/* Resubmit — author, disabled if stage blocks */}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span tabIndex={0}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="border-amber-500/30"
+                                                    disabled={!canResubmit}
+                                                    onClick={() => router.visit(ideas.edit(idea.slug).url)}
+                                                >
+                                                    <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {canResubmit ? 'Resubmit idea' : 'Resubmit not available at this stage'}
+                                        </TooltipContent>
+                                    </Tooltip>
+
+                                    {/* Collaborations — author always active */}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span tabIndex={0}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    onClick={() => router.visit(ideas.collaborations.index(idea.slug).url)}
+                                                >
+                                                    <Users className="h-4 w-4" />
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            Manage collaborators{hasPendingCollaborationCount > 0 ? ` (${hasPendingCollaborationCount} pending)` : ''}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </>
+                            )}
+
+                            {!isAuthor && (
+                                <>
+                                    {/* Propose Changes — non-author, disabled if stage blocks */}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span tabIndex={0}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="border-purple-500/30"
+                                                    disabled={!canProposeChanges}
+                                                    onClick={() => router.visit(ideas.changes.create(idea.slug).url)}
+                                                >
+                                                    <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {canProposeChanges ? 'Propose changes' : 'Cannot propose changes at this stage'}
+                                        </TooltipContent>
+                                    </Tooltip>
+
+                                    {/* Request Collaboration — non-author, disabled if stage blocks */}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span tabIndex={0}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    className="border-teal-500/30"
+                                                    disabled={!canRequestCollaboration}
+                                                    onClick={() => setDialogOpen(true)}
+                                                >
+                                                    <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {canRequestCollaboration ? 'Request to collaborate' : 'Cannot request collaboration at this stage'}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </>
+                            )}
+                        </TooltipProvider>
+                    </div>
+                </div>
+
+                <Head title={idea.title} />
+
                 <div className="flex items-start justify-between">
                     <div>
                         <Heading
@@ -157,390 +281,6 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                             <Badge variant="secondary">Collaboration Open</Badge>
                         )}
                     </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex flex-col items-center gap-1">
-                        <Button variant="info" size="icon" onClick={goBack}>
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
-                    </div>
-
-                    {(canAssign || canClassify) && (
-                        <div className="flex flex-col items-center gap-1">
-                            <Button variant="outline" size="icon" asChild>
-                                <Link href={ideas.review().url}>
-                                    <LayoutDashboard className="h-4 w-4" />
-                                </Link>
-                            </Button>
-                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Review</span>
-                        </div>
-                    )}
-
-                    {isAuthor && (
-                        <div className="flex flex-col items-center gap-1">
-                            <span tabIndex={0}>
-                                {canEdit ? (
-                                    <Button variant="outline" size="icon" className="border-green-500/30" asChild>
-                                        <Link href={ideas.edit(idea.slug).url}>
-                                            <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                        </Link>
-                                    </Button>
-                                ) : (
-                                    <Button variant="outline" size="icon" className="border-green-500/30" disabled>
-                                        <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                    </Button>
-                                )}
-                            </span>
-                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Edit</span>
-                        </div>
-                    )}
-                    {isAuthor && (
-                        <div className="flex flex-col items-center gap-1">
-                            <span tabIndex={0}>
-                                {canResubmit ? (
-                                    <Button variant="outline" size="icon" className="border-amber-500/30" asChild>
-                                        <Link href={ideas.edit(idea.slug).url}>
-                                            <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                        </Link>
-                                    </Button>
-                                ) : (
-                                    <Button variant="outline" size="icon" className="border-amber-500/30" disabled>
-                                        <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                    </Button>
-                                )}
-                            </span>
-                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Resubmit</span>
-                        </div>
-                    )}
-
-                    {isAuthor && (
-                        <div className="flex flex-col items-center gap-1">
-                            <Button variant="outline" size="icon" asChild>
-                                <Link href={ideas.collaborations.index(idea.slug)}>
-                                    <Users className="h-4 w-4" />
-                                </Link>
-                            </Button>
-                            <span className="text-[10px] leading-tight text-muted-foreground text-center">
-                                Collab{hasPendingCollaborationCount > 0 ? ` (${hasPendingCollaborationCount})` : ''}
-                            </span>
-                        </div>
-                    )}
-
-                    {canClassify && (
-                        <Dialog>
-                            <div className="flex flex-col items-center gap-1">
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="icon">
-                                        <Tags className="h-4 w-4" />
-                                    </Button>
-                                </DialogTrigger>
-                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Classify</span>
-                            </div>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Classify Idea</DialogTitle>
-                                </DialogHeader>
-                                <Form
-                                    method="post"
-                                    action={ideas.classify(idea.slug)}
-                                    className="space-y-4"
-                                    transform={(data) => ({
-                                        ...data,
-                                        classification_id: data.classification_id === '' ? undefined : Number(data.classification_id),
-                                        category_id: data.category_id === '' ? undefined : Number(data.category_id),
-                                    })}
-                                >
-                                    {({ processing, errors }) => (
-                                        <>
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="classification_id">
-                                                    Classification Type
-                                                </Label>
-                                                <select
-                                                    id="classification_id"
-                                                    name="classification_id"
-                                                    defaultValue=""
-                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                    required
-                                                >
-                                                    <option value="">Select type...</option>
-                                                    {classifications.map((c) => (
-                                                        <option key={c.id} value={c.id}>
-                                                            {c.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <InputError message={errors.classification_id} />
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="category_id">
-                                                    Thematic Area <span className="text-muted-foreground">(optional)</span>
-                                                </Label>
-                                                <select
-                                                    id="category_id"
-                                                    name="category_id"
-                                                    defaultValue=""
-                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                >
-                                                    <option value="">Keep current area</option>
-                                                    {categories.map((c) => (
-                                                        <option key={c.id} value={c.id}>
-                                                            {c.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <InputError message={errors.category_id} />
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="notes">
-                                                    Notes <span className="text-muted-foreground">(optional)</span>
-                                                </Label>
-                                                <textarea
-                                                    id="notes"
-                                                    name="notes"
-                                                    defaultValue=""
-                                                    rows={3}
-                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                    placeholder="Any additional notes..."
-                                                />
-                                                <InputError message={errors.notes} />
-                                            </div>
-
-                                            <div className="flex justify-end gap-3">
-                                                <DialogTrigger asChild>
-                                                    <Button type="button" variant="outline">
-                                                        Cancel
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <Button type="submit" disabled={processing}>
-                                                    {processing ? 'Classifying...' : 'Classify Idea'}
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
-                                </Form>
-                            </DialogContent>
-                        </Dialog>
-                    )}
-
-                    {canRecordDecision && (
-                        <Dialog>
-                            <div className="flex flex-col items-center gap-1">
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="icon" className="border-amber-500/30">
-                                        <Gavel className="h-4 w-4" />
-                                    </Button>
-                                </DialogTrigger>
-                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Decision</span>
-                            </div>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Record DG Decision</DialogTitle>
-                                </DialogHeader>
-                                <Form
-                                    method="post"
-                                    action={ideas.decide(idea.slug)}
-                                    className="space-y-4"
-                                >
-                                    {({ processing, errors }) => (
-                                        <>
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="decision">Decision</Label>
-                                                <select
-                                                    id="decision"
-                                                    name="decision"
-                                                    defaultValue=""
-                                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                    required
-                                                >
-                                                    <option value="">Select decision...</option>
-                                                    {validDecisions.map((d) => (
-                                                        <option key={d} value={d}>
-                                                            {d.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <InputError message={errors.decision} />
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="notes">
-                                                    Notes <span className="text-muted-foreground">(optional)</span>
-                                                </Label>
-                                                <Textarea
-                                                    id="notes"
-                                                    name="notes"
-                                                    defaultValue=""
-                                                    rows={3}
-                                                    placeholder="Any additional notes..."
-                                                />
-                                                <InputError message={errors.notes} />
-                                            </div>
-
-                                            <div className="flex justify-end gap-3">
-                                                <DialogTrigger asChild>
-                                                    <Button type="button" variant="outline">
-                                                        Cancel
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <Button type="submit" disabled={processing}>
-                                                    {processing ? 'Recording...' : 'Record Decision'}
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
-                                </Form>
-                            </DialogContent>
-                        </Dialog>
-                    )}
-
-                    {canProgress && (
-                        <Form
-                            method="post"
-                            action={ideas.progress(idea.slug)}
-                        >
-                            {({ processing }) => (
-                                <div className="flex flex-col items-center gap-1">
-                                    <Button type="submit" variant="outline" size="icon" className="border-sky-500/30" disabled={processing}>
-                                        <ArrowRight className="h-4 w-4" />
-                                    </Button>
-                                    <span className="text-[10px] leading-tight text-muted-foreground text-center">Advance</span>
-                                </div>
-                            )}
-                        </Form>
-                    )}
-
-                    {canRequestRevision && (
-                        <Dialog>
-                            <div className="flex flex-col items-center gap-1">
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="icon" className="border-amber-500/30">
-                                        <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                    </Button>
-                                </DialogTrigger>
-                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Revision</span>
-                            </div>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Request Revision</DialogTitle>
-                                </DialogHeader>
-                                <Form
-                                    method="post"
-                                    action={ideas.requestRevision(idea.slug)}
-                                    className="space-y-4"
-                                >
-                                    {({ processing, errors }) => (
-                                        <>
-                                            <p className="text-sm text-muted-foreground">
-                                                The author will be asked to revise and resubmit this idea.
-                                            </p>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="notes">
-                                                    Instructions <span className="text-muted-foreground">(optional)</span>
-                                                </Label>
-                                                <Textarea
-                                                    id="notes"
-                                                    name="notes"
-                                                    defaultValue=""
-                                                    rows={3}
-                                                    placeholder="What changes are needed?"
-                                                />
-                                                <InputError message={errors.notes} />
-                                            </div>
-
-                                            <div className="flex justify-end gap-3">
-                                                <DialogTrigger asChild>
-                                                    <Button type="button" variant="outline">
-                                                        Cancel
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <Button type="submit" disabled={processing}>
-                                                    {processing ? 'Requesting...' : 'Request Revision'}
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
-                                </Form>
-                            </DialogContent>
-                        </Dialog>
-                    )}
-
-                    {(canProposeChanges || canApproveChanges) && (
-                        <div className="flex flex-col items-center gap-1">
-                            <Button variant="outline" size="icon" asChild>
-                                <Link href={ideas.changes.index(idea.slug).url}>
-                                    <GitCompareArrows className="h-4 w-4" />
-                                </Link>
-                            </Button>
-                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Changes</span>
-                        </div>
-                    )}
-
-                    {!isAuthor && canProposeChanges && (
-                        <div className="flex flex-col items-center gap-1">
-                            <Button variant="outline" size="icon" className="border-purple-500/30" asChild>
-                                <Link href={ideas.changes.create(idea.slug).url}>
-                                    <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                </Link>
-                            </Button>
-                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Propose</span>
-                        </div>
-                    )}
-
-                    {canRequestCollaboration && (
-                        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                            <div className="flex flex-col items-center gap-1">
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="icon" className="border-teal-500/30">
-                                        <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                                    </Button>
-                                </DialogTrigger>
-                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Collab</span>
-                            </div>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Request to Collaborate</DialogTitle>
-                                </DialogHeader>
-                                <Form
-                                    method="post"
-                                    action={ideas.collaborations.store(idea.slug)}
-                                    resetOnSuccess={true}
-                                    className="space-y-4"
-                                >
-                                    {({ processing, errors }) => (
-                                        <>
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="message">
-                                                    Why do you want to collaborate?
-                                                </Label>
-                                                <Textarea
-                                                    id="message"
-                                                    name="message"
-                                                    rows={4}
-                                                    required
-                                                    placeholder="Tell the author what skills or ideas you can contribute..."
-                                                />
-                                                <InputError message={errors.message} />
-                                            </div>
-                                            <div className="flex justify-end gap-3">
-                                                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                                                    Cancel
-                                                </Button>
-                                                <Button type="submit" disabled={processing}>
-                                                    {processing ? 'Sending...' : 'Send Request'}
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
-                                </Form>
-                            </DialogContent>
-                        </Dialog>
-                    )}
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
@@ -725,44 +465,6 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                     {idea.assigned_officer.email}
                                 </p>
                             </div>
-                        ) : canAssign ? (
-                            <Form
-                                method="post"
-                                action={ideas.assign(idea.slug)}
-                                className="space-y-4"
-                                transform={(data) => ({
-                                    ...data,
-                                    officer_id: data.officer_id === '' ? undefined : Number(data.officer_id),
-                                })}
-                            >
-                                {({ processing, errors }) => (
-                                    <>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="officer_id">
-                                                Assign RI&KM Officer
-                                            </Label>
-                                            <select
-                                                id="officer_id"
-                                                name="officer_id"
-                                                defaultValue=""
-                                                className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                required
-                                            >
-                                                <option value="">Select an officer...</option>
-                                                {officers.map((o) => (
-                                                    <option key={o.id} value={o.id}>
-                                                        {o.name} ({o.email})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <InputError message={errors.officer_id} />
-                                        </div>
-                                        <Button type="submit" disabled={processing}>
-                                            {processing ? 'Assigning...' : 'Assign Officer'}
-                                        </Button>
-                                    </>
-                                )}
-                            </Form>
                         ) : (
                             <p className="text-sm text-muted-foreground">
                                 No officer assigned yet.
@@ -821,6 +523,56 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                     </Card>
                 )}
             </div>
+
+            {/* Request Collaboration Dialog */}
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Request to Collaborate</DialogTitle>
+                    </DialogHeader>
+                    <Form
+                        method="post"
+                        action={ideas.collaborations.store(idea.slug)}
+                        resetOnSuccess={true}
+                        onSuccess={() => setDialogOpen(false)}
+                        className="space-y-4"
+                    >
+                        {({ processing, errors }) => (
+                            <>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="message">
+                                        Why do you want to collaborate?
+                                    </Label>
+                                    <Textarea
+                                        id="message"
+                                        name="message"
+                                        rows={4}
+                                        required
+                                        placeholder="Tell the author what skills or ideas you can contribute..."
+                                    />
+                                    <InputError message={errors.message} />
+                                </div>
+                                <div className="flex justify-end gap-3">
+                                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" disabled={processing}>
+                                        {processing ? 'Sending...' : 'Send Request'}
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </Form>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
+
+ShowIdea.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'View Idea', href: '#' },
+    ],
+};
