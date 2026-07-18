@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Eye, EyeOff, MessageSquare } from 'lucide-react';
-import { useMemo } from 'react';
+import { ArrowLeft, Eye, EyeOff, MessageSquare, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
+import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +27,8 @@ type ChangeRequest = {
 
 type Props = {
     changeRequests: ChangeRequest[];
+    search: string | null;
+    filters: Record<string, string>;
 };
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
@@ -32,6 +36,8 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destr
     approved: 'secondary',
     rejected: 'destructive',
 };
+
+const CHANGE_STATUSES = ['pending', 'approved', 'rejected'] as const;
 
 function ChangeRequestCard({ cr }: { cr: ChangeRequest }) {
     const handleHide = () => {
@@ -114,11 +120,67 @@ function ChangeRequestCard({ cr }: { cr: ChangeRequest }) {
     );
 }
 
-export default function Mine({ changeRequests }: Props) {
-    const sorted = useMemo(
-        () => [...changeRequests].sort((a, b) => Number(a.hidden_by_user) - Number(b.hidden_by_user)),
-        [changeRequests],
-    );
+export default function Mine({ changeRequests, filters: initialFilters, search: initialSearch }: Props) {
+    const [searchValue, setSearchValue] = useState(initialSearch ?? '');
+    const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
+        const params = new URLSearchParams();
+        const filters = filterOverrides ?? activeFilters;
+
+        if (searchVal) {
+            params.set('search', searchVal);
+        }
+
+        for (const [key, value] of Object.entries(filters)) {
+            if (value) {
+                params.set(key, value);
+            }
+        }
+
+        const qs = params.toString();
+        router.get(window.location.pathname + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleSearchChange = (value: string) => {
+        setSearchValue(value);
+
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+
+        searchDebounceRef.current = setTimeout(() => navigateWithFilters(value), 300);
+    };
+
+    const updateFilter = (key: string, value: string) => {
+        const next = { ...activeFilters };
+
+        if (value) {
+            next[key] = value;
+        } else {
+            delete next[key];
+        }
+
+        setActiveFilters(next);
+        navigateWithFilters(searchValue, next);
+    };
+
+    const clearFilters = () => {
+        const cleared: Record<string, string> = {};
+        setActiveFilters(cleared);
+        navigateWithFilters(searchValue, cleared);
+    };
+
+    const hasActiveFilters = Object.keys(activeFilters).length > 0;
+
+    useEffect(() => {
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+            }
+        };
+    }, []);
 
     const goBack = () => {
         if (window.history.length > 2) {
@@ -148,18 +210,45 @@ export default function Mine({ changeRequests }: Props) {
                     description="Changes you have proposed"
                 />
 
-                {sorted.length === 0 ? (
+                <div className="flex items-center gap-2">
+                    <SearchInput
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        placeholder="Search by idea, status, or proposer..."
+                    />
+                    <FilterModal
+                        statuses={CHANGE_STATUSES}
+                        categories={[]}
+                        filters={activeFilters}
+                        onFilterChange={updateFilter}
+                        onClear={clearFilters}
+                        hasActiveFilters={hasActiveFilters}
+                    />
+                </div>
+
+                {changeRequests.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-12">
-                            <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
-                            <p className="text-sm text-muted-foreground">
-                                You haven't proposed any changes yet.
-                            </p>
+                            {searchValue || hasActiveFilters ? (
+                                <>
+                                    <Search className="h-10 w-10 text-muted-foreground/40" />
+                                    <p className="text-sm text-muted-foreground">
+                                        No changes match your search.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
+                                    <p className="text-sm text-muted-foreground">
+                                        You haven't proposed any changes yet.
+                                    </p>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
                 ) : (
                     <div className="space-y-4">
-                        {sorted.map((cr) => (
+                        {changeRequests.map((cr) => (
                             <ChangeRequestCard key={cr.id} cr={cr} />
                         ))}
                     </div>
@@ -168,3 +257,11 @@ export default function Mine({ changeRequests }: Props) {
         </>
     );
 }
+
+Mine.layout = {
+    breadcrumbs: [
+        { title: 'Dashboard', href: '/dashboard' },
+        { title: 'Ideas', href: '/ideas' },
+        { title: 'My Changes', href: '/ideas/changes/mine' },
+    ],
+};
