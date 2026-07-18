@@ -17,10 +17,12 @@ class RoleController extends Controller
         private RoleService $roleService,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return inertia('roles/index', [
-            'roles' => $this->roleService->getAll(),
+            'roles' => $this->roleService->getAll($request->get('search', '')),
+            'filters' => $request->only('search'),
+            'search' => $request->get('search', ''),
         ]);
     }
 
