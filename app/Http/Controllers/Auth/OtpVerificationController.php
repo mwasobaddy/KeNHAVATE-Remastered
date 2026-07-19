@@ -46,7 +46,7 @@ class OtpVerificationController extends Controller
             ]);
         }
 
-        auth()->login($user, true);
+        auth()->login($user, $request->boolean('remember'));
         session()->forget('otp_email');
 
         if ($user->onboarding_completed_at) {
