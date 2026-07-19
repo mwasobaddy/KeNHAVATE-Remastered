@@ -20,12 +20,19 @@ use App\Http\Controllers\Ideas\ReviewController;
 use App\Http\Controllers\Points\LeaderboardController;
 use App\Http\Controllers\Points\PointController;
 use App\Http\Controllers\Points\TransactionController;
+use App\Http\Controllers\PublicController;
 use App\Http\Controllers\Roles\RoleController;
 use App\Http\Controllers\Users\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', [PublicController::class, 'home'])->name('home');
+Route::get('how-it-works', fn () => inertia('public/how-it-works'))->name('how-it-works');
+Route::get('about', fn () => inertia('public/about'))->name('about');
+Route::get('contact', [PublicController::class, 'contact'])->name('contact');
+Route::post('contact', [PublicController::class, 'contact']);
+Route::get('explore', [PublicController::class, 'explore'])->name('explore');
+Route::get('explore/{slug}', [PublicController::class, 'show'])->name('explore.show');
 
 Route::middleware('guest')->group(function () {
     Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
