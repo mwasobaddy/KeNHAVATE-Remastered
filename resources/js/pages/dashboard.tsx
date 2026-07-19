@@ -4,8 +4,8 @@ import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ideas from '@/routes/ideas';
 import { leaderboard } from '@/routes';
+import ideas from '@/routes/ideas';
 import points from '@/routes/points';
 
 type Transaction = {
@@ -66,32 +66,40 @@ export default function Dashboard({
                         title="Dashboard"
                         description="Welcome to the KeNHA Innovation Portal"
                     />
-                    <div className="flex flex-wrap gap-2">
-                        <Button size="sm" asChild>
-                            <Link href={ideas.create()}>
-                                <Plus className="mr-1.5 h-4 w-4" />
-                                New Idea
-                            </Link>
-                        </Button>
-                        <Button size="sm" variant="outline" asChild>
-                            <Link href={ideas.index()}>
-                                <List className="mr-1.5 h-4 w-4" />
-                                Browse Ideas
-                            </Link>
-                        </Button>
-                        <Button size="sm" variant="outline" asChild>
-                            <Link href={leaderboard()}>
-                                <Trophy className="mr-1.5 h-4 w-4" />
-                                Leaderboard
-                            </Link>
-                        </Button>
-                        {canManage && (
-                            <Button size="sm" variant="outline" asChild>
-                                <Link href={points.index()}>
-                                    <Award className="mr-1.5 h-4 w-4" />
-                                    Manage Points
+                    <div className="flex items-start gap-3">
+                        <div className="flex flex-col items-center gap-1">
+                            <Button size="icon" asChild>
+                                <Link href={ideas.create()}>
+                                    <Plus className="h-4 w-4" />
                                 </Link>
                             </Button>
+                            <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">New Idea</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <Button variant="warning" size="icon" asChild>
+                                <Link href={ideas.index()}>
+                                    <List className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">Browse Ideas</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <Button variant="warning" size="icon" asChild>
+                                <Link href={leaderboard()}>
+                                    <Trophy className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">Leaderboard</span>
+                        </div>
+                        {canManage && (
+                            <div className="flex flex-col items-center gap-1">
+                                <Button variant="warning" size="icon" asChild>
+                                    <Link href={points.index()}>
+                                        <Award className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                                <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">Manage Points</span>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -345,10 +353,21 @@ function formatDate(dateString: string): string {
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+    if (diffDays === 0) {
+return 'Today';
+}
+
+    if (diffDays === 1) {
+return 'Yesterday';
+}
+
+    if (diffDays < 7) {
+return `${diffDays} days ago`;
+}
+
+    if (diffDays < 30) {
+return `${Math.floor(diffDays / 7)}w ago`;
+}
 
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
