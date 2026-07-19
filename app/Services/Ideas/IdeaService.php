@@ -157,6 +157,17 @@ class IdeaService
         return $query->paginate($perPage)->appends(request()->query());
     }
 
+    public function getPublic(?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $query = Idea::with(['author', 'category'])
+            ->whereNotIn('status', ['draft'])
+            ->latest();
+
+        $query = $this->applySearchAndFilters($query, $search, $filters);
+
+        return $query->paginate($perPage)->appends(request()->query());
+    }
+
     public function getMyIdeas(User $user, ?string $search = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = Idea::with(['author', 'category'])
