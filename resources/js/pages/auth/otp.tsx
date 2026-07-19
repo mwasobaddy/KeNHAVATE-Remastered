@@ -3,11 +3,13 @@ import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     InputOTP,
     InputOTPGroup,
     InputOTPSlot,
 } from '@/components/ui/input-otp';
+import { Label } from '@/components/ui/label';
 import AuthSplitLayout from '@/layouts/auth/auth-split-layout';
 
 const OTP_LENGTH = 6;
@@ -93,6 +95,11 @@ export default function OtpVerification({ email, status, cooldown_remaining }: P
                                     {status}
                                 </p>
                             )}
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                            <Checkbox id="remember" name="remember" />
+                            <Label htmlFor="remember">Remember me</Label>
                         </div>
 
                         <Button
