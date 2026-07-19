@@ -25,7 +25,7 @@ class GoogleAuthController extends Controller
 
         $user = $this->googleAuthService->findOrCreateUser($googleUser);
 
-        Auth::login($user, true);
+        Auth::login($user);
 
         if ($user->onboarding_completed_at) {
             return redirect()->intended(route('dashboard'));
