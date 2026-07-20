@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ClipboardCheck, ClipboardList, FileEdit, LayoutGrid, Lightbulb, MessageSquare, ScrollText, Shield, Trophy, User, Zap } from 'lucide-react';
+import { ClipboardCheck, ClipboardList, Inbox, LayoutGrid, Lightbulb, ScrollText, Send, Shield, Trophy, User, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -15,7 +15,6 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard, leaderboard } from '@/routes';
-import allChanges from '@/routes/all-changes';
 import ideas from '@/routes/ideas';
 import points from '@/routes/points';
 import roles from '@/routes/roles';
@@ -69,30 +68,30 @@ export function AppSidebar() {
 
     const allChangesItems: NavItem[] = [
         {
-            title: 'Proposed',
-            href: allChanges.mine(),
-            icon: FileEdit,
+            title: 'Request Outbox',
+            href: ideas.changes.mine(),
+            icon: Send,
             group: 'Change',
         },
         {
-            title: 'Pending',
-            href: allChanges.pending(),
-            icon: FileEdit,
+            title: 'Request Inbox',
+            href: ideas.changes.pending(),
+            icon: Inbox,
             group: 'Change',
         },
     ];
 
     const collaborationItems: NavItem[] = [
         {
-            title: 'Inbox',
+            title: 'Request Inbox',
             href: ideas.collaborations.inbox(),
-            icon: MessageSquare,
+            icon: Inbox,
             group: 'Collaboration',
         },
         {
-            title: 'Sent Requests',
+            title: 'Request Outbox',
             href: ideas.collaborations.outbox(),
-            icon: MessageSquare,
+            icon: Send,
             group: 'Collaboration',
         },
     ];
