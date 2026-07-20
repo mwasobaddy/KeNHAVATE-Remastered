@@ -149,7 +149,7 @@ export default function UserIndex({ users, filters: initialFilters, search: init
                 {/* Top bar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" variant="info" onClick={goBack}>
+                        <Button size="icon" variant="warning" onClick={goBack}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
