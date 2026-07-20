@@ -888,8 +888,8 @@ Review                        ← gray group label
   ... 
 ────────────────────────────────
 Collaboration                 ← gray group label
-  📥 Inbox
-  📤 Sent Requests
+  📥 Request Inbox
+  📤 Request Outbox
 ────────────────────────────────
 👤 User Name                  ← bordered footer area
    email@kenha.co.ke
