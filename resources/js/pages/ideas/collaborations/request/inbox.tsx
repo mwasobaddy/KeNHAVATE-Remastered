@@ -1,8 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Eye, MessageSquare, Search, Send, UserCheck } from 'lucide-react';
+import { ArrowLeft, Eye, MessageSquare, Reply, Search, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
+import RespondToCollaborationDialog from '@/components/respond-to-collaboration-dialog';
 import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,10 +36,10 @@ type Props = {
     filters: Record<string, string>;
 };
 
-const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
-    pending: 'default',
-    approved: 'secondary',
-    rejected: 'destructive',
+const statusStyles: Record<string, string> = {
+    pending: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+    approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+    rejected: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
 };
 
 const REQUEST_STATUSES = ['pending', 'approved', 'rejected'] as const;
@@ -46,6 +47,8 @@ const REQUEST_STATUSES = ['pending', 'approved', 'rejected'] as const;
 export default function Inbox({ requests, filters: initialFilters, search: initialSearch }: Props) {
     const [searchValue, setSearchValue] = useState(initialSearch ?? '');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const [respondTarget, setRespondTarget] = useState<CollaborationRequest | null>(null);
+    const [activeTips, setActiveTips] = useState<Record<string, boolean>>({});
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
@@ -117,30 +120,35 @@ export default function Inbox({ requests, filters: initialFilters, search: initi
 
     return (
         <>
-            <Head title="Collaboration Inbox" />
+            <Head title="Collaboration Requests Inbox" />
 
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 {/* Top bar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" variant="info" onClick={goBack}>
+                        <Button size="icon" variant="warning" onClick={goBack}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
 
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" variant="outline" asChild>
-                            <Link href={ideas.collaborations.outbox()}>
-                                <Send className="h-5 w-5" />
-                            </Link>
-                        </Button>
+                        <Tooltip open={activeTips['nav-outbox'] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, 'nav-outbox': o }))}>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" asChild>
+                                    <Link href={ideas.collaborations.outbox()} onClick={() => setActiveTips((p) => ({ ...p, 'nav-outbox': true }))}>
+                                        <Send className="h-5 w-5" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Outbox</TooltipContent>
+                        </Tooltip>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Sent</span>
                     </div>
                 </div>
 
                 <Heading
-                    title="Collaboration Inbox"
+                    title="Collaboration Requests Inbox"
                     description="Requests from users who want to collaborate on your ideas"
                 />
 
@@ -193,31 +201,37 @@ export default function Inbox({ requests, filters: initialFilters, search: initi
                                             <CardTitle className="truncate text-base">
                                                 {req.user.name}
                                             </CardTitle>
-                                            <Badge className="shrink-0" variant={statusVariant[req.status] ?? 'outline'}>
+                                            <Badge className={(statusStyles[req.status] ?? '') + ' shrink-0'} variant="outline">
                                                 {req.status}
                                             </Badge>
                                         </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
-                                                        <Link href={ideas.show(req.idea.slug)}>
-                                                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                        </Link>
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>View Idea</TooltipContent>
-                                            </Tooltip>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="outline" size="icon" className="border-teal-500/30" asChild>
-                                                        <Link href={ideas.collaborations.index(req.idea.slug)}>
-                                                            <UserCheck className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                                                        </Link>
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Manage Collaboration</TooltipContent>
-                                            </Tooltip>
+                                        <div className="flex items-start gap-2 shrink-0">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Tooltip open={activeTips[`${req.id}-view`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${req.id}-view`]: o }))}>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="info" size="icon" asChild>
+                                                            <Link href={ideas.show(req.idea.slug)} onClick={() => setActiveTips((p) => ({ ...p, [`${req.id}-view`]: true }))}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>View</TooltipContent>
+                                                </Tooltip>
+                                                <span className="text-[10px] leading-tight text-muted-foreground text-center">View</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Tooltip open={activeTips[`${req.id}-respond`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${req.id}-respond`]: o }))}>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="success" size="icon" onClick={() => {
+                                                            setActiveTips((p) => ({ ...p, [`${req.id}-respond`]: true })); setRespondTarget(req);
+                                                        }}>
+                                                            <Reply className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Respond</TooltipContent>
+                                                </Tooltip>
+                                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Respond</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -278,6 +292,16 @@ export default function Inbox({ requests, filters: initialFilters, search: initi
                         )}
                     </div>
                 )}
+
+                <RespondToCollaborationDialog
+                    request={respondTarget!}
+                    open={respondTarget !== null}
+                    onOpenChange={(open) => {
+ if (!open) {
+setRespondTarget(null);
+} 
+}}
+                />
             </div>
         </>
     );
@@ -287,6 +311,6 @@ Inbox.layout = {
     breadcrumbs: [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Ideas', href: '/ideas' },
-        { title: 'Collaboration Inbox', href: '/ideas/collaborations/request/inbox' },
+        { title: 'Collaboration Requests Inbox', href: '/ideas/collaborations/request/inbox' },
     ],
 };
