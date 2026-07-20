@@ -1,12 +1,12 @@
-import { Form, Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { ArrowLeft, Reply } from 'lucide-react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import RespondToCollaborationDialog from '@/components/respond-to-collaboration-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Collaborator = { id: number; name: string };
@@ -26,13 +26,15 @@ type Props = {
     collaborationRequests: { data: CollaborationRequest[] };
 };
 
-const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
-    pending: 'default',
-    approved: 'secondary',
-    rejected: 'destructive',
+const statusStyles: Record<string, string> = {
+    pending: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+    approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+    rejected: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
 };
 
 export default function CollaborationIndex({ idea, collaborationRequests }: Props) {
+    const [respondTarget, setRespondTarget] = useState<(CollaborationRequest & { idea: { slug: string; title: string } }) | null>(null);
+
     const goBack = () => {
         if (window.history.length > 2) {
             window.history.back();
@@ -47,24 +49,19 @@ export default function CollaborationIndex({ idea, collaborationRequests }: Prop
 
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <div className="flex items-start justify-between">
-                    <Heading
-                        title="Collaboration Requests"
-                        description={`For: ${idea.title}`}
-                    />
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" variant="info" onClick={goBack}>
+                        <Button size="icon" variant="warning" onClick={goBack}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={ideas.collaborations.inbox()}>Inbox</Link>
-                        </Button>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={ideas.collaborations.outbox()}>Sent Requests</Link>
-                        </Button>
-                    </div>
+                </div>
+
+                <div className="flex items-start justify-between">
+                    <Heading
+                        title="Collaboration Requests"
+                        description={`For: ${idea.title}`}
+                    />
                 </div>
 
                 {collaborationRequests.data.length === 0 ? (
@@ -82,7 +79,7 @@ export default function CollaborationIndex({ idea, collaborationRequests }: Prop
                                         <CardTitle className="text-base">
                                             {cr.user.name}
                                         </CardTitle>
-                                        <Badge variant={statusVariant[cr.status] ?? 'outline'}>
+                                        <Badge variant="outline" className={statusStyles[cr.status] ?? ''}>
                                             {cr.status}
                                         </Badge>
                                     </div>
@@ -107,67 +104,20 @@ export default function CollaborationIndex({ idea, collaborationRequests }: Prop
                                     </div>
 
                                     {cr.status === 'pending' && (
-                                        <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                            <Card>
-                                                <CardContent className="pt-4">
-                                                    <Form
-                                                        method="post"
-                                                        action={ideas.collaborations.approve([idea.slug, cr.id])}
-                                                        className="space-y-3"
+                                        <div className="mt-4">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        variant="default"
+                                                        size="sm"
+                                                        onClick={() => setRespondTarget({ ...cr, idea: { slug: idea.slug, title: idea.title } })}
                                                     >
-                                                        {({ processing, errors }) => (
-                                                            <>
-                                                                <div className="grid gap-2">
-                                                                    <Label htmlFor={`approve-feedback-${cr.id}`}>
-                                                                        Feedback (optional)
-                                                                    </Label>
-                                                                    <Textarea
-                                                                        id={`approve-feedback-${cr.id}`}
-                                                                        name="feedback"
-                                                                        rows={2}
-                                                                        placeholder="Optional note..."
-                                                                    />
-                                                                    <InputError message={errors.feedback} />
-                                                                </div>
-                                                                <Button type="submit" className="w-full" disabled={processing}>
-                                                                    {processing ? 'Approving...' : 'Approve'}
-                                                                </Button>
-                                                            </>
-                                                        )}
-                                                    </Form>
-                                                </CardContent>
-                                            </Card>
-
-                                            <Card>
-                                                <CardContent className="pt-4">
-                                                    <Form
-                                                        method="post"
-                                                        action={ideas.collaborations.reject([idea.slug, cr.id])}
-                                                        className="space-y-3"
-                                                    >
-                                                        {({ processing, errors }) => (
-                                                            <>
-                                                                <div className="grid gap-2">
-                                                                    <Label htmlFor={`reject-feedback-${cr.id}`}>
-                                                                        Feedback (required)
-                                                                    </Label>
-                                                                    <Textarea
-                                                                        id={`reject-feedback-${cr.id}`}
-                                                                        name="feedback"
-                                                                        rows={2}
-                                                                        required
-                                                                        placeholder="Explain why..."
-                                                                    />
-                                                                    <InputError message={errors.feedback} />
-                                                                </div>
-                                                                <Button type="submit" variant="destructive" className="w-full" disabled={processing}>
-                                                                    {processing ? 'Rejecting...' : 'Reject'}
-                                                                </Button>
-                                                            </>
-                                                        )}
-                                                    </Form>
-                                                </CardContent>
-                                            </Card>
+                                                        <Reply className="mr-1.5 h-4 w-4" />
+                                                        Respond
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Approve or reject this request</TooltipContent>
+                                            </Tooltip>
                                         </div>
                                     )}
                                 </CardContent>
@@ -175,6 +125,16 @@ export default function CollaborationIndex({ idea, collaborationRequests }: Prop
                         ))}
                     </div>
                 )}
+
+                <RespondToCollaborationDialog
+                    request={respondTarget!}
+                    open={respondTarget !== null}
+                    onOpenChange={(open) => {
+ if (!open) {
+setRespondTarget(null);
+} 
+}}
+                />
             </div>
         </>
     );
