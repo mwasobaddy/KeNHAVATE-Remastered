@@ -79,7 +79,7 @@ class CollaborationController extends Controller
             $validated['feedback'] ?? null,
         );
 
-        return redirect()->route('ideas.collaborations.index', $idea->slug)
+        return redirect()->back()
             ->with('success', 'Collaboration request approved. User can now access the idea.');
     }
 
@@ -105,7 +105,7 @@ class CollaborationController extends Controller
             $validated['feedback'],
         );
 
-        return redirect()->route('ideas.collaborations.index', $idea->slug)
+        return redirect()->back()
             ->with('success', 'Collaboration request rejected.');
     }
 }
