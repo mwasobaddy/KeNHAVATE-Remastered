@@ -25,6 +25,10 @@ class ChangeRequestController extends Controller
             abort(404);
         }
 
+        if (! $idea->userCan($request->user(), 'idea.view_changes')) {
+            abort(403);
+        }
+
         return inertia('ideas/changes/index', [
             'idea' => $idea->load('author'),
             'changeRequests' => $this->changeRequestService->getForIdea($idea, $request->user()),
@@ -159,7 +163,7 @@ class ChangeRequestController extends Controller
             $validated['feedback'] ?? null,
         );
 
-        return redirect()->route('ideas.changes.index', $idea->slug)
+        return redirect()->back()
             ->with('success', 'Change request approved and applied.');
     }
 
@@ -245,7 +249,7 @@ class ChangeRequestController extends Controller
             $validated['feedback'],
         );
 
-        return redirect()->route('ideas.changes.index', $idea->slug)
+        return redirect()->back()
             ->with('success', 'Change request rejected.');
     }
 }
