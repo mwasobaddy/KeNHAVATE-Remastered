@@ -1,4 +1,4 @@
-import { Form, Head, router, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, FileEdit, GitCompareArrows, Pencil, RotateCcw, UserPlus, Users } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Document = {
@@ -121,146 +121,127 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
     const { auth } = usePage().props as { auth: { user: { id: number } } };
     const isAuthor = auth.user.id === idea.author.id;
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [tipChanges, setTipChanges] = useState(false);
+    const [tipEdit, setTipEdit] = useState(false);
+    const [tipResubmit, setTipResubmit] = useState(false);
+    const [tipCollaborate, setTipCollaborate] = useState(false);
+    const [tipPropose, setTipPropose] = useState(false);
+    const [tipRequest, setTipRequest] = useState(false);
 
     return (
         <>
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
-                        <Button variant="info" size="icon" onClick={goBack}>
+                        <Button size="icon" variant="warning" onClick={goBack}>
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
-                    <div className="flex flex-row items-center gap-1">
-                        <TooltipProvider delayDuration={0}>
-                            {/* Changes — everyone */}
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <span tabIndex={0}>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            disabled={!canProposeChanges && !canApproveChanges}
-                                            onClick={() => router.visit(ideas.changes.index(idea.slug).url)}
-                                        >
-                                            <GitCompareArrows className="h-4 w-4" />
+                    <div className="flex flex-row items-start gap-2">
+                        {(canProposeChanges || canApproveChanges) && (
+                            <div className="flex flex-col items-center gap-1">
+                                <Tooltip open={tipChanges} onOpenChange={setTipChanges}>
+                                    <TooltipTrigger asChild>
+                                        <Button size="icon" asChild>
+                                            <Link href={ideas.changes.index(idea.slug)} onClick={() => setTipChanges(true)}>
+                                                <GitCompareArrows className="h-4 w-4" />
+                                            </Link>
                                         </Button>
-                                    </span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    {!canProposeChanges && !canApproveChanges
-                                        ? 'Cannot view changes at this stage'
-                                        : 'View Changes'}
-                                </TooltipContent>
-                            </Tooltip>
+                                    </TooltipTrigger>
+                                    <TooltipContent>View Changes</TooltipContent>
+                                </Tooltip>
+                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Changes</span>
+                            </div>
+                        )}
 
-                            {isAuthor && (
-                                <>
-                                    {/* Edit — author, disabled if stage blocks */}
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <span tabIndex={0}>
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    className="border-green-500/30"
-                                                    disabled={!canEdit}
-                                                    onClick={() => router.visit(ideas.edit(idea.slug).url)}
-                                                >
-                                                    <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        {isAuthor && (
+                            <>
+                                {canEdit && (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Tooltip open={tipEdit} onOpenChange={setTipEdit}>
+                                            <TooltipTrigger asChild>
+                                                <Button size="icon" className="border-green-500/30" asChild>
+                                                    <Link href={ideas.edit(idea.slug)} onClick={() => setTipEdit(true)}>
+                                                        <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                    </Link>
                                                 </Button>
-                                            </span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {canEdit ? 'Edit idea' : 'Editing not available at this stage'}
-                                        </TooltipContent>
-                                    </Tooltip>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Edit idea</TooltipContent>
+                                        </Tooltip>
+                                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Edit</span>
+                                    </div>
+                                )}
 
-                                    {/* Resubmit — author, disabled if stage blocks */}
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <span tabIndex={0}>
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    className="border-amber-500/30"
-                                                    disabled={!canResubmit}
-                                                    onClick={() => router.visit(ideas.edit(idea.slug).url)}
-                                                >
-                                                    <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                {canResubmit && (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Tooltip open={tipResubmit} onOpenChange={setTipResubmit}>
+                                            <TooltipTrigger asChild>
+                                                <Button size="icon" className="border-amber-500/30" asChild>
+                                                    <Link href={ideas.edit(idea.slug)} onClick={() => setTipResubmit(true)}>
+                                                        <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                    </Link>
                                                 </Button>
-                                            </span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {canResubmit ? 'Resubmit idea' : 'Resubmit not available at this stage'}
-                                        </TooltipContent>
-                                    </Tooltip>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Resubmit idea</TooltipContent>
+                                        </Tooltip>
+                                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Resubmit</span>
+                                    </div>
+                                )}
 
-                                    {/* Collaborations — author always active */}
-                                    <Tooltip>
+                                <div className="flex flex-col items-center gap-1">
+                                    <Tooltip open={tipCollaborate} onOpenChange={setTipCollaborate}>
                                         <TooltipTrigger asChild>
-                                            <span tabIndex={0}>
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => router.visit(ideas.collaborations.index(idea.slug).url)}
-                                                >
+                                            <Button size="icon" asChild>
+                                                <Link href={ideas.collaborations.index(idea.slug)} onClick={() => setTipCollaborate(true)}>
                                                     <Users className="h-4 w-4" />
-                                                </Button>
-                                            </span>
+                                                </Link>
+                                            </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             Manage collaborators{hasPendingCollaborationCount > 0 ? ` (${hasPendingCollaborationCount} pending)` : ''}
                                         </TooltipContent>
                                     </Tooltip>
-                                </>
-                            )}
+                                    <span className="text-[10px] leading-tight text-muted-foreground text-center">Team</span>
+                                </div>
+                            </>
+                        )}
 
-                            {!isAuthor && (
-                                <>
-                                    {/* Propose Changes — non-author, disabled if stage blocks */}
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <span tabIndex={0}>
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    className="border-purple-500/30"
-                                                    disabled={!canProposeChanges}
-                                                    onClick={() => router.visit(ideas.changes.create(idea.slug).url)}
-                                                >
-                                                    <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        {!isAuthor && (
+                            <>
+                                {canProposeChanges && (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Tooltip open={tipPropose} onOpenChange={setTipPropose}>
+                                            <TooltipTrigger asChild>
+                                                <Button size="icon" className="border-purple-500/30" asChild>
+                                                    <Link href={ideas.changes.create(idea.slug)} onClick={() => setTipPropose(true)}>
+                                                        <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                    </Link>
                                                 </Button>
-                                            </span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {canProposeChanges ? 'Propose changes' : 'Cannot propose changes at this stage'}
-                                        </TooltipContent>
-                                    </Tooltip>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Propose changes</TooltipContent>
+                                        </Tooltip>
+                                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Propose</span>
+                                    </div>
+                                )}
 
-                                    {/* Request Collaboration — non-author, disabled if stage blocks */}
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <span tabIndex={0}>
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    className="border-teal-500/30"
-                                                    disabled={!canRequestCollaboration}
-                                                    onClick={() => setDialogOpen(true)}
-                                                >
+                                {canRequestCollaboration && (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Tooltip open={tipRequest} onOpenChange={setTipRequest}>
+                                            <TooltipTrigger asChild>
+                                                <Button size="icon" className="border-teal-500/30" onClick={() => {
+ setTipRequest(true); setDialogOpen(true); 
+}}>
                                                     <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                                                 </Button>
-                                            </span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            {canRequestCollaboration ? 'Request to collaborate' : 'Cannot request collaboration at this stage'}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </>
-                            )}
-                        </TooltipProvider>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Request to collaborate</TooltipContent>
+                                        </Tooltip>
+                                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Request</span>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -336,7 +317,7 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                 <CardTitle>Full Proposal</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <Button variant="outline" asChild>
+                                <Button variant="default" asChild>
                                     <a
                                         href={`/ideas/${idea.slug}/documents/${proposal.id}`}
                                         target="_blank"
@@ -396,7 +377,7 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                 {idea.ip_right.has_ip_protection ? (
                                     <Badge>IP Protected</Badge>
                                 ) : (
-                                    <Badge variant="outline">Not Protected</Badge>
+                                    <Badge variant="default">Not Protected</Badge>
                                 )}
                                 <Badge variant="secondary">{idea.ip_right.status}</Badge>
                             </div>
@@ -553,7 +534,7 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                     <InputError message={errors.message} />
                                 </div>
                                 <div className="flex justify-end gap-3">
-                                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                                    <Button type="button" variant="default" onClick={() => setDialogOpen(false)}>
                                         Cancel
                                     </Button>
                                     <Button type="submit" disabled={processing}>
