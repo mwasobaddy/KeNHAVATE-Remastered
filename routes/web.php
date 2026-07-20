@@ -177,8 +177,11 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::get('/create', [IdeaController::class, 'create'])->name('create');
         Route::post('/', [IdeaController::class, 'store'])->name('store');
 
-        Route::get('/collaborations/inbox', [CollaborationRequestController::class, 'inbox'])->name('collaborations.inbox');
-        Route::get('/collaborations/outbox', [CollaborationRequestController::class, 'outbox'])->name('collaborations.outbox');
+        Route::get('/collaborations/request-inbox', [CollaborationRequestController::class, 'inbox'])->name('collaborations.inbox');
+        Route::get('/collaborations/request-outbox', [CollaborationRequestController::class, 'outbox'])->name('collaborations.outbox');
+
+        Route::get('/changes/request-outbox', [ChangeRequestController::class, 'mine'])->name('changes.mine');
+        Route::get('/changes/request-inbox', [ChangeRequestController::class, 'pending'])->name('changes.pending');
 
         Route::get('/{slug}', [IdeaController::class, 'show'])->name('show');
         Route::get('/{slug}/review', [ReviewController::class, 'show'])->name('review-show');
@@ -211,6 +214,4 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::post('/{slug}/resubmit', [RevisionController::class, 'resubmit'])->name('resubmit');
     });
 
-    Route::get('/all-changes/mine', [ChangeRequestController::class, 'mine'])->name('all-changes.mine');
-    Route::get('/all-changes/pending', [ChangeRequestController::class, 'pending'])->name('all-changes.pending');
 });
