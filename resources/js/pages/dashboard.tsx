@@ -76,7 +76,7 @@ export default function Dashboard({
                             <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">New Idea</span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
-                            <Button variant="warning" size="icon" asChild>
+                            <Button size="icon" asChild>
                                 <Link href={ideas.index()}>
                                     <List className="h-4 w-4" />
                                 </Link>
@@ -84,7 +84,7 @@ export default function Dashboard({
                             <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">Browse Ideas</span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
-                            <Button variant="warning" size="icon" asChild>
+                            <Button size="icon" asChild>
                                 <Link href={leaderboard()}>
                                     <Trophy className="h-4 w-4" />
                                 </Link>
@@ -93,7 +93,7 @@ export default function Dashboard({
                         </div>
                         {canManage && (
                             <div className="flex flex-col items-center gap-1">
-                                <Button variant="warning" size="icon" asChild>
+                                <Button size="icon" asChild>
                                     <Link href={points.index()}>
                                         <Award className="h-4 w-4" />
                                     </Link>
