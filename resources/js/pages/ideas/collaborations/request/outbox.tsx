@@ -34,10 +34,10 @@ type Props = {
     filters: Record<string, string>;
 };
 
-const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
-    pending: 'default',
-    approved: 'secondary',
-    rejected: 'destructive',
+const statusStyles: Record<string, string> = {
+    pending: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+    approved: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+    rejected: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
 };
 
 const REQUEST_STATUSES = ['pending', 'approved', 'rejected'] as const;
@@ -45,6 +45,7 @@ const REQUEST_STATUSES = ['pending', 'approved', 'rejected'] as const;
 export default function Outbox({ requests, filters: initialFilters, search: initialSearch }: Props) {
     const [searchValue, setSearchValue] = useState(initialSearch ?? '');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const [activeTips, setActiveTips] = useState<Record<string, boolean>>({});
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
@@ -122,24 +123,29 @@ export default function Outbox({ requests, filters: initialFilters, search: init
                 {/* Top bar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" variant="info" onClick={goBack}>
+                        <Button size="icon" variant="warning" onClick={goBack}>
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
 
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" variant="outline" asChild>
-                            <Link href={ideas.collaborations.inbox()}>
-                                <Inbox className="h-5 w-5" />
-                            </Link>
-                        </Button>
+                        <Tooltip open={activeTips['nav-inbox'] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, 'nav-inbox': o }))}>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" asChild>
+                                    <Link href={ideas.collaborations.inbox()} onClick={() => setActiveTips((p) => ({ ...p, 'nav-inbox': true }))}>
+                                        <Inbox className="h-5 w-5" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Inbox</TooltipContent>
+                        </Tooltip>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Inbox</span>
                     </div>
                 </div>
 
                 <Heading
-                    title="Sent Requests"
+                    title="Collaboration Requests Outbox"
                     description="Collaboration requests you have sent to idea authors"
                 />
 
@@ -197,45 +203,51 @@ export default function Outbox({ requests, filters: initialFilters, search: init
                                             <CardTitle className="truncate text-base">
                                                 {req.idea.title}
                                             </CardTitle>
-                                            <Badge className="shrink-0" variant={statusVariant[req.status] ?? 'outline'}>
+                                            <Badge className={(statusStyles[req.status] ?? '') + ' shrink-0'} variant="outline">
                                                 {req.status}
                                             </Badge>
                                         </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
-                                                        <Link href={ideas.show(req.idea.slug)}>
-                                                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                        </Link>
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>View Idea</TooltipContent>
-                                            </Tooltip>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <span tabIndex={0}>
-                                                        {req.status === 'approved' ? (
-                                                            <Button variant="outline" size="icon" className="border-purple-500/30" asChild>
-                                                                <Link href={ideas.changes.create(req.idea.slug)}>
-                                                                    <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                                                </Link>
-                                                            </Button>
-                                                        ) : (
-                                                            <Button variant="outline" size="icon" className="border-purple-500/30" disabled>
-                                                                <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                                            </Button>
-                                                        )}
-                                                    </span>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    {req.status === 'approved'
-                                                        ? 'Request Change'
-                                                        : req.status === 'pending'
-                                                            ? 'Awaiting approval before you can propose changes'
-                                                            : 'Request was rejected'}
-                                                </TooltipContent>
-                                            </Tooltip>
+                                        <div className="flex items-start gap-2 shrink-0">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Tooltip open={activeTips[`${req.id}-view`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${req.id}-view`]: o }))}>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="info" size="icon" asChild>
+                                                            <Link href={ideas.show(req.idea.slug)} onClick={() => setActiveTips((p) => ({ ...p, [`${req.id}-view`]: true }))}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>View</TooltipContent>
+                                                </Tooltip>
+                                                <span className="text-[10px] leading-tight text-muted-foreground text-center">View</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Tooltip open={activeTips[`${req.id}-change`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${req.id}-change`]: o }))}>
+                                                    <TooltipTrigger asChild>
+                                                        <span tabIndex={0}>
+                                                            {req.status === 'approved' ? (
+                                                                <Button variant="premium" size="icon" asChild>
+                                                                    <Link href={ideas.changes.create(req.idea.slug)} onClick={() => setActiveTips((p) => ({ ...p, [`${req.id}-change`]: true }))}>
+                                                                        <FileEdit className="h-4 w-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                            ) : (
+                                                                <Button variant="premium" size="icon" disabled>
+                                                                    <FileEdit className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {req.status === 'approved'
+                                                            ? 'Request Change'
+                                                            : req.status === 'pending'
+                                                                ? 'Awaiting approval before you can propose changes'
+                                                                : 'Request was rejected'}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Propose</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -313,6 +325,6 @@ Outbox.layout = {
     breadcrumbs: [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Ideas', href: '/ideas' },
-        { title: 'Sent Requests', href: '/ideas/collaborations/request/outbox' },
+        { title: 'Collaboration Requests Outbox', href: '/ideas/collaborations/request/outbox' },
     ],
 };
