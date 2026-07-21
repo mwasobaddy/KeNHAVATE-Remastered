@@ -35,7 +35,7 @@ class IdeaService
         ?UploadedFile $proposal = null,
         array $supportDocs = [],
         ?array $ipData = null,
-        array $ipDocuments = [],
+        ?UploadedFile $ipDocument = null,
     ): Idea {
         $idea = Idea::create([
             'title' => $data['title'],
@@ -64,7 +64,7 @@ class IdeaService
             }
         }
 
-        $this->handleIpData($idea, $ipData, $ipDocuments);
+        $this->handleIpData($idea, $ipData, $ipDocument);
 
         if (! empty($data['team_emails'])) {
             $emails = array_map('trim', explode(',', $data['team_emails']));
@@ -88,7 +88,7 @@ class IdeaService
         ?UploadedFile $proposal = null,
         array $supportDocs = [],
         ?array $ipData = null,
-        array $ipDocuments = [],
+        ?UploadedFile $ipDocument = null,
     ): Idea {
         if ($proposal) {
             $idea->documents()->where('type', 'proposal')->each(fn ($doc) => $this->deleteDocument($doc));
@@ -101,7 +101,7 @@ class IdeaService
             }
         }
 
-        $this->handleIpData($idea, $ipData, $ipDocuments);
+        $this->handleIpData($idea, $ipData, $ipDocument);
 
         $idea->update($data);
 
@@ -314,7 +314,7 @@ class IdeaService
         }
     }
 
-    protected function handleIpData(Idea $idea, ?array $ipData, array $ipDocuments): void
+    protected function handleIpData(Idea $idea, ?array $ipData, ?UploadedFile $ipDocument = null): void
     {
         if ($ipData === null) {
             return;
@@ -343,12 +343,8 @@ class IdeaService
             $ipRight = IdeaIpRight::create($data);
         }
 
-        if ($data['has_ip_protection']) {
-            foreach ($ipDocuments as $doc) {
-                if ($doc instanceof UploadedFile) {
-                    $this->storeIpDocument($ipRight, $doc);
-                }
-            }
+        if ($data['has_ip_protection'] && $ipDocument instanceof UploadedFile) {
+            $this->storeIpDocument($ipRight, $ipDocument);
         }
     }
 
