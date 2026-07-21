@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Pencil, Plus, Power, PowerOff, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, SquarePen, Plus, Power, PowerOff, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
@@ -40,6 +40,9 @@ const POINT_STATUSES = ['active', 'inactive'] as const;
 export default function PointIndex({ points, filters: initialFilters, search: initialSearch }: Props) {
     const [searchValue, setSearchValue] = useState(initialSearch ?? '');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const [activeTips, setActiveTips] = useState<Record<string, boolean>>({});
+    const [tipBack, setTipBack] = useState(false);
+    const [tipNew, setTipNew] = useState(false);
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
@@ -126,18 +129,30 @@ export default function PointIndex({ points, filters: initialFilters, search: in
                 {/* Top bar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" variant="warning" onClick={goBack}>
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
+                        <Tooltip open={tipBack} onOpenChange={setTipBack}>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="warning" onClick={() => {
+ setTipBack(true); goBack(); 
+}}>
+                                    <ArrowLeft className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Back</TooltipContent>
+                        </Tooltip>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
 
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" asChild>
-                            <Link href={routes.create()}>
-                                <Plus className="h-5 w-5" />
-                            </Link>
-                        </Button>
+                        <Tooltip open={tipNew} onOpenChange={setTipNew}>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" asChild>
+                                    <Link href={routes.create()} onClick={() => setTipNew(true)}>
+                                        <Plus className="h-5 w-5" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>New Action</TooltipContent>
+                        </Tooltip>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">New Action</span>
                     </div>
                 </div>
@@ -208,49 +223,62 @@ export default function PointIndex({ points, filters: initialFilters, search: in
                                                     {point.created_by?.name ?? '—'}
                                                 </td>
                                                 <td className="py-3 pr-4">
-                                                    <div className="flex items-center gap-0.5">
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button variant="outline" size="icon" className="border-green-500/30" asChild>
-                                                                     <Link href={routes.edit({ point: point.id })}>
-                                                                         <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                                    </Link>
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>Edit</TooltipContent>
-                                                        </Tooltip>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    className={point.is_active ? 'border-amber-500/30' : 'border-green-500/30'}
-                                                                    onClick={() => handleToggle(point)}
-                                                                >
-                                                                    {point.is_active
-                                                                        ? <PowerOff className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                                                        : <Power className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                                    }
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                {point.is_active ? 'Deactivate' : 'Activate'}
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                        {!point.deleted_at && (
-                                                            <Tooltip>
+                                                    <div className="flex items-start gap-2">
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <Tooltip open={activeTips[`${point.id}-edit`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${point.id}-edit`]: o }))}>
                                                                 <TooltipTrigger asChild>
-                                                                <Button
-                                                                     variant="outline"
-                                                                     size="icon"
-                                                                     className="border-red-500/30"
-                                                                     onClick={() => handleDelete(point)}
-                                                                 >
-                                                                     <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                                    <Button variant="success" size="icon" asChild>
+                                                                         <Link href={routes.edit({ point: point.id })} onClick={() => setActiveTips((p) => ({ ...p, [`${point.id}-edit`]: true }))}>
+                                                                             <SquarePen className="h-4 w-4" />
+                                                                        </Link>
                                                                     </Button>
                                                                 </TooltipTrigger>
-                                                                <TooltipContent>Delete</TooltipContent>
+                                                                <TooltipContent>Edit</TooltipContent>
                                                             </Tooltip>
+                                                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Edit</span>
+                                                        </div>
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <Tooltip open={activeTips[`${point.id}-toggle`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${point.id}-toggle`]: o }))}>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button
+                                                                        variant={point.is_active ? 'warning' : 'info'}
+                                                                        size="icon"
+                                                                        onClick={() => {
+                                                                            setActiveTips((p) => ({ ...p, [`${point.id}-toggle`]: true }));
+                                                                            handleToggle(point);
+                                                                        }}
+                                                                    >
+                                                                        {point.is_active
+                                                                            ? <PowerOff className="h-4 w-4" />
+                                                                            : <Power className="h-4 w-4" />
+                                                                        }
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    {point.is_active ? 'Deactivate' : 'Activate'}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                            <span className="text-[10px] leading-tight text-muted-foreground text-center">{point.is_active ? 'Deactivate' : 'Activate'}</span>
+                                                        </div>
+                                                        {!point.deleted_at && (
+                                                            <div className="flex flex-col items-center gap-1">
+                                                                <Tooltip open={activeTips[`${point.id}-delete`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${point.id}-delete`]: o }))}>
+                                                                    <TooltipTrigger asChild>
+                                                                    <Button
+                                                                         variant="destructive"
+                                                                         size="icon"
+                                                                         onClick={() => {
+                                                                             setActiveTips((p) => ({ ...p, [`${point.id}-delete`]: true }));
+                                                                             handleDelete(point);
+                                                                         }}
+                                                                     >
+                                                                         <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>Delete</TooltipContent>
+                                                                </Tooltip>
+                                                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Delete</span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </td>
