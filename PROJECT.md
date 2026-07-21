@@ -914,16 +914,16 @@ resources/js/pages/
 │   ├── security.tsx       → 2FA management
 │   └── appearance.tsx
 ├── points/
-│   ├── index.tsx          → Table of point actions with colored icon buttons (Pencil green, Power amber, Trash2 red)
+│   ├── index.tsx          → Table of point actions with colored icon buttons (SquarePen green, Power amber, Trash2 red)
 │   ├── create.tsx         → Form to define a new point action
 │   ├── edit.tsx           → Edit an existing point action
 │   └── transactions.tsx   → Paginated audit log of all point awards
 ├── ideas/
-│   ├── index.tsx          → Paginated table with 3 tabs (My Ideas / Open for Collaboration / My Contributions). Colored action icons with matching borders (Eye blue, Pencil green, RotateCcw amber, Trash2 red, UserPlus teal, FileEdit purple). Tab state via ?tab= query param (default: my-ideas).
+│   ├── index.tsx          → Paginated table with 3 tabs (My Ideas / Open for Collaboration / My Contributions). Colored action icons with matching borders (Eye blue, SquarePen green, RotateCcw amber, Trash2 red, UserPlus teal, FileEdit purple). Tab state via ?tab= query param (default: my-ideas).
 │   ├── review.tsx         → Review dashboard with tabbed sections (Pending Assignment, My Queue, Pending Decisions). Each tab gated by permission (idea.assign_officer, idea.classify, idea.dg_decision). UserPlus teal + Eye blue icon buttons.
 │   ├── create.tsx         → Full form with file uploads, category select, team emails input, IP section (radio + conditional fields + required consent checkbox)
 │   ├── edit.tsx           → Pre-populated form with existing IP data, document management, consent checkbox
-│   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog. Author-only buttons (Pencil, RotateCcw) show disabled with contextual tooltip when status condition not met; permission-based buttons (Tags, Gavel, ArrowRight, etc.) hidden without permission
+│   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog. Author-only buttons (SquarePen, RotateCcw) show disabled with contextual tooltip when status condition not met; permission-based buttons (Tags, Gavel, ArrowRight, etc.) hidden without permission
 │   ├── invitation.tsx     → Invitation acceptance page (idea title, inviter, sign-in prompt)
 │   ├── collaborations/
 │   │   ├── index.tsx      → Pending collaboration request list with inline approve/reject forms (per-idea)
@@ -1213,10 +1213,10 @@ API counterparts use standard `apiResource` at `api/roles` and `api/users`.
 
 | Page | File | Description |
 |------|------|-------------|
-| Role List | `roles/index.tsx` | Table with Shield icon, user/permission counts, Protected badge, Pencil green + Trash2 red icon buttons |
+| Role List | `roles/index.tsx` | Table with Shield icon, user/permission counts, Protected badge, SquarePen green + Trash2 red icon buttons |
 | Create Role | `roles/create.tsx` | Form with permission checkboxes grouped by prefix |
 | Edit Role | `roles/edit.tsx` | Same form pre-filled; name disabled for protected roles |
-| User List | `users/index.tsx` | Table with role badge, staff indicator, Pencil green + Trash2 red icon buttons |
+| User List | `users/index.tsx` | Table with role badge, staff indicator, SquarePen green + Trash2 red icon buttons |
 | Create User | `users/create.tsx` | Full form with cascade selects for region→directorate→department |
 | Edit User | `users/edit.tsx` | Same form pre-filled with existing data |
 
@@ -1483,7 +1483,7 @@ All action icon buttons follow a consistent visual convention across the app:
 - **`variant="outline" size="icon"`** — every action button uses the outline variant with matching colored border at `/30` opacity
 - **Trash2 (red)** — destructive actions (delete user, role, point action, idea)
 - **Eye (blue)** — view/review actions (view idea, review page)
-- **Pencil (green)** — edit actions (edit idea, role, user, point action)
+- **SquarePen (green)** — edit actions (edit idea, role, user, point action)
 - **RotateCcw (amber)** — resubmit/revision actions (resubmit for review, request revision)
 - **Power (amber)** — toggle actions (activate/deactivate point action)
 - **FileEdit (purple)** — propose changes (change requests)
