@@ -20,14 +20,14 @@ class StoreIdeaRequest extends FormRequest
             'problem_statement' => ['required', 'string'],
             'proposed_solution' => ['required', 'string'],
             'cost_benefit_analysis' => ['required', 'string'],
-            'proposal_file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
-            'support_documents.*' => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png', 'max:10240'],
+            'proposal_file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'support_documents.*' => ['nullable', 'file', 'mimes:pdf,xls,xlsx,jpg,jpeg,png', 'max:10240'],
             'collaboration_enabled' => ['boolean'],
             'team_emails' => ['nullable', 'string'],
             'has_ip_protection' => ['required', 'boolean'],
-            'patent_number' => ['nullable', 'string', 'max:255'],
+            'patent_number' => ['required_if:has_ip_protection,1', 'string', 'max:255'],
             'consent_given' => ['required', 'accepted'],
-            'ip_documents.*' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+            'ip_document' => ['required_if:has_ip_protection,1', 'file', 'mimes:pdf', 'max:10240'],
         ];
     }
 }
