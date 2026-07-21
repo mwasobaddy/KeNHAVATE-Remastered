@@ -1,9 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
 import { Award, CheckCircle, ClipboardCheck, Clock, Lightbulb, List, Plus, Trophy, UserPlus } from 'lucide-react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { leaderboard } from '@/routes';
 import ideas from '@/routes/ideas';
 import points from '@/routes/points';
@@ -56,6 +58,11 @@ export default function Dashboard({
     systemStats,
     canManage,
 }: Props) {
+    const [tipNewIdea, setTipNewIdea] = useState(false);
+    const [tipBrowse, setTipBrowse] = useState(false);
+    const [tipLeaderboard, setTipLeaderboard] = useState(false);
+    const [tipManagePoints, setTipManagePoints] = useState(false);
+
     return (
         <>
             <Head title="Dashboard" />
@@ -68,36 +75,56 @@ export default function Dashboard({
                     />
                     <div className="flex items-start gap-3">
                         <div className="flex flex-col items-center gap-1">
-                            <Button size="icon" asChild>
-                                <Link href={ideas.create()}>
-                                    <Plus className="h-4 w-4" />
-                                </Link>
-                            </Button>
+                            <Tooltip open={tipNewIdea} onOpenChange={setTipNewIdea}>
+                                <TooltipTrigger asChild>
+                                    <Button size="icon" asChild>
+                                        <Link href={ideas.create()} onClick={() => setTipNewIdea(true)}>
+                                            <Plus className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>New Idea</TooltipContent>
+                            </Tooltip>
                             <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">New Idea</span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
-                            <Button size="icon" asChild>
-                                <Link href={ideas.index()}>
-                                    <List className="h-4 w-4" />
-                                </Link>
-                            </Button>
+                            <Tooltip open={tipBrowse} onOpenChange={setTipBrowse}>
+                                <TooltipTrigger asChild>
+                                    <Button size="icon" asChild>
+                                        <Link href={ideas.index()} onClick={() => setTipBrowse(true)}>
+                                            <List className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Browse Ideas</TooltipContent>
+                            </Tooltip>
                             <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">Browse Ideas</span>
                         </div>
                         <div className="flex flex-col items-center gap-1">
-                            <Button size="icon" asChild>
-                                <Link href={leaderboard()}>
-                                    <Trophy className="h-4 w-4" />
-                                </Link>
-                            </Button>
+                            <Tooltip open={tipLeaderboard} onOpenChange={setTipLeaderboard}>
+                                <TooltipTrigger asChild>
+                                    <Button size="icon" asChild>
+                                        <Link href={leaderboard()} onClick={() => setTipLeaderboard(true)}>
+                                            <Trophy className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Leaderboard</TooltipContent>
+                            </Tooltip>
                             <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">Leaderboard</span>
                         </div>
                         {canManage && (
                             <div className="flex flex-col items-center gap-1">
-                                <Button size="icon" asChild>
-                                    <Link href={points.index()}>
-                                        <Award className="h-4 w-4" />
-                                    </Link>
-                                </Button>
+                                <Tooltip open={tipManagePoints} onOpenChange={setTipManagePoints}>
+                                    <TooltipTrigger asChild>
+                                        <Button size="icon" asChild>
+                                            <Link href={points.index()} onClick={() => setTipManagePoints(true)}>
+                                                <Award className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Manage Points</TooltipContent>
+                                </Tooltip>
                                 <span className="text-[10px] font-medium text-muted-foreground leading-tight text-center">Manage Points</span>
                             </div>
                         )}
