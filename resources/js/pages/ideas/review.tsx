@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Officer = {
@@ -222,6 +222,7 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myQueue, re
     const currentData = { 'assign-officer': pendingAssignment, 'my-queue': myQueue, reviewed }[currentTab] ?? null;
     const visibleTabs = availableTabs.length > 1;
     const [assigningSlug, setAssigningSlug] = useState<string | null>(null);
+    const [activeTips, setActiveTips] = useState<Record<string, boolean>>({});
     const [searchValue, setSearchValue] = useState(initialSearch ?? '');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -281,9 +282,8 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myQueue, re
     const tableColspan = currentTab === 'assign-officer' ? 6 : currentTab === 'reviewed' ? 7 : 6;
 
     return (
-        <TooltipProvider>
-            <>
-                <Head title="Review Dashboard" />
+        <>
+            <Head title="Review Dashboard" />
 
                 <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
 
@@ -439,32 +439,37 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myQueue, re
                                                             {formatDate(idea.created_at)}
                                                         </td>
                                                         <td className="py-3">
-                                                            <div className="flex items-center gap-0.5">
+                                                            <div className="flex items-start gap-2">
                                                                 {canAssign && currentTab === 'assign-officer' && (
-                                                                    <Tooltip>
+                                                                    <div className="flex flex-col items-center gap-1">
+                                                                        <Tooltip open={activeTips[`${idea.id}-assign`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-assign`]: open }))}>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Button
+                                                                                    variant="success"
+                                                                                    size="icon"
+                                                                                    onClick={() => setAssigningSlug(idea.slug)}
+                                                                                >
+                                                                                    <UserPlus className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>Assign Officer</TooltipContent>
+                                                                        </Tooltip>
+                                                                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Assign</span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <Tooltip open={activeTips[`${idea.id}-review`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-review`]: open }))}>
                                                                         <TooltipTrigger asChild>
-                                                                            <Button
-                                                                                variant="outline"
-                                                                                size="icon"
-                                                                                className="border-teal-500/30"
-                                                                                onClick={() => setAssigningSlug(idea.slug)}
-                                                                            >
-                                                                                <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                                            <Button variant="info" size="icon" asChild>
+                                                                                <Link href={ideas.reviewShow(idea.slug)}>
+                                                                                    <Eye className="h-4 w-4" />
+                                                                                </Link>
                                                                             </Button>
                                                                         </TooltipTrigger>
-                                                                        <TooltipContent>Assign Officer</TooltipContent>
+                                                                        <TooltipContent>Review</TooltipContent>
                                                                     </Tooltip>
-                                                                )}
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
-                                                                            <Link href={ideas.reviewShow(idea.slug)}>
-                                                                                <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                                            </Link>
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>Review</TooltipContent>
-                                                                </Tooltip>
+                                                                    <span className="text-[10px] leading-tight text-muted-foreground text-center">Review</span>
+                                                                </div>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -541,8 +546,7 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myQueue, re
                     )}
                 </Dialog>
             </>
-        </TooltipProvider>
-    );
+        );
 }
 
 ReviewIndex.layout = {
