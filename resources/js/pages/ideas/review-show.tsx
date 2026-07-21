@@ -1,5 +1,6 @@
 import { Form, Head, router } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Gavel, LayoutDashboard, RotateCcw, Tags } from 'lucide-react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,11 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Document = {
@@ -138,9 +144,15 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
         if (window.history.length > 2) {
             window.history.back();
         } else {
-            router.visit(`/ideas/review?tab=my-assignments`);
+            router.visit(`/ideas/review?tab=my-queue`);
         }
     };
+
+    const [tipAssign, setTipAssign] = useState(false);
+    const [tipClassify, setTipClassify] = useState(false);
+    const [tipRevision, setTipRevision] = useState(false);
+    const [tipDecision, setTipDecision] = useState(false);
+    const [tipAdvance, setTipAdvance] = useState(false);
 
     return (
         <>
@@ -158,17 +170,22 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
 
                     <div className="flex flex-wrap items-center gap-2">
                         {canAssign && !idea.assigned_officer && (
-                            <AssignOfficerDialog ideaSlug={idea.slug} ideaTitle={idea.title} officers={officers} authorId={idea.author.id} />
+                            <AssignOfficerDialog ideaSlug={idea.slug} ideaTitle={idea.title} officers={officers} authorId={idea.author.id} tipAssign={tipAssign} setTipAssign={setTipAssign} />
                         )}
 
                         {canClassify && (
                             <Dialog>
                                 <div className="flex flex-col items-center gap-1">
-                                    <DialogTrigger asChild>
-                                        <Button size="icon">
-                                            <Tags className="h-4 w-4" />
-                                        </Button>
-                                    </DialogTrigger>
+                                    <Tooltip open={tipClassify} onOpenChange={setTipClassify}>
+                                        <TooltipTrigger asChild>
+                                            <DialogTrigger asChild>
+                                                <Button size="icon" variant="premium">
+                                                    <Tags className="h-4 w-4" />
+                                                </Button>
+                                            </DialogTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Classify</TooltipContent>
+                                    </Tooltip>
                                     <span className="text-[10px] leading-tight text-muted-foreground text-center">Classify</span>
                                 </div>
                                 <DialogContent>
@@ -253,11 +270,16 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                         {canRequestRevision && (
                             <Dialog>
                                 <div className="flex flex-col items-center gap-1">
-                                    <DialogTrigger asChild>
-                                        <Button size="icon">
-                                            <RotateCcw className="h-4 w-4" />
-                                        </Button>
-                                    </DialogTrigger>
+                                    <Tooltip open={tipRevision} onOpenChange={setTipRevision}>
+                                        <TooltipTrigger asChild>
+                                            <DialogTrigger asChild>
+                                                <Button size="icon" variant="info">
+                                                    <RotateCcw className="h-4 w-4" />
+                                                </Button>
+                                            </DialogTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Revision</TooltipContent>
+                                    </Tooltip>
                                     <span className="text-[10px] leading-tight text-muted-foreground text-center">Revision</span>
                                 </div>
                                 <DialogContent>
@@ -299,11 +321,16 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                         {canRecordDecision && (
                             <Dialog>
                                 <div className="flex flex-col items-center gap-1">
-                                    <DialogTrigger asChild>
-                                        <Button size="icon">
-                                            <Gavel className="h-4 w-4" />
-                                        </Button>
-                                    </DialogTrigger>
+                                    <Tooltip open={tipDecision} onOpenChange={setTipDecision}>
+                                        <TooltipTrigger asChild>
+                                            <DialogTrigger asChild>
+                                                <Button size="icon" variant="warning">
+                                                    <Gavel className="h-4 w-4" />
+                                                </Button>
+                                            </DialogTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Decision</TooltipContent>
+                                    </Tooltip>
                                     <span className="text-[10px] leading-tight text-muted-foreground text-center">Decision</span>
                                 </div>
                                 <DialogContent>
@@ -361,9 +388,14 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                             <Form method="post" action={ideas.progress(idea.slug)}>
                                 {({ processing }) => (
                                     <div className="flex flex-col items-center gap-1">
-                                        <Button type="submit" variant="success" size="icon" className="border-sky-500/30" disabled={processing}>
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Button>
+                                        <Tooltip open={tipAdvance} onOpenChange={setTipAdvance}>
+                                            <TooltipTrigger asChild>
+                                                <Button type="submit" variant="success" size="icon" disabled={processing}>
+                                                    <ArrowRight className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Advance</TooltipContent>
+                                        </Tooltip>
                                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Advance</span>
                                     </div>
                                 )}
@@ -603,22 +635,31 @@ function AssignOfficerDialog({
     ideaTitle,
     officers,
     authorId,
+    tipAssign,
+    setTipAssign,
 }: {
     ideaSlug: string;
     ideaTitle: string;
     officers: Officer[];
     authorId: number;
+    tipAssign: boolean;
+    setTipAssign: (value: boolean) => void;
 }) {
     const availableOfficers = officers.filter((o) => o.id !== authorId);
 
     return (
         <Dialog>
             <div className="flex flex-col items-center gap-1">
-                <DialogTrigger asChild>
-                    <Button variant="outline" size="icon">
-                        <LayoutDashboard className="h-4 w-4" />
-                    </Button>
-                </DialogTrigger>
+                <Tooltip open={tipAssign} onOpenChange={setTipAssign}>
+                    <TooltipTrigger asChild>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="icon">
+                                <LayoutDashboard className="h-4 w-4" />
+                            </Button>
+                        </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Assign</TooltipContent>
+                </Tooltip>
                 <span className="text-[10px] leading-tight text-muted-foreground text-center">Assign</span>
             </div>
             <DialogContent>
