@@ -34,6 +34,7 @@ const statusStyles: Record<string, string> = {
 
 export default function CollaborationIndex({ idea, collaborationRequests }: Props) {
     const [respondTarget, setRespondTarget] = useState<(CollaborationRequest & { idea: { slug: string; title: string } }) | null>(null);
+    const [activeTips, setActiveTips] = useState<Record<string, boolean>>({});
 
     const goBack = () => {
         if (window.history.length > 2) {
@@ -75,13 +76,30 @@ export default function CollaborationIndex({ idea, collaborationRequests }: Prop
                         {collaborationRequests.data.map((cr) => (
                             <Card key={cr.id}>
                                 <CardHeader className="pb-3">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-base">
-                                            {cr.user.name}
-                                        </CardTitle>
-                                        <Badge variant="outline" className={statusStyles[cr.status] ?? ''}>
-                                            {cr.status}
-                                        </Badge>
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <CardTitle className="truncate text-base">{cr.user.name}</CardTitle>
+                                            <Badge variant="outline" className={(statusStyles[cr.status] ?? '') + ' shrink-0'}>
+                                                {cr.status}
+                                            </Badge>
+                                        </div>
+                                        {cr.status === 'pending' && (
+                                            <div className="flex items-start gap-2 shrink-0">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <Tooltip open={activeTips[`${cr.id}-respond`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${cr.id}-respond`]: o }))}>
+                                                        <TooltipTrigger asChild>
+                                                            <Button variant="success" size="icon" onClick={() => {
+ setActiveTips((p) => ({ ...p, [`${cr.id}-respond`]: true })); setRespondTarget({ ...cr, idea: { slug: idea.slug, title: idea.title } }); 
+}}>
+                                                                <Reply className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Respond</TooltipContent>
+                                                    </Tooltip>
+                                                    <span className="text-[10px] leading-tight text-muted-foreground text-center">Respond</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </CardHeader>
                                 <CardContent>
@@ -102,24 +120,6 @@ export default function CollaborationIndex({ idea, collaborationRequests }: Prop
                                             <span>Reviewed by {cr.reviewer.name}</span>
                                         )}
                                     </div>
-
-                                    {cr.status === 'pending' && (
-                                        <div className="mt-4">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="default"
-                                                        size="sm"
-                                                        onClick={() => setRespondTarget({ ...cr, idea: { slug: idea.slug, title: idea.title } })}
-                                                    >
-                                                        <Reply className="mr-1.5 h-4 w-4" />
-                                                        Respond
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Approve or reject this request</TooltipContent>
-                                            </Tooltip>
-                                        </div>
-                                    )}
                                 </CardContent>
                             </Card>
                         ))}
