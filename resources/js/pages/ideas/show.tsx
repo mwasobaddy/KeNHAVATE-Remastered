@@ -1,5 +1,5 @@
 import { Form, Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, FileEdit, GitCompareArrows, Pencil, RotateCcw, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, FileEdit, GitCompareArrows, SquarePen, RotateCcw, UserPlus, Users } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -161,9 +161,9 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                     <div className="flex flex-col items-center gap-1">
                                         <Tooltip open={tipEdit} onOpenChange={setTipEdit}>
                                             <TooltipTrigger asChild>
-                                                <Button size="icon" className="border-green-500/30" asChild>
+                                                <Button size="icon" variant="success" asChild>
                                                     <Link href={ideas.edit(idea.slug)} onClick={() => setTipEdit(true)}>
-                                                        <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                                        <SquarePen className="h-4 w-4" />
                                                     </Link>
                                                 </Button>
                                             </TooltipTrigger>
@@ -177,9 +177,9 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                     <div className="flex flex-col items-center gap-1">
                                         <Tooltip open={tipResubmit} onOpenChange={setTipResubmit}>
                                             <TooltipTrigger asChild>
-                                                <Button size="icon" className="border-amber-500/30" asChild>
+                                                <Button size="icon" variant="warning" asChild>
                                                     <Link href={ideas.edit(idea.slug)} onClick={() => setTipResubmit(true)}>
-                                                        <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                                        <RotateCcw className="h-4 w-4" />
                                                     </Link>
                                                 </Button>
                                             </TooltipTrigger>
@@ -192,7 +192,7 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                 <div className="flex flex-col items-center gap-1">
                                     <Tooltip open={tipCollaborate} onOpenChange={setTipCollaborate}>
                                         <TooltipTrigger asChild>
-                                            <Button size="icon" asChild>
+                                            <Button variant="success" size="icon" asChild>
                                                 <Link href={ideas.collaborations.index(idea.slug)} onClick={() => setTipCollaborate(true)}>
                                                     <Users className="h-4 w-4" />
                                                 </Link>
@@ -213,9 +213,9 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                     <div className="flex flex-col items-center gap-1">
                                         <Tooltip open={tipPropose} onOpenChange={setTipPropose}>
                                             <TooltipTrigger asChild>
-                                                <Button size="icon" className="border-purple-500/30" asChild>
+                                                <Button size="icon" variant="premium" asChild>
                                                     <Link href={ideas.changes.create(idea.slug)} onClick={() => setTipPropose(true)}>
-                                                        <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                        <FileEdit className="h-4 w-4" />
                                                     </Link>
                                                 </Button>
                                             </TooltipTrigger>
@@ -229,10 +229,10 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                     <div className="flex flex-col items-center gap-1">
                                         <Tooltip open={tipRequest} onOpenChange={setTipRequest}>
                                             <TooltipTrigger asChild>
-                                                <Button size="icon" className="border-teal-500/30" onClick={() => {
- setTipRequest(true); setDialogOpen(true); 
-}}>
-                                                    <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                <Button size="icon" variant="success" onClick={() => {
+                                                    setTipRequest(true); setDialogOpen(true);
+                                                }}>
+                                                    <UserPlus className="h-4 w-4" />
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent>Request to collaborate</TooltipContent>
