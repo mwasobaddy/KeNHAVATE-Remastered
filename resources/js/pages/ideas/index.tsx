@@ -1,5 +1,5 @@
 import { Form, Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle, ClipboardCheck, Eye, FileEdit, Lightbulb, Pencil, Plus, RotateCcw, Search, Trash2, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ClipboardCheck, Eye, FileEdit, Lightbulb, SquarePen, Plus, RotateCcw, Search, Trash2, UserPlus, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
 
 type Idea = {
@@ -145,6 +145,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
     const [searchValue, setSearchValue] = useState(initialSearch ?? '');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [activeTips, setActiveTips] = useState<Record<string, boolean>>({});
 
     const goBack = () => {
         if (window.history.length > 2) {
@@ -220,27 +221,36 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
     };
 
     return (
-        <TooltipProvider>
-            <>
-                <Head title="Ideas" />
+        <>
+            <Head title="Ideas" />
 
-                <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
 
                     {/* Top bar */}
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex flex-col items-center gap-1">
-                            <Button size="icon" variant="warning" onClick={goBack}>
-                                <ArrowLeft className="h-5 w-5" />
-                            </Button>
+                            <Tooltip open={activeTips['nav-back']} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, 'nav-back': open }))}>
+                                <TooltipTrigger asChild>
+                                    <Button size="icon" variant="warning" onClick={goBack}>
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Back</TooltipContent>
+                            </Tooltip>
                             <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                         </div>
 
                         <div className="flex flex-col items-center gap-1">
-                            <Button size="icon" asChild>
-                                <Link href={ideas.create()}>
-                                    <Plus className="h-5 w-5" />
-                                </Link>
-                            </Button>
+                            <Tooltip open={activeTips['nav-new']} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, 'nav-new': open }))}>
+                                <TooltipTrigger asChild>
+                                    <Button size="icon" asChild>
+                                        <Link href={ideas.create()}>
+                                            <Plus className="h-5 w-5" />
+                                        </Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>New Idea</TooltipContent>
+                            </Tooltip>
                             <span className="text-[10px] leading-tight text-muted-foreground text-center">New Idea</span>
                         </div>
                     </div>
@@ -255,7 +265,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                         summary={`${ideaStats.total} ideas · ${ideaStats.drafts} drafts · ${ideaStats.under_review} in review`}
                         items={[
                             { title: 'Total Ideas', value: ideaStats.total, description: 'Ideas submitted', icon: <Lightbulb className="text-sky-600 dark:text-sky-400" /> },
-                            { title: 'Drafts', value: ideaStats.drafts, description: 'Awaiting submission', icon: <Pencil className="text-amber-600 dark:text-amber-400" /> },
+                            { title: 'Drafts', value: ideaStats.drafts, description: 'Awaiting submission', icon: <SquarePen className="text-amber-600 dark:text-amber-400" /> },
                             { title: 'Under Review', value: ideaStats.under_review, description: 'Awaiting decision', icon: <ClipboardCheck className="text-violet-600 dark:text-violet-400" /> },
                             { title: 'Approved', value: ideaStats.approved, description: 'Ideas approved', icon: <CheckCircle className="text-emerald-600 dark:text-emerald-400" /> },
                         ]}
@@ -392,136 +402,119 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                         {formatDate(idea.created_at)}
                                                     </td>
                                                     <td className="py-3">
-                                                        <div className="flex items-center gap-0.5">
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button variant="outline" size="icon" className="border-blue-500/30" asChild>
-                                                                        <Link href={ideas.show(idea.slug)}>
-                                                                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                                        </Link>
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>View</TooltipContent>
-                                                             </Tooltip>
+                                                        <div className="flex items-start gap-2">
+                                                            <div className="flex flex-col items-center gap-1">
+                                                                <Tooltip open={activeTips[`${idea.id}-view`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-view`]: open }))}>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button variant="info" size="icon" asChild>
+                                                                            <Link href={ideas.show(idea.slug)}>
+                                                                                <Eye className="h-4 w-4" />
+                                                                            </Link>
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>View</TooltipContent>
+                                                                </Tooltip>
+                                                                <span className="text-[10px] leading-tight text-muted-foreground">View</span>
+                                                            </div>
 
-                                                             {(currentTab === 'my-ideas' || currentTab === 'open-for-collaboration') && (idea.collaboration_enabled || idea.collaboration_status) && (
-                                                                 <Tooltip>
-                                                                     <TooltipTrigger asChild>
-                                                                         <span tabIndex={0}>
-                                                                             {currentTab === 'open-for-collaboration' && idea.author?.id !== auth.user.id ? (
-                                                                                 <Button variant="outline" size="icon" className="border-teal-500/30" disabled>
-                                                                                     <Users className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                                                                                 </Button>
-                                                                             ) : (
-                                                                                 <Button variant="outline" size="icon" className="border-teal-500/30" asChild>
-                                                                                     <Link href={ideas.collaborations.index(idea.slug)}>
-                                                                                         <Users className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                                                                                     </Link>
-                                                                                 </Button>
-                                                                             )}
-                                                                         </span>
-                                                                     </TooltipTrigger>
-                                                                     <TooltipContent>Manage Collaborations</TooltipContent>
-                                                                 </Tooltip>
-                                                             )}
+                                                            {(currentTab === 'my-ideas' || (currentTab === 'open-for-collaboration' && idea.author?.id === auth.user.id)) && (idea.collaboration_enabled || idea.collaboration_status) && (
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <Tooltip open={activeTips[`${idea.id}-collab`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-collab`]: open }))}>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Button variant="success" size="icon" asChild>
+                                                                                <Link href={ideas.collaborations.index(idea.slug)}>
+                                                                                    <Users className="h-4 w-4" />
+                                                                                </Link>
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>Team</TooltipContent>
+                                                                    </Tooltip>
+                                                                    <span className="text-[10px] leading-tight text-muted-foreground">Team</span>
+                                                                </div>
+                                                            )}
 
-                                                             {currentTab === 'my-ideas' && (
-                                                                <>
-                                                                    <Tooltip>
+                                                            {currentTab === 'my-ideas' && idea.status === 'draft' && (
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <Tooltip open={activeTips[`${idea.id}-edit`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-edit`]: open }))}>
                                                                         <TooltipTrigger asChild>
-                                                                            <span tabIndex={0}>
-                                                                                {idea.status === 'draft' ? (
-                                                                                    <Button variant="outline" size="icon" className="border-green-500/30" asChild>
-                                                                                        <Link href={ideas.edit(idea.slug)}>
-                                                                                            <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                                                        </Link>
-                                                                                    </Button>
-                                                                                ) : (
-                                                                                    <Button variant="outline" size="icon" className="border-green-500/30" disabled>
-                                                                                        <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                                                    </Button>
-                                                                                )}
-                                                                            </span>
+                                                                            <Button variant="success" size="icon" asChild>
+                                                                                <Link href={ideas.edit(idea.slug)}>
+                                                                                    <SquarePen className="h-4 w-4" />
+                                                                                </Link>
+                                                                            </Button>
                                                                         </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            {idea.status === 'draft' ? 'Edit' : 'Only available for draft ideas'}
-                                                                        </TooltipContent>
+                                                                        <TooltipContent>Edit</TooltipContent>
                                                                     </Tooltip>
-                                                                    <Tooltip>
+                                                                    <span className="text-[10px] leading-tight text-muted-foreground">Edit</span>
+                                                                </div>
+                                                            )}
+
+                                                            {currentTab === 'my-ideas' && idea.status === 'revision_requested' && (
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <Tooltip open={activeTips[`${idea.id}-resubmit`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-resubmit`]: open }))}>
                                                                         <TooltipTrigger asChild>
-                                                                            <span tabIndex={0}>
-                                                                                {idea.status === 'revision_requested' ? (
-                                                                                    <Button variant="outline" size="icon" className="border-amber-500/30" asChild>
-                                                                                        <Link href={ideas.edit(idea.slug)}>
-                                                                                            <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                                                                        </Link>
-                                                                                    </Button>
-                                                                                ) : (
-                                                                                    <Button variant="outline" size="icon" className="border-amber-500/30" disabled>
-                                                                                        <RotateCcw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                                                                    </Button>
-                                                                                )}
-                                                                            </span>
+                                                                            <Button variant="warning" size="icon" asChild>
+                                                                                <Link href={ideas.edit(idea.slug)}>
+                                                                                    <RotateCcw className="h-4 w-4" />
+                                                                                </Link>
+                                                                            </Button>
                                                                         </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            {idea.status === 'revision_requested' ? 'Resubmit' : 'Only available when revision is requested'}
-                                                                        </TooltipContent>
+                                                                        <TooltipContent>Resubmit</TooltipContent>
                                                                     </Tooltip>
-                                                                    <Tooltip>
+                                                                    <span className="text-[10px] leading-tight text-muted-foreground">Resubmit</span>
+                                                                </div>
+                                                            )}
+
+                                                            {currentTab === 'my-ideas' && (
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <Tooltip open={activeTips[`${idea.id}-delete`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-delete`]: open }))}>
                                                                         <TooltipTrigger asChild>
                                                                             <Button
-                                                                                variant="outline"
+                                                                                variant="destructive"
                                                                                 size="icon"
-                                                                                className="border-red-500/30"
                                                                                 onClick={() => setDeleteIdea(idea)}
                                                                             >
-                                                                                <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                                                <Trash2 className="h-4 w-4" />
                                                                             </Button>
                                                                         </TooltipTrigger>
                                                                         <TooltipContent>Delete</TooltipContent>
                                                                     </Tooltip>
-                                                                </>
+                                                                    <span className="text-[10px] leading-tight text-muted-foreground">Delete</span>
+                                                                </div>
                                                             )}
 
-                                                            {currentTab === 'open-for-collaboration' && (
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <span tabIndex={0}>
+                                                            {currentTab === 'open-for-collaboration' && canRequestCollaboration(idea) && (
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <Tooltip open={activeTips[`${idea.id}-request`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-request`]: open }))}>
+                                                                        <TooltipTrigger asChild>
                                                                             <Button
-                                                                                variant="outline"
+                                                                                variant="success"
                                                                                 size="icon"
-                                                                                className="border-teal-500/30"
-                                                                                disabled={!canRequestCollaboration(idea)}
                                                                                 onClick={() => setCollabIdeaSlug(idea.slug)}
                                                                             >
-                                                                                <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                                                <UserPlus className="h-4 w-4" />
                                                                             </Button>
-                                                                        </span>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        {canRequestCollaboration(idea)
-                                                                            ? 'Request to Collaborate'
-                                                                            : idea.status !== 'draft' && idea.status !== 'submitted' && idea.status !== 'revision_requested'
-                                                                                ? 'Idea is not open for collaboration'
-                                                                                : idea.collaboration_status === 'pending'
-                                                                                    ? 'Request already pending'
-                                                                                    : idea.collaboration_status === 'approved'
-                                                                                        ? 'Already a collaborator'
-                                                                                        : 'Cannot request collaboration'}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>Request</TooltipContent>
+                                                                    </Tooltip>
+                                                                    <span className="text-[10px] leading-tight text-muted-foreground">Request</span>
+                                                                </div>
                                                             )}
+
                                                             {currentTab === 'open-for-collaboration' && idea.collaboration_status === 'approved' && (
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button variant="outline" size="icon" className="border-purple-500/30" asChild>
-                                                                            <Link href={ideas.changes.create(idea.slug)}>
-                                                                                <FileEdit className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                                                            </Link>
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>Request Change</TooltipContent>
-                                                                </Tooltip>
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <Tooltip open={activeTips[`${idea.id}-propose`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-propose`]: open }))}>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Button variant="premium" size="icon" asChild>
+                                                                                <Link href={ideas.changes.create(idea.slug)}>
+                                                                                    <FileEdit className="h-4 w-4" />
+                                                                                </Link>
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>Propose</TooltipContent>
+                                                                    </Tooltip>
+                                                                    <span className="text-[10px] leading-tight text-muted-foreground">Propose</span>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </td>
@@ -665,8 +658,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                         )}
                     </DialogContent>
                 </Dialog>
-            </>
-        </TooltipProvider>
+        </>
     );
 }
 
