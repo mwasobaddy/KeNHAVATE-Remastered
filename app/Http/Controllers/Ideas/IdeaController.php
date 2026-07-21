@@ -85,11 +85,11 @@ class IdeaController extends Controller
     {
         $idea = $this->ideaService->create(
             $request->user(),
-            $request->safe()->except(['proposal_file', 'support_documents', 'has_ip_protection', 'patent_number', 'consent_given', 'ip_documents']),
+            $request->safe()->except(['proposal_file', 'support_documents', 'has_ip_protection', 'patent_number', 'consent_given', 'ip_document']),
             $request->file('proposal_file'),
             $request->file('support_documents', []),
             $request->safe()->only(['has_ip_protection', 'patent_number', 'consent_given']),
-            $request->file('ip_documents', []),
+            $request->file('ip_document'),
         );
 
         return redirect()->route('ideas.show', $idea->slug)
@@ -201,11 +201,11 @@ class IdeaController extends Controller
         $this->ideaService->update(
             $idea,
             $request->user(),
-            $request->safe()->except(['proposal_file', 'support_documents', 'has_ip_protection', 'patent_number', 'consent_given', 'ip_documents', 'resubmit_notes']),
+            $request->safe()->except(['proposal_file', 'support_documents', 'has_ip_protection', 'patent_number', 'consent_given', 'ip_document', 'resubmit_notes']),
             $request->file('proposal_file'),
             $request->file('support_documents', []),
             $request->safe()->only(['has_ip_protection', 'patent_number', 'consent_given']),
-            $request->file('ip_documents', []),
+            $request->file('ip_document'),
         );
 
         if ($request->filled('resubmit_notes') && $idea->status === 'revision_requested' && $idea->author_id === $request->user()->id) {
