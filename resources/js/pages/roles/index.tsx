@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, Pencil, Plus, Search, Shield, Trash2 } from 'lucide-react';
+import { ArrowLeft, SquarePen, Plus, Search, Shield, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
@@ -47,6 +47,9 @@ export default function RoleIndex({ roles, filters: initialFilters, search: init
     const [deleting, setDeleting] = useState(false);
     const [searchValue, setSearchValue] = useState(initialSearch ?? '');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
+    const [activeTips, setActiveTips] = useState<Record<string, boolean>>({});
+    const [tipBack, setTipBack] = useState(false);
+    const [tipNew, setTipNew] = useState(false);
 
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const passwordInput = useRef<HTMLInputElement>(null);
@@ -149,19 +152,31 @@ export default function RoleIndex({ roles, filters: initialFilters, search: init
                 {/* Top bar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" variant="warning" onClick={goBack}>
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
+                        <Tooltip open={tipBack} onOpenChange={setTipBack}>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="warning" onClick={() => {
+ setTipBack(true); goBack(); 
+}}>
+                                    <ArrowLeft className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Back</TooltipContent>
+                        </Tooltip>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
 
                     {permissions.includes('role.create') && (
                         <div className="flex flex-col items-center gap-1">
-                            <Button size="icon" asChild>
-                                <Link href={routes.create()}>
-                                    <Plus className="h-5 w-5" />
-                                </Link>
-                            </Button>
+                            <Tooltip open={tipNew} onOpenChange={setTipNew}>
+                                <TooltipTrigger asChild>
+                                    <Button size="icon" asChild>
+                                        <Link href={routes.create()} onClick={() => setTipNew(true)}>
+                                            <Plus className="h-5 w-5" />
+                                        </Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>New Role</TooltipContent>
+                            </Tooltip>
                             <span className="text-[10px] leading-tight text-muted-foreground text-center">New Role</span>
                         </div>
                     )}
@@ -221,33 +236,41 @@ export default function RoleIndex({ roles, filters: initialFilters, search: init
                                                 <td className="py-3 pr-4">{role.users_count}</td>
                                                 <td className="py-3 pr-4">{role.permissions_count}</td>
                                                 <td className="py-3 pr-4">
-                                                    <div className="flex items-center gap-0.5">
+                                                    <div className="flex items-start gap-2">
                                                         {permissions.includes('role.edit') && (
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button variant="outline" size="icon" className="border-green-500/30" asChild>
-                                                                         <Link href={routes.edit({ role: role.id })}>
-                                                                             <Pencil className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                                                        </Link>
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>Edit</TooltipContent>
-                                                            </Tooltip>
+                                                            <div className="flex flex-col items-center gap-1">
+                                                                <Tooltip open={activeTips[`${role.id}-edit`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${role.id}-edit`]: o }))}>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button variant="success" size="icon" asChild>
+                                                                             <Link href={routes.edit({ role: role.id })} onClick={() => setActiveTips((p) => ({ ...p, [`${role.id}-edit`]: true }))}>
+                                                                                 <SquarePen className="h-4 w-4" />
+                                                                            </Link>
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>Edit</TooltipContent>
+                                                                </Tooltip>
+                                                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Edit</span>
+                                                            </div>
                                                         )}
                                                         {permissions.includes('role.delete') && !role.is_protected && (
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button
-                                                                         variant="outline"
-                                                                         size="icon"
-                                                                         className="border-red-500/30"
-                                                                         onClick={() => setDeletingRole(role)}
-                                                                     >
-                                                                         <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>Delete</TooltipContent>
-                                                            </Tooltip>
+                                                            <div className="flex flex-col items-center gap-1">
+                                                                <Tooltip open={activeTips[`${role.id}-delete`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${role.id}-delete`]: o }))}>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button
+                                                                             variant="destructive"
+                                                                             size="icon"
+                                                                             onClick={() => {
+                                                                                 setActiveTips((p) => ({ ...p, [`${role.id}-delete`]: true }));
+                                                                                 setDeletingRole(role);
+                                                                             }}
+                                                                         >
+                                                                             <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>Delete</TooltipContent>
+                                                                </Tooltip>
+                                                                <span className="text-[10px] leading-tight text-muted-foreground text-center">Delete</span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </td>
