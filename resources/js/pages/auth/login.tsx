@@ -19,7 +19,7 @@ export default function Login({ status }: Props) {
 
             <div className="flex flex-col gap-6">
                 <a href="/auth/google" className="w-full">
-                    <Button type="button" variant="outline" className="w-full">
+                    <Button type="button" variant="outline" className="w-full rounded-full">
                         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                             <path
                                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -72,10 +72,19 @@ export default function Login({ status }: Props) {
 
                             <Button
                                 type="submit"
-                                className="w-full bg-yellow text-black hover:bg-yellow/90 shadow-sm"
+                                className="w-full rounded-full bg-yellow text-black hover:bg-yellow/90 shadow-sm"
                                 disabled={processing}
                             >
-                                {processing ? 'Sending OTP...' : 'Continue'}
+                                <span className="inline-flex items-center gap-2">
+                                    {processing ? 'Sending OTP...' : (
+                                        <>
+                                            Continue
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                            </svg>
+                                        </>
+                                    )}
+                                </span>
                             </Button>
                         </div>
                     )}
