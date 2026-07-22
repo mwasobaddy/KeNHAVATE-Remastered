@@ -18,7 +18,8 @@ class TermsController extends Controller
         $user = auth()->user();
 
         if ($user->terms_accepted) {
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended(route('dashboard'))
+                ->with('success', 'Terms accepted. Welcome!');
         }
 
         return inertia('auth/terms', [
