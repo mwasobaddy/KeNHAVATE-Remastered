@@ -19,7 +19,7 @@ class TermsController extends Controller
 
         if ($user->terms_accepted) {
             return redirect()->intended(route('dashboard'))
-                ->with('success', 'Terms accepted. Welcome!');
+                ->with('success', 'Welcome back!');
         }
 
         return inertia('auth/terms', [
@@ -35,6 +35,7 @@ class TermsController extends Controller
 
         $this->auditService->log($user, 'terms_accepted', 'Accepted terms and conditions');
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('dashboard'))
+            ->with('success', 'Terms accepted. Welcome!');
     }
 }
