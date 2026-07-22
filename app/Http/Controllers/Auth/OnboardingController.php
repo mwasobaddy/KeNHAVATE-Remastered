@@ -32,6 +32,7 @@ class OnboardingController extends Controller
             $request->validated(),
         );
 
-        return redirect()->intended($redirectUrl ?? route('dashboard'));
+        return redirect()->intended($redirectUrl ?? route('dashboard'))
+            ->with('success', 'Onboarding complete! Welcome to KeNHA.');
     }
 }
