@@ -104,7 +104,7 @@ export default function OtpVerification({ email, status, cooldown_remaining }: P
 
                         <Button
                             type="submit"
-                            className="w-full"
+                            className="w-full bg-yellow text-black hover:bg-yellow/90 shadow-sm"
                             disabled={processing || otp.length !== OTP_LENGTH}
                         >
                             {processing ? 'Verifying...' : 'Verify'}

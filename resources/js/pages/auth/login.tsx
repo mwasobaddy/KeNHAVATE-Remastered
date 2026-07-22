@@ -47,7 +47,7 @@ export default function Login({ status }: Props) {
                         <span className="w-full border-t border-muted-foreground/20" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
+                        <span className="bg-beige px-2 text-gray dark:bg-black dark:text-gray/60">
                             Or continue with email
                         </span>
                     </div>
@@ -72,7 +72,7 @@ export default function Login({ status }: Props) {
 
                             <Button
                                 type="submit"
-                                className="w-full"
+                                className="w-full bg-yellow text-black hover:bg-yellow/90 shadow-sm"
                                 disabled={processing}
                             >
                                 {processing ? 'Sending OTP...' : 'Continue'}
