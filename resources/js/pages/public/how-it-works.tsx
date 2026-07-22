@@ -87,7 +87,7 @@ export default function HowItWorks() {
                 </div>
 
                 {/* Bottom fade */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-32 dark:bg-gradient-to-t from-background to-transparent" />
             </section>
 
             {/* ─── DETAILED STEPS ─── */}
@@ -143,7 +143,7 @@ export default function HowItWorks() {
                     <div className="mt-8">
                         <Link
                             href={login()}
-                            className="group inline-flex items-center gap-2 rounded-xl bg-yellow px-8 py-3.5 text-sm font-semibold text-black shadow-lg shadow-yellow/20 transition-all hover:bg-yellow/90 hover:shadow-xl hover:shadow-yellow/25 active:scale-[0.97]"
+                            className="group inline-flex items-center gap-2 rounded-full bg-yellow px-8 py-3.5 text-sm font-semibold text-black shadow-lg shadow-yellow/20 transition-all hover:bg-yellow/90 hover:shadow-xl hover:shadow-yellow/25 active:scale-[0.97]"
                         >
                             <span>Get Started</span>
                             <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

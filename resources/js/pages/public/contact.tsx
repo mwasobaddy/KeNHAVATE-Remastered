@@ -31,7 +31,7 @@ export default function Contact() {
                 </div>
 
                 {/* Bottom fade */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-32 dark:bg-gradient-to-t from-background to-transparent" />
             </section>
 
             {/* ─── FORM + INFO ─── */}
@@ -76,8 +76,19 @@ export default function Contact() {
                                                 <Textarea id="message" name="message" rows={5} required placeholder="Your message..." />
                                                 <InputError message={errors.message} />
                                             </div>
-                                            <Button type="submit" className="w-full" disabled={processing}>
-                                                {processing ? 'Sending...' : 'Send Message'}
+                                            <Button type="submit" className="w-full rounded-full" disabled={processing}>
+                                                <span className="inline-flex items-center gap-2">
+                                                    {processing ? (
+                                                        'Sending...'
+                                                    ) : (
+                                                        <>
+                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                                                            </svg>
+                                                            Send Message
+                                                        </>
+                                                    )}
+                                                </span>
                                             </Button>
                                         </>
                                     )}

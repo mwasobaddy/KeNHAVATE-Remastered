@@ -80,7 +80,7 @@ export default function About() {
                 </div>
 
                 {/* Bottom fade */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-32 dark:bg-gradient-to-t from-background to-transparent" />
             </section>
 
             {/* ─── WHY KeNHAVATE? ─── */}
@@ -93,7 +93,7 @@ export default function About() {
                             Why KeNHAVATE?
                         </span>
                         <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                            Built for <span className="text-yellow">innovation</span>
+                            Built for <span className="px-4 before:block before:absolute before:-inset-1 before:-skew-y-3 before:bg-black dark:before:bg-white relative inline-block"><span className="relative text-yellow dark:text-black">innovation</span></span>
                         </h2>
                     </div>
 
@@ -148,7 +148,7 @@ export default function About() {
                             FAQ
                         </span>
                         <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                            Frequently Asked <span className="text-yellow">Questions</span>
+                            Frequently Asked <span className="px-4 before:block before:absolute before:-inset-1 before:-skew-y-3 before:bg-black dark:before:bg-white relative inline-block"><span className="relative text-yellow dark:text-black">Questions</span></span>
                         </h2>
                     </div>
 

@@ -100,7 +100,7 @@ export default function Explore({ ideas }: Props) {
                 </div>
 
                 {/* Bottom fade */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-32 dark:bg-gradient-to-t from-background to-transparent" />
             </section>
 
             {/* ─── IDEAS GRID ─── */}
@@ -111,8 +111,13 @@ export default function Explore({ ideas }: Props) {
                     {ideas.data.length === 0 ? (
                         <div className="mt-12 text-center">
                             <p className="text-muted-foreground">No ideas have been published yet.</p>
-                            <Button className="mt-4" asChild>
-                                <Link href="/">Back to Home</Link>
+                            <Button className="mt-4 rounded-full" asChild>
+                                <Link href="/" className="inline-flex items-center gap-2">
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                    </svg>
+                                    Back to Home
+                                </Link>
                             </Button>
                         </div>
                     ) : (

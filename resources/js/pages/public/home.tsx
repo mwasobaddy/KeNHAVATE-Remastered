@@ -166,7 +166,7 @@ export default function Home({ stats }: Props) {
                             </div>
 
                             <h1 className="reveal in reveal-delay-1 mt-8 text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
-                                <span className="text-white/90">Innovation @</span>
+                                <span className="text-white/90">Innovations @</span>
                                 <br />
                                 <span className="bg-gradient-to-r from-yellow via-amber-300 to-yellow bg-clip-text text-transparent">
                                     KeNHA
@@ -181,7 +181,7 @@ export default function Home({ stats }: Props) {
                             <div className="reveal in reveal-delay-3 mt-8 flex flex-wrap items-center gap-4">
                                 <Link
                                     href={login()}
-                                    className="group inline-flex items-center gap-2 rounded-xl bg-yellow px-7 py-3.5 text-sm font-semibold text-black shadow-lg shadow-yellow/20 transition-all hover:bg-yellow/90 hover:shadow-xl hover:shadow-yellow/25 active:scale-[0.97]"
+                                    className="group inline-flex items-center gap-2 rounded-full bg-yellow px-7 py-3.5 text-sm font-semibold text-black shadow-lg shadow-yellow/20 transition-all hover:bg-yellow/90 hover:shadow-xl hover:shadow-yellow/25 active:scale-[0.97]"
                                 >
                                     <span>Submit Your Idea</span>
                                     <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -190,8 +190,11 @@ export default function Home({ stats }: Props) {
                                 </Link>
                                 <Link
                                     href="/explore"
-                                    className="group inline-flex items-center gap-2 rounded-xl border border-white/20 px-7 py-3.5 text-sm font-semibold text-white/80 transition-all hover:border-white/40 hover:bg-white/5 hover:text-white"
+                                    className="group inline-flex items-center gap-2 rounded-full border border-white/20 px-7 py-3.5 text-sm font-semibold text-white/80 transition-all hover:border-white/40 hover:bg-white/5 hover:text-white"
                                 >
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                    </svg>
                                     Browse Ideas
                                 </Link>
                             </div>
@@ -286,7 +289,7 @@ export default function Home({ stats }: Props) {
                         How It Works
                     </span>
                     <h2 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-                        From idea to <span className="text-yellow">impact</span>
+                        From idea to <span className="px-4 before:block before:absolute before:-inset-1 before:-skew-y-3 before:bg-black dark:before:bg-white relative inline-block"><span className="relative text-yellow dark:text-black">impact</span></span>
                     </h2>
                     <p className="mt-3 text-sm text-muted-foreground sm:text-base">
                         Every great road improvement starts with a single idea. Here's how yours makes a difference.
@@ -382,7 +385,7 @@ export default function Home({ stats }: Props) {
                     <div className="reveal in reveal-delay-3 mt-8">
                         <Link
                             href={login()}
-                            className="group inline-flex items-center gap-2 rounded-xl bg-yellow px-8 py-3.5 text-sm font-semibold text-black shadow-lg shadow-yellow/20 transition-all hover:bg-yellow/90 hover:shadow-xl hover:shadow-yellow/25 active:scale-[0.97]"
+                            className="group inline-flex items-center gap-2 rounded-full bg-yellow px-8 py-3.5 text-sm font-semibold text-black shadow-lg shadow-yellow/20 transition-all hover:bg-yellow/90 hover:shadow-xl hover:shadow-yellow/25 active:scale-[0.97]"
                         >
                             <span>Get Started</span>
                             <svg className="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

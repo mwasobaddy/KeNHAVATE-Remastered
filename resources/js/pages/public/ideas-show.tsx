@@ -99,7 +99,7 @@ export default function PublicIdeaShow({ idea }: Props) {
                 </div>
 
                 {/* Bottom fade */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-32 dark:bg-gradient-to-t from-background to-transparent" />
             </section>
 
             {/* ─── CONTENT ─── */}
@@ -153,9 +153,12 @@ export default function PublicIdeaShow({ idea }: Props) {
                                         </svg>
                                         <span className="font-semibold text-sm">Proposal Document</span>
                                     </div>
-                                    <Button variant="outline" size="sm" asChild>
-                                        <a href={`/ideas/${idea.slug}/documents/${proposal.id}`} target="_blank" rel="noopener noreferrer">
-                                            Download Proposal
+                                    <Button variant="outline" size="sm" className="rounded-full" asChild>
+                                        <a href={`/ideas/${idea.slug}/documents/${proposal.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                            </svg>
+                                            Download
                                         </a>
                                     </Button>
                                     {proposal.file_size && (
@@ -231,11 +234,21 @@ export default function PublicIdeaShow({ idea }: Props) {
                                     Sign in to collaborate, propose changes, or submit your own idea.
                                 </p>
                                 <div className="mt-5 flex items-center justify-center gap-3">
-                                    <Button asChild>
-                                        <Link href="/login">Sign in</Link>
+                                    <Button className="rounded-full" asChild>
+                                        <Link href="/login" className="inline-flex items-center gap-2">
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                            </svg>
+                                            Sign in
+                                        </Link>
                                     </Button>
-                                    <Button variant="outline" asChild className="border-white/20 text-white hover:bg-white/10">
-                                        <Link href="/login">Create account</Link>
+                                    <Button variant="outline" className="rounded-full border-white/20 text-white hover:bg-white/10" asChild>
+                                        <Link href="/login" className="inline-flex items-center gap-2">
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3.375 19.5a7.125 7.125 0 0114.25 0v.75h-14.25v-.75z" />
+                                            </svg>
+                                            Create account
+                                        </Link>
                                     </Button>
                                 </div>
                             </div>
