@@ -31,6 +31,7 @@ class EmailLoginController extends Controller
         $this->otpService->markCooldown($email);
         session(['otp_email' => $email]);
 
-        return redirect()->route('auth.otp');
+        return redirect()->route('auth.otp')
+            ->with('success', 'OTP sent to your email.');
     }
 }
