@@ -73,7 +73,7 @@ class UserController extends Controller
         $this->authorize('user.delete');
 
         if ($request->user()->is($user)) {
-            return back()->withErrors(['error' => 'You cannot delete your own account.']);
+            return back()->with('error', 'You cannot delete your own account.');
         }
 
         $request->validate([

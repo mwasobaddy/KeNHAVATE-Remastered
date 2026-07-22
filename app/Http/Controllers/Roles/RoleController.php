@@ -75,7 +75,7 @@ class RoleController extends Controller
         $this->authorize('role.delete');
 
         if ($this->roleService->isProtected($role)) {
-            return back()->withErrors(['error' => "The '{$role->name}' role cannot be deleted."]);
+            return back()->with('error', "The '{$role->name}' role cannot be deleted.");
         }
 
         $request->validate([
