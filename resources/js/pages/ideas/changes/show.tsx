@@ -68,7 +68,7 @@ export default function ReviewChange({ idea, changeRequest, canReview }: Props) 
         <>
             <Head title={`Review Changes - ${idea.title}`} />
 
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <div className="flex items-start justify-between">
                     <div className="flex flex-col items-center gap-1">
                         <Button size="icon" variant="warning" onClick={goBack}>

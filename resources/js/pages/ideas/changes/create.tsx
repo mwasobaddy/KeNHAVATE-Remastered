@@ -53,7 +53,7 @@ export default function ProposeChanges({ idea }: Props) {
         <>
             <Head title={`Propose Changes - ${idea.title}`} />
 
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <Heading
                     title="Propose Changes"
                     description={`To: ${idea.title}`}
