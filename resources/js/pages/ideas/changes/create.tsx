@@ -138,7 +138,7 @@ export default function ProposeChanges({ idea }: Props) {
                                             {processing ? 'Submitting...' : 'Submit Changes'}
                                         </Button>
                                         <Button type="button" variant="outline" asChild>
-                                            <a href={ideas.changes.index(idea.slug)}>Cancel</a>
+                                            <a href={ideas.changes.index(idea.slug).url}>Cancel</a>
                                         </Button>
                                     </div>
                                 </>

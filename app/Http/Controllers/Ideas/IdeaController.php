@@ -50,6 +50,10 @@ class IdeaController extends Controller
             default => $this->ideaService->getAll($search, $filters),
         };
 
+        foreach ($ideas->items() as $idea) {
+            $idea->canProposeChanges = $idea->isOpen() && $idea->userCan($user, 'idea.propose_changes');
+        }
+
         $ideasCollection = $user->authoredIdeas()->select('status')->get();
 
         return inertia('ideas/index', [

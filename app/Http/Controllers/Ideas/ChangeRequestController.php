@@ -32,6 +32,7 @@ class ChangeRequestController extends Controller
         return inertia('ideas/changes/index', [
             'idea' => $idea->load('author'),
             'changeRequests' => $this->changeRequestService->getForIdea($idea, $request->user()),
+            'canProposeChanges' => $idea->userCan($request->user(), 'idea.propose_changes'),
         ]);
     }
 

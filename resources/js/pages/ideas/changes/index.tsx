@@ -31,6 +31,7 @@ type ChangeRequest = {
 type Props = {
     idea: { slug: string; title: string; author: User };
     changeRequests: { data: ChangeRequest[] };
+    canProposeChanges: boolean;
 };
 
 const statusStyles: Record<string, string> = {
@@ -153,7 +154,7 @@ function ChangeRequestCard({
     );
 }
 
-export default function ChangeRequestIndex({ idea, changeRequests }: Props) {
+export default function ChangeRequestIndex({ idea, changeRequests, canProposeChanges }: Props) {
     const goBack = () => {
         if (window.history.length > 2) {
             window.history.back();
@@ -219,14 +220,16 @@ export default function ChangeRequestIndex({ idea, changeRequests }: Props) {
                         </Button>
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
-                    <div className="flex flex-col items-center gap-1">
-                        <Button size="icon" asChild>
-                            <Link href={ideas.changes.create(idea.slug)}>
-                                <Plus className="h-5 w-5" />
-                            </Link>
-                        </Button>
-                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Propose Changes</span>
-                    </div>
+                    {canProposeChanges && (
+                        <div className="flex flex-col items-center gap-1">
+                            <Button size="icon" asChild>
+                                <Link href={ideas.changes.create(idea.slug)}>
+                                    <Plus className="h-5 w-5" />
+                                </Link>
+                            </Button>
+                            <span className="text-[10px] leading-tight text-muted-foreground text-center">Propose Changes</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-start justify-between">

@@ -21,6 +21,7 @@ type Idea = {
     title: string;
     slug: string;
     status: string;
+    canProposeChanges: boolean;
     collaboration_enabled: boolean;
     collaboration_status?: 'pending' | 'approved' | 'rejected' | null;
     author: { id: number; name: string } | null;
@@ -501,7 +502,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                                                 </div>
                                                             )}
 
-                                                            {currentTab === 'open-for-collaboration' && idea.collaboration_status === 'approved' && (
+                                                            {currentTab === 'open-for-collaboration' && idea.collaboration_status === 'approved' && idea.canProposeChanges && (
                                                                 <div className="flex flex-col items-center gap-1">
                                                                     <Tooltip open={activeTips[`${idea.id}-propose`]} onOpenChange={(open) => setActiveTips((prev) => ({ ...prev, [`${idea.id}-propose`]: open }))}>
                                                                         <TooltipTrigger asChild>
