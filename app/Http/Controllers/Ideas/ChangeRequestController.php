@@ -214,7 +214,7 @@ class ChangeRequestController extends Controller
         }
 
         if ($changeRequest->status !== 'pending') {
-            return back()->withErrors(['error' => 'Only pending change requests can be deleted.']);
+            return back()->with('error', 'Only pending change requests can be deleted.');
         }
 
         $request->validate([
