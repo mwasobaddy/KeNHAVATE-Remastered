@@ -1,5 +1,23 @@
 import { Form, Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, FileEdit, GitCompareArrows, SquarePen, RotateCcw, UserPlus, Users } from 'lucide-react';
+import {
+    ArrowLeft,
+    ClipboardCheck,
+    Coins,
+    Download,
+    FileEdit,
+    FileIcon,
+    FileText,
+    GitCompareArrows,
+    Lightbulb,
+    RotateCcw,
+    ScrollText,
+    Shield,
+    SquarePen,
+    Target,
+    UserCheck,
+    UserPlus,
+    Users,
+} from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -13,6 +31,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
@@ -107,6 +126,61 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'outline' | 'dest
     implemented: 'secondary',
 };
 
+function formatSize(bytes: number | null): string {
+    if (bytes === null) {
+        return '';
+    }
+
+    if (bytes < 1024 * 1024) {
+        return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function docIcon(name: string) {
+    const ext = name.split('.').pop()?.toLowerCase() ?? '';
+
+    if (['pdf'].includes(ext)) {
+        return <FileText className="h-5 w-5 text-primary" />;
+    }
+
+    if (['xls', 'xlsx'].includes(ext)) {
+        return <FileText className="h-5 w-5 text-emerald-600" />;
+    }
+
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+        return <FileText className="h-5 w-5 text-amber-600" />;
+    }
+
+    return <FileIcon className="h-5 w-5 text-muted-foreground" />;
+}
+
+function DocumentRow({ href, name, size, typeLabel }: { href: string; name: string; size: number | null; typeLabel: string }) {
+    return (
+        <div className="flex items-center justify-between gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50">
+            <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/5">
+                    {docIcon(name)}
+                </div>
+                <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{name}</p>
+                    <p className="text-xs text-muted-foreground">
+                        {typeLabel}
+                        {size !== null ? ` · ${formatSize(size)}` : ''}
+                    </p>
+                </div>
+            </div>
+            <Button size="sm" variant="outline" className="shrink-0" asChild>
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                    <Download className="mr-1.5 h-3.5 w-3.5" />
+                    Download
+                </a>
+            </Button>
+        </div>
+    );
+}
+
 export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPendingCollaborationCount, canProposeChanges, canApproveChanges, canResubmit }: Props) {
     const goBack = () => {
         if (window.history.length > 2) {
@@ -130,7 +204,7 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
 
     return (
         <>
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
                         <Button size="icon" variant="warning" onClick={goBack}>
@@ -267,7 +341,10 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                 <div className="grid gap-6 md:grid-cols-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Description</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                Description
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm text-muted-foreground whitespace-pre-line">
@@ -278,7 +355,10 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Problem Statement</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <Target className="h-4 w-4 text-destructive" />
+                                Problem Statement
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm text-muted-foreground whitespace-pre-line">
@@ -289,7 +369,10 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Proposed Solution</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <Lightbulb className="h-4 w-4 text-amber-500" />
+                                Proposed Solution
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm text-muted-foreground whitespace-pre-line">
@@ -300,7 +383,10 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Cost-Benefit Analysis</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <Coins className="h-4 w-4 text-emerald-600" />
+                                Cost-Benefit Analysis
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm text-muted-foreground whitespace-pre-line">
@@ -310,74 +396,70 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                     </Card>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
-                    {proposal && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Full Proposal</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Button variant="default" asChild>
-                                    <a
+                {(proposal || supportingDocs.length > 0) && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Download className="h-4 w-4 text-muted-foreground" />
+                                Documents
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {proposal && (
+                                <div>
+                                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Full Proposal
+                                    </h4>
+                                    <DocumentRow
                                         href={`/ideas/${idea.slug}/documents/${proposal.id}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        Download Proposal
-                                    </a>
-                                </Button>
-                                <p className="mt-2 text-xs text-muted-foreground">
-                                    {proposal.original_name}
-                                    {proposal.file_size
-                                        ? ` (${(proposal.file_size / 1024).toFixed(1)} KB)`
-                                        : ''}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {supportingDocs.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Supporting Documents</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-2">
-                                    {supportingDocs.map((doc) => (
-                                        <li key={doc.id}>
-                                            <Button variant="link" className="h-auto p-0" asChild>
-                                                <a
-                                                    href={`/ideas/${idea.slug}/documents/${doc.id}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    {doc.original_name}
-                                                </a>
-                                            </Button>
-                                            {doc.file_size && (
-                                                <span className="ml-2 text-xs text-muted-foreground">
-                                                    ({(doc.file_size / 1024).toFixed(1)} KB)
-                                                </span>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
+                                        name={proposal.original_name}
+                                        size={proposal.file_size}
+                                        typeLabel="Full Proposal"
+                                    />
+                                </div>
+                            )}
+                            {supportingDocs.length > 0 && (
+                                <div>
+                                    {proposal && <Separator className="mb-4" />}
+                                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Supporting Documents
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {supportingDocs.map((doc) => (
+                                            <DocumentRow
+                                                key={doc.id}
+                                                href={`/ideas/${idea.slug}/documents/${doc.id}`}
+                                                name={doc.original_name}
+                                                size={doc.file_size}
+                                                typeLabel="Supporting Document"
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {idea.ip_right && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Intellectual Property</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <Shield className="h-4 w-4 text-muted-foreground" />
+                                Intellectual Property
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="flex items-center gap-2">
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-wrap items-center gap-2">
                                 {idea.ip_right.has_ip_protection ? (
-                                    <Badge>IP Protected</Badge>
+                                    <Badge className="gap-1.5">
+                                        <Shield className="h-3 w-3" />
+                                        IP Protected
+                                    </Badge>
                                 ) : (
-                                    <Badge variant="default">Not Protected</Badge>
+                                    <Badge variant="default" className="gap-1.5">
+                                        Not Protected
+                                    </Badge>
                                 )}
                                 <Badge variant="secondary">{idea.ip_right.status}</Badge>
                             </div>
@@ -385,35 +467,24 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                             {idea.ip_right.has_ip_protection && (
                                 <>
                                     {idea.ip_right.patent_number && (
-                                        <p className="text-sm">
-                                            <span className="font-medium">Patent Number:</span>{' '}
-                                            {idea.ip_right.patent_number}
-                                        </p>
+                                        <div className="rounded-lg border bg-muted/30 px-4 py-3">
+                                            <p className="text-xs text-muted-foreground">Patent Number</p>
+                                            <p className="mt-0.5 text-sm font-medium">{idea.ip_right.patent_number}</p>
+                                        </div>
                                     )}
 
                                     {idea.ip_right.documents.length > 0 && (
-                                        <div>
-                                            <p className="mb-1 text-sm font-medium">Patent Documents:</p>
-                                            <ul className="space-y-1">
-                                                {idea.ip_right.documents.map((doc) => (
-                                                    <li key={doc.id}>
-                                                        <Button variant="link" className="h-auto p-0" asChild>
-                                                            <a
-                                                                href={`/ideas/${idea.slug}/ip-documents/${doc.id}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                            >
-                                                                {doc.original_name}
-                                                            </a>
-                                                        </Button>
-                                                        {doc.file_size && (
-                                                            <span className="ml-2 text-xs text-muted-foreground">
-                                                                ({(doc.file_size / 1024).toFixed(1)} KB)
-                                                            </span>
-                                                        )}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                        <div className="space-y-3">
+                                            <p className="text-sm font-medium">Patent Documents</p>
+                                            {idea.ip_right.documents.map((doc) => (
+                                                <DocumentRow
+                                                    key={doc.id}
+                                                    href={`/ideas/${idea.slug}/ip-documents/${doc.id}`}
+                                                    name={doc.original_name}
+                                                    size={doc.file_size}
+                                                    typeLabel="Patent Document"
+                                                />
+                                            ))}
                                         </div>
                                     )}
                                 </>
@@ -433,37 +504,53 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Review</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+                            Review
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {idea.assigned_officer ? (
-                            <div className="text-sm">
-                                <p>
-                                    <span className="font-medium">RI&KM Officer:</span>{' '}
-                                    {idea.assigned_officer.name}
-                                </p>
-                                <p className="text-muted-foreground">
-                                    {idea.assigned_officer.email}
-                                </p>
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                <UserCheck className="h-5 w-5 text-primary" />
                             </div>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">
-                                No officer assigned yet.
-                            </p>
-                        )}
-
-                        {idea.classification && (
-                            <div className="border-t pt-4 text-sm">
-                                <p>
-                                    <span className="font-medium">Classification:</span>{' '}
-                                    {idea.classification.name}
-                                </p>
-                                {idea.classification.description && (
-                                    <p className="mt-1 text-muted-foreground">
-                                        {idea.classification.description}
+                            <div>
+                                {idea.assigned_officer ? (
+                                    <>
+                                        <p className="text-sm font-medium">
+                                            {idea.assigned_officer.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {idea.assigned_officer.email}
+                                        </p>
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">
+                                        No officer assigned yet.
                                     </p>
                                 )}
                             </div>
+                        </div>
+
+                        {idea.classification && (
+                            <>
+                                <Separator />
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10">
+                                        <ScrollText className="h-5 w-5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            {idea.classification.name}
+                                        </p>
+                                        {idea.classification.description && (
+                                            <p className="text-xs text-muted-foreground">
+                                                {idea.classification.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </CardContent>
                 </Card>
@@ -471,7 +558,10 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                 {idea.invitations.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Contributors</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                Contributors
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
