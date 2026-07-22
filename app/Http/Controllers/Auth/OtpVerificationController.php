@@ -50,10 +50,12 @@ class OtpVerificationController extends Controller
         session()->forget('otp_email');
 
         if ($user->onboarding_completed_at) {
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended(route('dashboard'))
+                ->with('success', 'Welcome back!');
         }
 
-        return redirect()->route('onboarding');
+        return redirect()->route('onboarding')
+            ->with('success', 'Welcome! Please complete your profile.');
     }
 
     public function resend(Request $request): RedirectResponse
@@ -73,6 +75,6 @@ class OtpVerificationController extends Controller
         $this->authService->resendOtp($email);
         $this->otpService->markCooldown($email);
 
-        return back()->with('status', 'A new OTP has been sent to your email.');
+        return back()->with('success', 'A new OTP has been sent to your email.');
     }
 }
