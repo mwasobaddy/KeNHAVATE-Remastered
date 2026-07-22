@@ -1,4 +1,3 @@
-import { useFlashToast } from '@/hooks/use-flash-toast';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
@@ -6,8 +5,6 @@ import { Toaster as Sonner, type ToasterProps } from 'sonner';
 function Toaster({ ...props }: ToasterProps) {
     const { appearance } = useAppearance();
     const [position, setPosition] = useState<'top-center' | 'top-right'>('top-right');
-
-    useFlashToast();
 
     useEffect(() => {
         const check = () => {

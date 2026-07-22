@@ -4,6 +4,7 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import GuestLayout from '@/layouts/guest-layout';
+import RootLayout from '@/layouts/root-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 router.on('navigate', () => {
@@ -17,15 +18,15 @@ createInertiaApp({
     layout: (name) => {
         switch (true) {
             case name.startsWith('public/'):
-                return GuestLayout;
+                return [RootLayout, GuestLayout];
             case name === 'welcome':
-                return null;
+                return RootLayout;
             case name.startsWith('auth/'):
-                return AuthLayout;
+                return [RootLayout, AuthLayout];
             case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
+                return [RootLayout, AppLayout, SettingsLayout];
             default:
-                return AppLayout;
+                return [RootLayout, AppLayout];
         }
     },
     strictMode: true,
