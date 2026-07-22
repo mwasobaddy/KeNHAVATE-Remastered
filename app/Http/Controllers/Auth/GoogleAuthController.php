@@ -28,9 +28,11 @@ class GoogleAuthController extends Controller
         Auth::login($user);
 
         if ($user->onboarding_completed_at) {
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended(route('dashboard'))
+                ->with('success', 'Welcome back!');
         }
 
-        return redirect()->route('onboarding');
+        return redirect()->route('onboarding')
+            ->with('success', 'Welcome! Please complete your profile.');
     }
 }
