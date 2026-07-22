@@ -3,7 +3,9 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 export function useFlashToast() {
-    const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+    const { flash } = usePage().props as {
+        flash?: { success?: string; error?: string; warning?: string };
+    };
 
     useEffect(() => {
         if (flash?.success) {
@@ -12,6 +14,10 @@ export function useFlashToast() {
 
         if (flash?.error) {
             toast.error(flash.error);
+        }
+
+        if (flash?.warning) {
+            toast.warning(flash.warning);
         }
     }, [flash]);
 }
