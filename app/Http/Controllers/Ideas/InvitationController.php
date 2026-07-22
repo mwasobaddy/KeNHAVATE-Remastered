@@ -27,7 +27,9 @@ class InvitationController extends Controller
 
             return $accepted
                 ? redirect()->route('ideas.show', $invitation->idea->slug)
-                : redirect()->route('dashboard');
+                    ->with('success', 'Invitation accepted!')
+                : redirect()->route('dashboard')
+                    ->with('error', 'Unable to accept invitation. It may have expired.');
         }
 
         session(['invitation_token' => $invitation->token]);
@@ -59,6 +61,8 @@ class InvitationController extends Controller
 
         return $accepted
             ? redirect()->route('ideas.show', $invitation->idea->slug)
-            : redirect()->route('dashboard');
+                ->with('success', 'Invitation accepted!')
+            : redirect()->route('dashboard')
+                ->with('error', 'Unable to accept invitation. It may have expired.');
     }
 }
