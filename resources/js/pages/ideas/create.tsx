@@ -498,7 +498,7 @@ payload.ip_document = ipDocument;
                                     )}
                                 </Button>
                                 <Button type="button" size="lg" variant="outline" asChild>
-                                    <a href={ideas.index()}>Cancel</a>
+                                    <a href={ideas.index().url}>Cancel</a>
                                 </Button>
                             </div>
                         </form>
