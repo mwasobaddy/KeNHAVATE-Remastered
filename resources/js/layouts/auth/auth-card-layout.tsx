@@ -1,6 +1,5 @@
 import { Link } from '@inertiajs/react';
 import type { PropsWithChildren } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import {
     Card,
     CardContent,
@@ -24,10 +23,14 @@ export default function AuthCardLayout({
             <div className="flex w-full max-w-md flex-col gap-6">
                 <Link
                     href={home()}
-                    className="flex items-center gap-2 self-center font-medium"
+                    className="flex flex-col items-center gap-3 self-center font-medium"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center">
-                        <AppLogoIcon className="size-9 fill-current text-black dark:text-white" />
+                    <div className="flex h-18 w-18 items-center justify-center rounded-full border-2 border-black bg-white shadow-[0_0_20px_rgba(255,242,0,0.3)] dark:border-yellow dark:bg-zinc-800">
+                        <img
+                            src="/img/logo-icon.webp"
+                            alt="KeNHAVATE"
+                            className="size-6 fill-current text-[#231F20] dark:text-zinc-900 hover:scale-105 transition-transform duration-300 ease-in-out h-full w-full object-cover"
+                        />
                     </div>
                 </Link>
 
