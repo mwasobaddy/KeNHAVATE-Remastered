@@ -19,7 +19,7 @@ class UpdateUserRequest extends FormRequest
             'email' => ['required', 'email', Rule::unique('users')->ignore($this->route('user'))],
             'password' => ['nullable', 'string', 'min:8'],
             'mobile_number' => ['nullable', 'string', Rule::unique('users')->ignore($this->route('user'))],
-            'gender' => ['nullable', 'string', Rule::in(['male', 'female'])],
+            'gender' => ['nullable', 'string', Rule::in(['Male', 'Female'])],
             'role' => ['required', 'string', Rule::exists('roles', 'name')->where(fn ($q) => $q->whereNull('team_id'))],
             'is_staff' => ['nullable', 'boolean'],
             'region_id' => ['nullable', 'integer', 'exists:regions,id'],

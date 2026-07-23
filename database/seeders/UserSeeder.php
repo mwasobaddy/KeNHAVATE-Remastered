@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
             'email' => 'kelvinramsiel@gmail.com',
             'email_verified_at' => now(),
             'mobile_number' => '+254712345678',
-            'gender' => 'male',
+            'gender' => 'Male',
             'password' => Hash::make('password'),
             'terms_accepted' => true,
             'onboarding_completed_at' => now(),

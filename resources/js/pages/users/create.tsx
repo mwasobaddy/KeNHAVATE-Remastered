@@ -76,8 +76,8 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                                                     <SelectValue placeholder="Select gender" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="male">Male</SelectItem>
-                                                    <SelectItem value="female">Female</SelectItem>
+                                                    <SelectItem value="Male">Male</SelectItem>
+                                                    <SelectItem value="Female">Female</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <InputError message={errors.gender} />

@@ -23,8 +23,8 @@ class OnboardingRequest extends FormRequest
                     }
                 },
             ],
-            'mobile_number' => ['required', 'string', 'max:20'],
-            'gender' => ['required', Rule::in(['male', 'female', 'other'])],
+            'mobile_number' => ['required', 'string', 'regex:/^\+254\d{9}$/'],
+            'gender' => ['required', Rule::in(['Male', 'Female'])],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'is_staff' => ['boolean'],
             'region_id' => ['required_if:is_staff,1', 'exists:regions,id'],
