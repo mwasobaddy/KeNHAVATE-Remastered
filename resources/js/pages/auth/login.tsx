@@ -19,7 +19,7 @@ export default function Login({ status }: Props) {
 
             <div className="flex flex-col gap-6">
                 <a href="/auth/google" className="w-full">
-                    <Button type="button" variant="outline" className="w-full rounded-full">
+                    <Button type="button" variant="outline" className="w-full">
                         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                             <path
                                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -47,7 +47,7 @@ export default function Login({ status }: Props) {
                         <span className="w-full border-t border-muted-foreground/20" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-beige px-2 text-gray dark:bg-black dark:text-gray/60">
+                        <span className="bg-white px-2 text-gray dark:bg-zinc-800 dark:text-gray/60">
                             Or continue with email
                         </span>
                     </div>
@@ -72,7 +72,6 @@ export default function Login({ status }: Props) {
 
                             <Button
                                 type="submit"
-                                className="w-full rounded-full bg-yellow text-black hover:bg-yellow/90 shadow-sm"
                                 disabled={processing}
                             >
                                 <span className="inline-flex items-center gap-2">
@@ -96,6 +95,16 @@ export default function Login({ status }: Props) {
                     {status}
                 </div>
             )}
+
+            <div className="mt-8 flex items-center justify-center gap-3 text-xs text-gray/60 dark:text-zinc-500">
+                <a href="/terms" className="hover:text-gray transition-colors dark:hover:text-zinc-300">
+                    Terms
+                </a>
+                <span className="text-gray/30 dark:text-zinc-600">&bull;</span>
+                <a href="/privacy" className="hover:text-gray transition-colors dark:hover:text-zinc-300">
+                    Privacy Policy
+                </a>
+            </div>
         </AuthSplitLayout>
     );
 }

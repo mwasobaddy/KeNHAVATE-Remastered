@@ -45,6 +45,12 @@ export default function OtpVerification({ email, status, cooldown_remaining }: P
         router.post('/auth/otp/resend');
     };
 
+    const maskEmail = (email: string) => {
+        const [local, domain] = email.split('@');
+
+        return `${local.charAt(0)}***@${domain}`;
+    };
+
     const formatTime = (seconds: number): string => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
@@ -55,7 +61,7 @@ export default function OtpVerification({ email, status, cooldown_remaining }: P
     return (
         <AuthSplitLayout
             title="Check your email"
-            description={`We sent a 6-digit code to ${email}`}
+            description={`We sent a 6-digit code to ${maskEmail(email)}`}
         >
             <Head title="Verify OTP" />
 
@@ -75,17 +81,16 @@ export default function OtpVerification({ email, status, cooldown_remaining }: P
                                     disabled={processing}
                                     pattern={REGEXP_ONLY_DIGITS}
                                 >
-                                    <InputOTPGroup>
+                                    <div className="flex gap-3">
                                         {Array.from(
                                             { length: OTP_LENGTH },
                                             (_, index) => (
-                                                <InputOTPSlot
-                                                    key={index}
-                                                    index={index}
-                                                />
+                                                <InputOTPGroup key={index}>
+                                                    <InputOTPSlot index={index} />
+                                                </InputOTPGroup>
                                             ),
                                         )}
-                                    </InputOTPGroup>
+                                    </div>
                                 </InputOTP>
                             </div>
                             <InputError message={errors.otp} />
@@ -104,7 +109,6 @@ export default function OtpVerification({ email, status, cooldown_remaining }: P
 
                         <Button
                             type="submit"
-                            className="w-full rounded-full bg-yellow text-black hover:bg-yellow/90 shadow-sm"
                             disabled={processing || otp.length !== OTP_LENGTH}
                         >
                             <span className="inline-flex items-center gap-2">
