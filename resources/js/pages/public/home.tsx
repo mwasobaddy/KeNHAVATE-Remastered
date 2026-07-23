@@ -304,7 +304,7 @@ export default function Home({ stats }: Props) {
                             title="Submit"
                             description="Share your idea with a clear description, problem statement, and proposed solution."
                             color="bg-yellow text-black"
-                            border="border-yellow/30"
+                            border="hover:border-yellow/30"
                         />
                     </div>
 
@@ -315,7 +315,7 @@ export default function Home({ stats }: Props) {
                             title="Review"
                             description="Your idea is reviewed, classified, and evaluated by the relevant officers."
                             color="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
-                            border="border-amber-200/50 dark:border-amber-800/30"
+                            border="hover:border-amber-200/50 dark:hover:border-amber-800/30"
                         />
                     </div>
 
@@ -326,7 +326,7 @@ export default function Home({ stats }: Props) {
                             title="Implement"
                             description="Approved ideas are budgeted, implemented, and tracked to completion."
                             color="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
-                            border="border-emerald-200/50 dark:border-emerald-800/30"
+                            border="hover:border-emerald-200/50 dark:hover:border-emerald-800/30"
                         />
                     </div>
                 </div>
@@ -433,12 +433,13 @@ function StepCard({
     return (
         <div
             ref={ref}
-            className={`group relative overflow-hidden rounded-2xl border ${border} bg-card/50 p-7 transition-all duration-500 hover:-translate-y-2 hover:shadow-xl`}
+            className={`group relative overflow-hidden rounded-2xl border ${border} bg-card/50 p-7 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg`}
         >
-            {/* Hover glow */}
-            <div className="pointer-events-none absolute -inset-20 rounded-full opacity-0 transition-opacity duration-500 group-hover:opacity-100" style={{
-                background: 'radial-gradient(circle at 50% 0%, var(--color-yellow) 0%, transparent 60%)',
-            }} />
+            {/* Light gradient overlay — subtle by default, shines through on hover */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+
+            {/* Top highlight border — simulates light coming from above */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
 
             <div className={`relative z-10 mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold ${color}`}>
                 {number}
@@ -448,7 +449,7 @@ function StepCard({
                 {description}
             </p>
             {inView && (
-                <div className="absolute bottom-0 left-0 h-0.5 bg-yellow/40 transition-all duration-700" style={{ width: `${inView ? '100%' : '0%'}` }} />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" style={{ width: `${inView ? '100%' : '0%'}` }} />
             )}
         </div>
     );

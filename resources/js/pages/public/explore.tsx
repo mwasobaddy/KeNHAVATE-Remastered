@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Badge } from '@/components/ui/badge';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -29,18 +29,6 @@ interface Props {
     ideas: PaginatedData;
 }
 
-const statusStyles: Record<string, string> = {
-    submitted: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    assigned: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-    revision_requested: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-    resubmitted: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    classified: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-    approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    declined: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    deferred: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-    implemented: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-};
 
 function formatDate(dateString: string): string {
     const date = new Date(dateString);
@@ -129,16 +117,10 @@ export default function Explore({ ideas }: Props) {
                             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                                 {ideas.data.map((idea) => (
                                     <Link key={idea.id} href={`/explore/${idea.slug}`}>
-                                        <Card className="group h-full border bg-card/50 transition-all duration-300 hover:-translate-y-1 hover:border-yellow/30 hover:shadow-lg">
-                                            <CardContent className="p-5 sm:p-6">
-                                                <div className="mb-3 flex items-center gap-2">
-                                                    <Badge className={statusStyles[idea.status] ?? ''}>
-                                                        {idea.status.replace(/_/g, ' ')}
-                                                    </Badge>
-                                                    {idea.category && (
-                                                        <span className="text-xs text-muted-foreground">{idea.category.name}</span>
-                                                    )}
-                                                </div>
+                                        <Card className="group relative h-full overflow-hidden border bg-card/50 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-yellow/30 hover:shadow-md">
+                                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                                            <CardContent className="relative z-10 p-5 sm:p-6">
                                                 <h3 className="font-semibold leading-snug transition-colors group-hover:text-yellow-700 dark:group-hover:text-yellow-300">
                                                     {idea.title}
                                                 </h3>

@@ -146,13 +146,16 @@ export default function PublicIdeaShow({ idea }: Props) {
                     {(proposal || supportingDocs.length > 0) && (
                         <div className="mt-8 grid gap-6 md:grid-cols-2">
                             {proposal && (
-                                <div className="rounded-2xl border bg-card/50 p-6">
-                                    <div className="mb-3 flex items-center gap-2">
+                                <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm">
+                                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                                    <div className="relative z-10 mb-3 flex items-center gap-2">
                                         <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                                         </svg>
                                         <span className="font-semibold text-sm">Proposal Document</span>
                                     </div>
+                                    <div className="relative z-10">
                                     <Button variant="outline" size="sm" className="rounded-full" asChild>
                                         <a href={`/ideas/${idea.slug}/documents/${proposal.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
                                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -166,10 +169,14 @@ export default function PublicIdeaShow({ idea }: Props) {
                                             {(proposal.file_size / 1024).toFixed(1)} KB
                                         </p>
                                     )}
+                                    </div>
                                 </div>
                             )}
                             {supportingDocs.length > 0 && (
-                                <div className="rounded-2xl border bg-card/50 p-6">
+                                <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm">
+                                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                                    <div className="relative z-10">
                                     <div className="mb-3 flex items-center gap-2">
                                         <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -197,6 +204,7 @@ export default function PublicIdeaShow({ idea }: Props) {
                                             </a>
                                         ))}
                                     </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -204,7 +212,10 @@ export default function PublicIdeaShow({ idea }: Props) {
 
                     {/* Intellectual Property */}
                     {idea.ip_right && (
-                        <div className="mt-6 rounded-2xl border bg-card/50 p-6">
+                        <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm">
+                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                            <div className="relative z-10">
                             <div className="mb-3 flex items-center gap-2">
                                 <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
@@ -219,6 +230,7 @@ export default function PublicIdeaShow({ idea }: Props) {
                                 {idea.ip_right.patent_number && (
                                     <p><span className="font-medium text-foreground">Patent Number:</span> {idea.ip_right.patent_number}</p>
                                 )}
+                            </div>
                             </div>
                         </div>
                     )}
@@ -264,14 +276,20 @@ export default function PublicIdeaShow({ idea }: Props) {
 
 function ContentCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
     return (
-        <div className="rounded-2xl border bg-card/50 p-6 transition-all duration-200 hover:border-yellow/30 hover:shadow-sm">
-            <div className="mb-3 flex items-center gap-2">
+        <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm transition-all duration-200 hover:border-yellow/30 hover:shadow-md">
+            {/* Light gradient overlay */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+
+            {/* Top highlight */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+
+            <div className="relative z-10 mb-3 flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow/10 text-yellow-700 dark:text-yellow-300">
                     {icon}
                 </span>
                 <h3 className="font-semibold text-sm">{title}</h3>
             </div>
-            {children}
+            <div className="relative z-10">{children}</div>
         </div>
     );
 }

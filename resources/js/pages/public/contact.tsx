@@ -42,9 +42,11 @@ export default function Contact() {
                     <div className="grid gap-8 lg:grid-cols-5 lg:gap-12">
                         {/* Form */}
                         <div className="lg:col-span-3">
-                            <div className="rounded-2xl border bg-card/50 p-6 sm:p-8">
-                                <h2 className="text-xl font-bold tracking-tight">Send us a message</h2>
-                                <p className="mt-1 text-sm text-muted-foreground">
+                            <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm sm:p-8">
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                                <h2 className="relative z-10 text-xl font-bold tracking-tight">Send us a message</h2>
+                                <p className="relative z-10 mt-1 text-sm text-muted-foreground">
                                     Fill out the form below and we'll get back to you shortly.
                                 </p>
 
@@ -98,15 +100,17 @@ export default function Contact() {
 
                         {/* Info cards */}
                         <div className="space-y-4 lg:col-span-2">
-                            <div className="rounded-2xl border bg-card/50 p-6">
-                                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-yellow/10">
+                            <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm">
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                                <div className="relative z-10 mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-yellow/10">
                                     <svg className="h-5 w-5 text-yellow-700 dark:text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="font-semibold">Visit Us</h3>
-                                <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                <h3 className="relative z-10 font-semibold">Visit Us</h3>
+                                <div className="relative z-10 mt-2 space-y-1 text-sm text-muted-foreground">
                                     <p>KeNHA Headquarters</p>
                                     <p>Blue Shield Towers, 6th Floor</p>
                                     <p>Hospital Road, Upper Hill</p>
@@ -115,14 +119,16 @@ export default function Contact() {
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border bg-card/50 p-6">
-                                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                            <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm">
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                                <div className="relative z-10 mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
                                     <svg className="h-5 w-5 text-amber-700 dark:text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                                     </svg>
                                 </div>
-                                <h3 className="font-semibold">Contact Information</h3>
-                                <div className="mt-2 space-y-1 text-sm">
+                                <h3 className="relative z-10 font-semibold">Contact Information</h3>
+                                <div className="relative z-10 mt-2 space-y-1 text-sm">
                                     <p>
                                         <span className="font-medium text-foreground">Email:</span>{' '}
                                         <a href="mailto:innovate@kenha.co.ke" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -138,14 +144,16 @@ export default function Contact() {
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border bg-card/50 p-6">
-                                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
+                            <div className="group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm">
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                                <div className="relative z-10 mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
                                     <svg className="h-5 w-5 text-emerald-700 dark:text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <h3 className="font-semibold">Working Hours</h3>
-                                <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                <h3 className="relative z-10 font-semibold">Working Hours</h3>
+                                <div className="relative z-10 mt-2 space-y-1 text-sm text-muted-foreground">
                                     <p>Monday - Friday: 8:00 AM - 5:00 PM</p>
                                     <p>Saturday - Sunday: Closed</p>
                                     <p className="mt-2">Public holidays: Closed</p>

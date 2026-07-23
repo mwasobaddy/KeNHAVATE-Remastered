@@ -224,8 +224,21 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
                             </ul>
                         </div>
                     </div>
-                    <div className="mt-8 border-t border-border/50 pt-8 text-center text-sm text-muted-foreground">
-                        &copy; {new Date().getFullYear()} KeNHA. All rights reserved.
+                    <div className="mt-8 border-t border-border/50 pt-6">
+                        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+                            <p className="text-sm text-muted-foreground">
+                                &copy; {new Date().getFullYear()} KeNHA. All rights reserved.
+                            </p>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <Link href="/terms" className="hover:text-foreground transition-colors">
+                                    Terms &amp; Conditions
+                                </Link>
+                                <span className="text-muted-foreground/30">|</span>
+                                <Link href="/privacy" className="hover:text-foreground transition-colors">
+                                    Privacy Policy
+                                </Link>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </footer>

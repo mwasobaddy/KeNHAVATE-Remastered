@@ -42,8 +42,6 @@ const faqs = [
     },
 ];
 
-const accentColors = ['border-l-yellow', 'border-l-amber-400', 'border-l-emerald-400', 'border-l-blue-400'];
-
 export default function About() {
     return (
         <>
@@ -101,11 +99,10 @@ export default function About() {
                         {features.map((feature, i) => (
                             <div
                                 key={feature.title}
-                                className={`group relative overflow-hidden rounded-2xl border bg-card/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-7 ${accentColors[i]} border-l-4`}
+                                className={`group relative overflow-hidden rounded-2xl border bg-card/50 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-7`}
                             >
-                                <div className="pointer-events-none absolute -inset-20 rounded-full opacity-0 transition-opacity duration-500 group-hover:opacity-100" style={{
-                                    background: 'radial-gradient(circle at 50% 0%, var(--color-yellow) 0%, transparent 60%)',
-                                }} />
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
                                 <div className="relative z-10 mb-3 text-2xl">{feature.icon}</div>
                                 <h3 className="relative z-10 text-lg font-semibold">{feature.title}</h3>
                                 <p className="relative z-10 mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -156,9 +153,11 @@ export default function About() {
                         {faqs.map((faq, i) => (
                             <details
                                 key={faq.q}
-                                className="group rounded-2xl border bg-card/50 transition-all duration-200 hover:border-yellow/30 hover:shadow-sm open:border-yellow/30 open:shadow-sm"
+                                className="group relative overflow-hidden rounded-2xl border bg-card/50 shadow-sm transition-all duration-200 hover:border-yellow/30 hover:shadow-md open:border-yellow/30 open:shadow-md"
                             >
-                                <summary className="flex cursor-pointer items-center justify-between px-6 py-5 text-sm font-semibold sm:text-base">
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.03] via-transparent to-transparent dark:from-white/[0.06]" />
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-white/20" />
+                                <summary className="relative z-10 flex cursor-pointer items-center justify-between px-6 py-5 text-sm font-semibold sm:text-base">
                                     <span className="flex items-center gap-3">
                                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-yellow/10 text-xs font-bold text-yellow-700 dark:text-yellow-300">
                                             {String(i + 1).padStart(2, '0')}
