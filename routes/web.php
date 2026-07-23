@@ -43,6 +43,9 @@ Route::middleware('guest')->group(function () {
     Route::post('auth/otp/resend', [OtpVerificationController::class, 'resend'])->name('auth.otp.resend');
 });
 
+Route::inertia('terms', 'public/terms', ['title' => 'Terms & Conditions'])->name('public.terms');
+Route::inertia('privacy', 'public/privacy', ['title' => 'Privacy Policy'])->name('public.privacy');
+
 Route::middleware('auth')->group(function () {
     Route::get('onboarding', [OnboardingController::class, 'create'])->name('onboarding');
     Route::post('onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
@@ -51,6 +54,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('auth/terms', [TermsController::class, 'create'])->name('terms');
     Route::post('auth/terms', [TermsController::class, 'store'])->name('terms.store');
+    Route::post('auth/terms/decline', [TermsController::class, 'decline'])->name('terms.decline');
 });
 
 Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');

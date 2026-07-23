@@ -38,4 +38,14 @@ class TermsController extends Controller
         return redirect()->intended(route('dashboard'))
             ->with('success', 'Terms accepted. Welcome!');
     }
+
+    public function decline(): RedirectResponse
+    {
+        auth()->logout();
+
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
+        return redirect()->route('login');
+    }
 }
