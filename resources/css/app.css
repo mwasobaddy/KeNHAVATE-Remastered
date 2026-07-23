@@ -7,6 +7,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
 @theme {
   --color-black: #231F20;
   --color-beige: #F8EBD5;

@@ -11,7 +11,7 @@ router.on('navigate', () => {
     document.body.style.removeProperty('pointer-events');
 });
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'KeNHAVATE - KeNHA\'s Innovation Portal';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
