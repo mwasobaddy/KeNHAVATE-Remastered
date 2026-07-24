@@ -1,5 +1,5 @@
 import { Form } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +29,17 @@ type Props = {
 
 export default function RespondToChangeRequestDialog({ changeRequest, ideaSlug, open, onOpenChange }: Props) {
     const [action, setAction] = useState<'approve' | 'reject' | null>(null);
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const rejectFormRef = useRef<HTMLFormElement>(null);
+
+    function validateReject(form: HTMLFormElement): boolean {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+        const feedback = fd.get('feedback') as string;
+        if (!feedback?.trim()) errs.feedback = 'Feedback is required.';
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
 
     if (!changeRequest) {
         return null;
@@ -101,12 +112,19 @@ export default function RespondToChangeRequestDialog({ changeRequest, ideaSlug, 
                     </Form>
                 ) : (
                     <Form
+                        ref={rejectFormRef}
                         method="post"
                         action={ideas.changes.reject([ideaSlug, changeRequest.id])}
                         onSuccess={handleSuccess}
                         className="space-y-3"
+                        onSubmit={(e) => {
+                            setClientErrors({});
+                            if (!validateReject(e.currentTarget)) e.preventDefault();
+                        }}
                     >
-                        {({ processing, errors }) => (
+                        {({ processing, errors }) => {
+                            const allErrors = { ...clientErrors, ...errors };
+                            return (
                             <>
                                 <div className="grid gap-2">
                                     <Label htmlFor={`reject-feedback-${changeRequest.id}`}>
@@ -116,10 +134,9 @@ export default function RespondToChangeRequestDialog({ changeRequest, ideaSlug, 
                                         id={`reject-feedback-${changeRequest.id}`}
                                         name="feedback"
                                         rows={2}
-                                        required
                                         placeholder="Explain why the changes are not accepted..."
                                     />
-                                    <InputError message={errors.feedback} />
+                                    <InputError message={allErrors.feedback} />
                                 </div>
                                 <div className="flex justify-end gap-3">
                                     <Button type="button" variant="outline" onClick={() => setAction(null)}>
@@ -130,7 +147,8 @@ export default function RespondToChangeRequestDialog({ changeRequest, ideaSlug, 
                                     </Button>
                                 </div>
                             </>
-                        )}
+                            );
+                        }}
                     </Form>
                 )}
             </DialogContent>
