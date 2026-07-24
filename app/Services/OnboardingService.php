@@ -18,11 +18,20 @@ class OnboardingService
 
     public function getFormData(User $user): array
     {
+        $nameParts = explode(' ', $user->name, 2);
+
         return [
             'regions' => Region::with('directorates.departments')->get(),
             'contractTypes' => ContractType::all(),
             'login_email' => $user->email,
             'auto_staff' => ! is_null($user->work_email),
+            'prefill' => [
+                'first_name' => $nameParts[0] ?? '',
+                'other_names' => $nameParts[1] ?? '',
+                'mobile_number' => $user->mobile_number ?? '',
+                'gender' => $user->gender ?? '',
+            ],
+            'has_password' => ! is_null($user->password),
         ];
     }
 
@@ -32,9 +41,12 @@ class OnboardingService
             'name' => trim($data['first_name'].' '.($data['other_names'] ?? '')),
             'mobile_number' => $data['mobile_number'],
             'gender' => $data['gender'],
-            'password' => Hash::make($data['password']),
             'onboarding_completed_at' => now(),
         ];
+
+        if (! empty($data['password'])) {
+            $updateData['password'] = Hash::make($data['password']);
+        }
 
         if (! empty($data['email'])) {
             $updateData['email'] = $data['email'];

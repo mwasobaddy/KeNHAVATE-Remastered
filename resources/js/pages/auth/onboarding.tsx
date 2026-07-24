@@ -49,6 +49,13 @@ type Props = {
     contractTypes: ContractType[];
     login_email: string | null;
     auto_staff: boolean;
+    prefill: {
+        first_name: string;
+        other_names: string;
+        mobile_number: string;
+        gender: string;
+    };
+    has_password: boolean;
 };
 
 const steps = [
@@ -66,7 +73,7 @@ const steps = [
     },
 ];
 
-export default function Onboarding({ regions, contractTypes, login_email, auto_staff }: Props) {
+export default function Onboarding({ regions, contractTypes, login_email, auto_staff, prefill, has_password }: Props) {
     const [showDialog, setShowDialog] = useState(true);
     const [isStaff, setIsStaff] = useState<boolean | null>(auto_staff ? true : null);
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
@@ -104,12 +111,17 @@ export default function Onboarding({ regions, contractTypes, login_email, auto_s
         if (!gender) errs.gender = 'Gender is required.';
 
         const password = (fd.get('password') as string);
-        if (!password) errs.password = 'Password is required.';
-        else if (password.length < 8) errs.password = 'Password must be at least 8 characters.';
+        if (!has_password && !password) {
+            errs.password = 'Password is required.';
+        } else if (password && password.length < 8) {
+            errs.password = 'Password must be at least 8 characters.';
+        }
 
         const confirmation = (fd.get('password_confirmation') as string);
-        if (!confirmation) errs.password_confirmation = 'Please confirm your password.';
-        else if (password && confirmation !== password) errs.password_confirmation = 'Passwords do not match.';
+        if (password) {
+            if (!confirmation) errs.password_confirmation = 'Please confirm your password.';
+            else if (confirmation !== password) errs.password_confirmation = 'Passwords do not match.';
+        }
 
         const isStaffValue = fd.get('is_staff') === '1';
         if (isStaffValue) {
@@ -311,19 +323,19 @@ export default function Onboarding({ regions, contractTypes, login_email, auto_s
 
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="first_name">First Name</Label>
-                                                    <Input id="first_name" name="first_name" placeholder="Enter your first name" />
+                                                    <Input id="first_name" name="first_name" placeholder="Enter your first name" defaultValue={prefill.first_name} />
                                                     <InputError message={allErrors.first_name} />
                                                 </div>
 
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="other_names">Other Names</Label>
-                                                    <Input id="other_names" name="other_names" placeholder="Enter your other names" />
+                                                    <Input id="other_names" name="other_names" placeholder="Enter your other names" defaultValue={prefill.other_names} />
                                                     <InputError message={allErrors.other_names} />
                                                 </div>
 
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="mobile_number">Mobile Number</Label>
-                                                    <PhoneInput name="mobile_number" placeholder="712345678" />
+                                                    <PhoneInput name="mobile_number" placeholder="712345678" defaultValue={prefill.mobile_number} />
                                                     <InputError message={allErrors.mobile_number} />
                                                 </div>
 
@@ -347,23 +359,25 @@ export default function Onboarding({ regions, contractTypes, login_email, auto_s
 
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="gender">Gender</Label>
-                                                    <select
-                                                        id="gender"
-                                                        name="gender"
-                                                        className="flex h-10 w-full min-w-0 rounded-xl border border-input bg-white px-4 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-yellow/30 disabled:opacity-50 md:text-sm dark:border-zinc-600 dark:bg-zinc-700/50"
-                                                        defaultValue=""
-                                                    >
-                                                        <option value="" disabled>Select gender</option>
-                                                        <option value="Male">Male</option>
-                                                        <option value="Female">Female</option>
-                                                    </select>
+                                                    <Select name="gender" defaultValue={prefill.gender || undefined}>
+                                                        <SelectTrigger id="gender">
+                                                            <SelectValue placeholder="Select gender" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Male">Male</SelectItem>
+                                                            <SelectItem value="Female">Female</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                     <InputError message={allErrors.gender} />
                                                 </div>
 
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="password">Password</Label>
-                                                    <PasswordInput id="password" name="password" placeholder="Create a password" />
+                                                    <PasswordInput id="password" name="password" placeholder={has_password ? 'Leave blank to keep current password' : 'Create a password'} />
                                                     <InputError message={allErrors.password} />
+                                                    {has_password && (
+                                                        <p className="text-xs text-muted-foreground">Leave blank to keep your existing password.</p>
+                                                    )}
                                                 </div>
 
                                                 <div className="grid gap-2">

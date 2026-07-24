@@ -59,7 +59,6 @@ class UserService
             'password' => Hash::make($password),
             'mobile_number' => $data['mobile_number'] ?? null,
             'gender' => $data['gender'] ?? null,
-            'onboarding_completed_at' => now(),
             'terms_accepted' => true,
         ]);
 

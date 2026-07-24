@@ -25,7 +25,9 @@ class OnboardingRequest extends FormRequest
             ],
             'mobile_number' => ['required', 'string', 'regex:/^\+254\d{9}$/'],
             'gender' => ['required', Rule::in(['Male', 'Female'])],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => $this->user()->password
+                ? ['nullable', 'string', 'min:8', 'confirmed']
+                : ['required', 'string', 'min:8', 'confirmed'],
             'is_staff' => ['boolean'],
             'region_id' => ['required_if:is_staff,1', 'exists:regions,id'],
             'directorate_id' => ['required_if:is_staff,1', 'exists:directorates,id'],
