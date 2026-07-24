@@ -201,6 +201,16 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
     const [tipCollaborate, setTipCollaborate] = useState(false);
     const [tipPropose, setTipPropose] = useState(false);
     const [tipRequest, setTipRequest] = useState(false);
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+
+    function validate(form: HTMLFormElement): boolean {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+        const message = (fd.get('message') as string)?.trim();
+        if (!message) errs.message = 'Please provide a reason for your collaboration request.';
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
 
     return (
         <>
@@ -607,8 +617,11 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                         resetOnSuccess={true}
                         onSuccess={() => setDialogOpen(false)}
                         className="space-y-4"
+                        onSubmit={(e) => { setClientErrors({}); if (!validate(e.currentTarget)) e.preventDefault(); }}
                     >
-                        {({ processing, errors }) => (
+                        {({ processing, errors }) => {
+                            const allErrors = { ...clientErrors, ...errors };
+                            return (
                             <>
                                 <div className="grid gap-2">
                                     <Label htmlFor="message">
@@ -618,10 +631,9 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                         id="message"
                                         name="message"
                                         rows={4}
-                                        required
                                         placeholder="Tell the author what skills or ideas you can contribute..."
                                     />
-                                    <InputError message={errors.message} />
+                                    <InputError message={allErrors.message} />
                                 </div>
                                 <div className="flex justify-end gap-3">
                                     <Button type="button" variant="default" onClick={() => setDialogOpen(false)}>
@@ -632,7 +644,8 @@ export default function ShowIdea({ idea, canEdit, canRequestCollaboration, hasPe
                                     </Button>
                                 </div>
                             </>
-                        )}
+                        );
+                        }}
                     </Form>
                 </DialogContent>
             </Dialog>

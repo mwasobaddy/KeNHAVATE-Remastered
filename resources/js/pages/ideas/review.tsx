@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideas from '@/routes/ideas';
@@ -561,8 +562,13 @@ function AssignOfficerDialog({ ideaSlug, onClose, officers, currentData }: { ide
     const { data, setData, post, processing, errors, reset } = useForm({
         officer_id: undefined as number | undefined,
     });
+    const [assignErrors, setAssignErrors] = useState<Record<string, string>>({});
 
     function handleAssign() {
+        const errs: Record<string, string> = {};
+        if (!data.officer_id) errs.officer_id = 'Please select an officer.';
+        setAssignErrors(errs);
+        if (Object.keys(errs).length > 0) return;
         post(ideas.assign(ideaSlug), {
             preserveState: true,
             onSuccess: () => {
@@ -584,26 +590,25 @@ function AssignOfficerDialog({ ideaSlug, onClose, officers, currentData }: { ide
 
             <div className="grid gap-2">
                 <Label htmlFor="officer_id">Officer</Label>
-                <select
-                    id="officer_id"
-                    name="officer_id"
-                    value={data.officer_id ?? ''}
-                    onChange={(e) => setData('officer_id', e.target.value === '' ? undefined : Number(e.target.value))}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    required
+                <Select
+                    value={String(data.officer_id ?? '')}
+                    onValueChange={(value) => setData('officer_id', value === '' ? undefined : Number(value))}
                 >
-                    <option value="">Select an officer...</option>
-                    {officers.filter((o) => {
-                        const idea = currentData?.data.find((i) => i.slug === ideaSlug);
-
-                        return o.id !== (idea?.author.id ?? -1);
-                    }).map((o) => (
-                        <option key={o.id} value={o.id}>
-                            {o.name} ({o.email})
-                        </option>
-                    ))}
-                </select>
-                <InputError message={errors.officer_id} />
+                    <SelectTrigger id="officer_id">
+                        <SelectValue placeholder="Select an officer..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {officers.filter((o) => {
+                            const idea = currentData?.data.find((i) => i.slug === ideaSlug);
+                            return o.id !== (idea?.author.id ?? -1);
+                        }).map((o) => (
+                            <SelectItem key={o.id} value={String(o.id)}>
+                                {o.name} ({o.email})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <InputError message={{ ...assignErrors, ...errors }.officer_id} />
             </div>
 
             <div className="flex justify-end gap-2">

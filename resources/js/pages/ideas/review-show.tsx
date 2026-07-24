@@ -1,6 +1,6 @@
 import { Form, Head, router } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Gavel, LayoutDashboard, RotateCcw, Tags } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
     Tooltip,
@@ -153,6 +154,27 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
     const [tipRevision, setTipRevision] = useState(false);
     const [tipDecision, setTipDecision] = useState(false);
     const [tipAdvance, setTipAdvance] = useState(false);
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+
+    function validate(form: HTMLFormElement): boolean {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+
+        if (form.querySelector<HTMLSelectElement>('[name="classification_id"]') && !fd.get('classification_id')) {
+            errs.classification_id = 'Please select a classification type.';
+        }
+
+        if (form.querySelector<HTMLSelectElement>('[name="decision"]') && !fd.get('decision')) {
+            errs.decision = 'Please select a decision.';
+        }
+
+        if (form.querySelector<HTMLSelectElement>('[name="officer_id"]') && !fd.get('officer_id')) {
+            errs.officer_id = 'Please select an officer.';
+        }
+
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
 
     return (
         <>
@@ -201,44 +223,44 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                                             classification_id: data.classification_id === '' ? undefined : Number(data.classification_id),
                                             category_id: data.category_id === '' ? undefined : Number(data.category_id),
                                         })}
+                                        onSubmit={(e) => { setClientErrors({}); if (!validate(e.currentTarget)) e.preventDefault(); }}
                                     >
-                                        {({ processing, errors }) => (
+                                        {({ processing, errors }) => {
+                                            const allErrors = { ...clientErrors, ...errors };
+                                            return (
                                             <>
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="classification_id">Classification Type</Label>
-                                                    <select
-                                                        id="classification_id"
-                                                        name="classification_id"
-                                                        defaultValue=""
-                                                        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                        required
-                                                    >
-                                                        <option value="">Select type...</option>
-                                                        {classifications.map((c) => (
-                                                            <option key={c.id} value={c.id}>
-                                                                {c.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <InputError message={errors.classification_id} />
+                                                    <Select name="classification_id" defaultValue="">
+                                                        <SelectTrigger id="classification_id">
+                                                            <SelectValue placeholder="Select type..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {classifications.map((c) => (
+                                                                <SelectItem key={c.id} value={String(c.id)}>
+                                                                    {c.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <InputError message={allErrors.classification_id} />
                                                 </div>
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="category_id">
                                                         Thematic Area <span className="text-muted-foreground">(optional)</span>
                                                     </Label>
-                                                    <select
-                                                        id="category_id"
-                                                        name="category_id"
-                                                        defaultValue=""
-                                                        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                    >
-                                                        <option value="">Keep current area</option>
-                                                        {categories.map((c) => (
-                                                            <option key={c.id} value={c.id}>
-                                                                {c.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                                    <Select name="category_id" defaultValue="">
+                                                        <SelectTrigger id="category_id">
+                                                            <SelectValue placeholder="Keep current area" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {categories.map((c) => (
+                                                                <SelectItem key={c.id} value={String(c.id)}>
+                                                                    {c.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                     <InputError message={errors.category_id} />
                                                 </div>
                                                 <div className="grid gap-2">
@@ -261,7 +283,8 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                                                     </Button>
                                                 </div>
                                             </>
-                                        )}
+                                        );
+                                    }}
                                     </Form>
                                 </DialogContent>
                             </Dialog>
@@ -286,8 +309,12 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                                     <DialogHeader>
                                         <DialogTitle>Request Revision</DialogTitle>
                                     </DialogHeader>
-                                    <Form method="post" action={ideas.requestRevision(idea.slug)} className="space-y-4">
-                                        {({ processing, errors }) => (
+                                    <Form method="post" action={ideas.requestRevision(idea.slug)} className="space-y-4"
+                                        onSubmit={(e) => { setClientErrors({}); if (!validate(e.currentTarget)) e.preventDefault(); }}
+                                    >
+                                        {({ processing, errors }) => {
+                                            const allErrors = { ...clientErrors, ...errors };
+                                            return (
                                             <>
                                                 <p className="text-sm text-muted-foreground">
                                                     The author will be asked to revise and resubmit this idea.
@@ -301,7 +328,7 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                                                         rows={3}
                                                         placeholder="What changes are needed?"
                                                     />
-                                                    <InputError message={errors.notes} />
+                                                    <InputError message={allErrors.notes} />
                                                 </div>
                                                 <div className="flex justify-end gap-3">
                                                     <DialogTrigger asChild>
@@ -312,7 +339,8 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                                                     </Button>
                                                 </div>
                                             </>
-                                        )}
+                                        );
+                                    }}
                                     </Form>
                                 </DialogContent>
                             </Dialog>
@@ -337,26 +365,28 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                                     <DialogHeader>
                                         <DialogTitle>Record DG Decision</DialogTitle>
                                     </DialogHeader>
-                                    <Form method="post" action={ideas.decide(idea.slug)} className="space-y-4">
-                                        {({ processing, errors }) => (
+                                    <Form method="post" action={ideas.decide(idea.slug)} className="space-y-4"
+                                        onSubmit={(e) => { setClientErrors({}); if (!validate(e.currentTarget)) e.preventDefault(); }}
+                                    >
+                                        {({ processing, errors }) => {
+                                            const allErrors = { ...clientErrors, ...errors };
+                                            return (
                                             <>
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="decision">Decision</Label>
-                                                    <select
-                                                        id="decision"
-                                                        name="decision"
-                                                        defaultValue=""
-                                                        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                                        required
-                                                    >
-                                                        <option value="">Select decision...</option>
-                                                        {validDecisions.map((d) => (
-                                                            <option key={d} value={d}>
-                                                                {d.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <InputError message={errors.decision} />
+                                                    <Select name="decision" defaultValue="">
+                                                        <SelectTrigger id="decision">
+                                                            <SelectValue placeholder="Select decision..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {validDecisions.map((d) => (
+                                                                <SelectItem key={d} value={d}>
+                                                                    {d.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <InputError message={allErrors.decision} />
                                                 </div>
                                                 <div className="grid gap-2">
                                                     <Label htmlFor="notes">Notes <span className="text-muted-foreground">(optional)</span></Label>
@@ -367,7 +397,7 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                                                         rows={3}
                                                         placeholder="Any additional notes..."
                                                     />
-                                                    <InputError message={errors.notes} />
+                                                    <InputError message={allErrors.notes} />
                                                 </div>
                                                 <div className="flex justify-end gap-3">
                                                     <DialogTrigger asChild>
@@ -378,14 +408,17 @@ export default function ReviewShow({ idea, canAssign, canClassify, classificatio
                                                     </Button>
                                                 </div>
                                             </>
-                                        )}
+                                        );
+                                    }}
                                     </Form>
                                 </DialogContent>
                             </Dialog>
                         )}
 
                         {canProgress && (
-                            <Form method="post" action={ideas.progress(idea.slug)}>
+                            <Form method="post" action={ideas.progress(idea.slug)}
+                                onSubmit={(e) => { setClientErrors({}); if (!validate(e.currentTarget)) e.preventDefault(); }}
+                            >
                                 {({ processing }) => (
                                     <div className="flex flex-col items-center gap-1">
                                         <Tooltip open={tipAdvance} onOpenChange={setTipAdvance}>
@@ -646,6 +679,15 @@ function AssignOfficerDialog({
     setTipAssign: (value: boolean) => void;
 }) {
     const availableOfficers = officers.filter((o) => o.id !== authorId);
+    const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+
+    function validateAssign(form: HTMLFormElement): boolean {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+        if (!fd.get('officer_id')) errs.officer_id = 'Please select an officer.';
+        setLocalErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
 
     return (
         <Dialog>
@@ -674,29 +716,30 @@ function AssignOfficerDialog({
                         ...data,
                         officer_id: data.officer_id === '' ? undefined : Number(data.officer_id),
                     })}
+                    onSubmit={(e) => { setLocalErrors({}); if (!validateAssign(e.currentTarget)) e.preventDefault(); }}
                 >
-                    {({ processing, errors }) => (
+                    {({ processing, errors }) => {
+                        const allErrors = { ...localErrors, ...errors };
+                        return (
                         <>
                             <p className="text-sm text-muted-foreground">
                                 Assign an officer to review <span className="font-medium text-foreground">{ideaTitle}</span>.
                             </p>
                             <div className="grid gap-2">
                                 <Label htmlFor="officer_id">Officer</Label>
-                                <select
-                                    id="officer_id"
-                                    name="officer_id"
-                                    defaultValue=""
-                                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    required
-                                >
-                                    <option value="">Select an officer...</option>
-                                    {availableOfficers.map((o) => (
-                                        <option key={o.id} value={o.id}>
-                                            {o.name} ({o.email})
-                                        </option>
-                                    ))}
-                                </select>
-                                <InputError message={errors.officer_id} />
+                                <Select name="officer_id" defaultValue="">
+                                    <SelectTrigger id="officer_id">
+                                        <SelectValue placeholder="Select an officer..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableOfficers.map((o) => (
+                                            <SelectItem key={o.id} value={String(o.id)}>
+                                                {o.name} ({o.email})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={allErrors.officer_id} />
                             </div>
                             <div className="flex justify-end gap-3">
                                 <DialogTrigger asChild>
@@ -707,7 +750,8 @@ function AssignOfficerDialog({
                                 </Button>
                             </div>
                         </>
-                    )}
+                    );
+                    }}
                 </Form>
             </DialogContent>
         </Dialog>

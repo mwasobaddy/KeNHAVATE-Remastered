@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import ideas from '@/routes/ideas';
 
@@ -117,20 +118,18 @@ export default function EditIdea({ idea, categories }: Props) {
 
                                     <div className="grid gap-2">
                                         <Label htmlFor="category_id">Category</Label>
-                                        <select
-                                            id="category_id"
-                                            name="category_id"
-                                            required
-                                            defaultValue={idea.category_id}
-                                            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                        >
-                                            <option value="">Select a category</option>
-                                            {categories.map((cat) => (
-                                                <option key={cat.id} value={cat.id}>
-                                                    {cat.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <Select name="category_id" defaultValue={String(idea.category_id)}>
+                                            <SelectTrigger id="category_id">
+                                                <SelectValue placeholder="Select a category" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {categories.map((cat) => (
+                                                    <SelectItem key={cat.id} value={String(cat.id)}>
+                                                        {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <InputError message={errors.category_id} />
                                     </div>
 
