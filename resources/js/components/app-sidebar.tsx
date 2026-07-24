@@ -66,21 +66,6 @@ export function AppSidebar() {
         },
     ];
 
-    const allChangesItems: NavItem[] = [
-        {
-            title: 'Request Outbox',
-            href: ideas.changes.mine(),
-            icon: Send,
-            group: 'Change',
-        },
-        {
-            title: 'Request Inbox',
-            href: ideas.changes.pending(),
-            icon: Inbox,
-            group: 'Change',
-        },
-    ];
-
     const collaborationItems: NavItem[] = [
         {
             title: 'Request Inbox',
@@ -93,6 +78,21 @@ export function AppSidebar() {
             href: ideas.collaborations.outbox(),
             icon: Send,
             group: 'Collaboration',
+        },
+    ];
+
+    const changesItems: NavItem[] = [
+        {
+            title: 'Request Outbox',
+            href: ideas.changes.mine(),
+            icon: Send,
+            group: 'Changes',
+        },
+        {
+            title: 'Request Inbox',
+            href: ideas.changes.pending(),
+            icon: Inbox,
+            group: 'Changes',
         },
     ];
 
@@ -116,43 +116,57 @@ export function AppSidebar() {
         });
     }
 
+    const engagementItems: NavItem[] = [];
+
     if (hasPointsAccess) {
-        reviewItems.push({
+        engagementItems.push({
             title: 'Points',
             href: points.index(),
             icon: Zap as LucideIcon,
-            group: 'Review',
+            group: 'Engagement',
         });
     }
 
-    if (hasAuditAccess) {
-        reviewItems.push({
-            title: 'Audit Log',
-            href: '/audit',
-            icon: ScrollText as LucideIcon,
-            group: 'Review',
-        });
-    }
+    const iamItems: NavItem[] = [];
 
     if (hasRoleManage) {
-        reviewItems.push({
+        iamItems.push({
             title: 'Role Management',
             href: roles.index(),
             icon: Shield as LucideIcon,
-            group: 'Review',
+            group: 'IAM',
         });
     }
 
     if (hasUserManage) {
-        reviewItems.push({
+        iamItems.push({
             title: 'User Management',
             href: users.index(),
             icon: User as LucideIcon,
-            group: 'Review',
+            group: 'IAM',
         });
     }
 
-    const mainNavItems = [...generalItems, ...allChangesItems, ...collaborationItems, ...reviewItems];
+    if (hasAuditAccess) {
+        iamItems.push({
+            title: 'Audit Log',
+            href: '/audit',
+            icon: ScrollText as LucideIcon,
+            group: 'IAM',
+        });
+    }
+
+    const othersItems: NavItem[] = [];
+
+    const mainNavItems = [
+        ...generalItems,
+        ...collaborationItems,
+        ...changesItems,
+        ...reviewItems,
+        ...engagementItems,
+        ...iamItems,
+        ...othersItems,
+    ];
 
     return (
         <Sidebar collapsible="icon" variant="inset">
