@@ -3,7 +3,6 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -16,37 +15,30 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
      */
     public function update(User $user, array $input): void
     {
-        Validator::make($input, [
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
+            'mobile_number' => ['nullable', 'string', 'max:20'],
+            'gender' => ['nullable', 'string', 'in:Male,Female'],
+        ];
 
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                Rule::unique('users')->ignore($user->id),
-            ],
-        ])->validateWithBag('updateProfileInformation');
-
-        if ($input['email'] !== $user->email &&
-            $user instanceof MustVerifyEmail) {
-            $this->updateVerifiedUser($user, $input);
-        } else {
-            $user->forceFill([
-                'name' => $input['name'],
-                'email' => $input['email'],
-            ])->save();
+        if ($user->relationLoaded('staff') && $user->staff) {
+            $rules['work_email'] = ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)];
         }
-    }
 
-    protected function updateVerifiedUser(User $user, array $input): void
-    {
-        $user->forceFill([
+        Validator::make($input, $rules)->validateWithBag('updateProfileInformation');
+
+        $data = [
             'name' => $input['name'],
-            'email' => $input['email'],
-            'email_verified_at' => null,
-        ])->save();
+            'mobile_number' => $input['mobile_number'] ?? null,
+            'gender' => $input['gender'] ?? null,
+        ];
 
-        $user->sendEmailVerificationNotification();
+        if (($user->relationLoaded('staff') && $user->staff) && isset($input['work_email'])) {
+            $data['work_email'] = $input['work_email'];
+        }
+
+        $user->forceFill($data)->save();
+
+        session()->flash('success', 'Profile updated successfully.');
     }
 }
