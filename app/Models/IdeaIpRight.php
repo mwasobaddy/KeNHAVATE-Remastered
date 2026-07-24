@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class IdeaIpRight extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'idea_id',
         'has_ip_protection',
