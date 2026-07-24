@@ -5,7 +5,7 @@ import { useInitials } from '@/hooks/use-initials';
 type User = {
     name: string;
     email: string;
-    avatar?: string;
+    avatar_url?: string | null;
 };
 
 export function UserInfo({ user }: { user?: User }) {
@@ -16,7 +16,7 @@ export function UserInfo({ user }: { user?: User }) {
     return (
         <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8 overflow-hidden rounded-full">
-                <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+                <AvatarImage src={currentUser.avatar_url ?? undefined} alt={currentUser.name} />
                 <AvatarFallback className="rounded-lg bg-neutral-200 font-medium text-neutral-700 text-xs dark:bg-neutral-700 dark:text-neutral-200">
                     {getInitials(currentUser.name)}
                 </AvatarFallback>

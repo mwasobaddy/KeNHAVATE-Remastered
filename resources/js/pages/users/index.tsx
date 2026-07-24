@@ -1,10 +1,11 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, SquarePen, Plus, Search, Trash2, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, SquarePen, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import FilterModal from '@/components/filter-modal';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import SearchInput from '@/components/search-input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,8 +22,19 @@ type User = {
     email: string;
     role: string;
     is_staff: boolean;
+    avatar_url: string | null;
     created_at: string;
 };
+
+function initials(name: string): string {
+    return name
+        .split(' ')
+        .filter(Boolean)
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+}
 
 type Props = {
     users: {
@@ -229,8 +241,15 @@ export default function UserIndex({ users, filters: initialFilters, search: init
                                         users.data.map((u) => (
                                             <tr key={u.id} className="border-b last:border-0">
                                                 <td className="py-3 pr-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <UserIcon className="h-4 w-4 text-muted-foreground" />
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar className="size-8">
+                                                            {u.avatar_url ? (
+                                                                <AvatarImage src={u.avatar_url} alt={u.name} />
+                                                            ) : null}
+                                                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                                                                {initials(u.name)}
+                                                            </AvatarFallback>
+                                                        </Avatar>
                                                         <div>
                                                             <div className="font-medium">{u.name}</div>
                                                             <div className="text-xs text-muted-foreground">{u.email}</div>
