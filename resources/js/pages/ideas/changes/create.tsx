@@ -1,5 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,8 @@ const EDITABLE_FIELDS: { key: keyof IdeaData; label: string }[] = [
 export default function ProposeChanges({ idea }: Props) {
     const [changedFields, setChangedFields] = useState<Set<keyof IdeaData>>(new Set());
     const [values, setValues] = useState<Partial<Record<keyof IdeaData, string>>>({});
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
 
     const toggleField = (key: keyof IdeaData) => {
         setChangedFields((prev) => {
@@ -49,6 +51,15 @@ export default function ProposeChanges({ idea }: Props) {
         });
     };
 
+    function validate(form: HTMLFormElement): boolean {
+        const errs: Record<string, string> = {};
+        if (changedFields.size === 0) {
+            errs.fields = 'Select at least one field to change.';
+        }
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
+
     return (
         <>
             <Head title={`Propose Changes - ${idea.title}`} />
@@ -62,11 +73,18 @@ export default function ProposeChanges({ idea }: Props) {
                 <Card>
                     <CardContent className="pt-6">
                         <Form
+                            ref={formRef}
                             method="post"
                             action={ideas.changes.store(idea.slug)}
                             className="space-y-6"
+                            onSubmit={(e) => {
+                                setClientErrors({});
+                                if (!validate(e.currentTarget)) e.preventDefault();
+                            }}
                         >
-                            {({ processing, errors }) => (
+                            {({ processing, errors }) => {
+                                const allErrors = { ...clientErrors, ...errors };
+                                return (
                                 <>
                                     <p className="text-sm text-muted-foreground">
                                         Select the fields you want to change, then enter the new values.
@@ -115,7 +133,7 @@ export default function ProposeChanges({ idea }: Props) {
                                                             name={`changes[${EDITABLE_FIELDS.findIndex((f) => f.key === key)}][field]`}
                                                             value={key}
                                                         />
-                                                        <InputError message={(errors as Record<string, string>)[`changes.${EDITABLE_FIELDS.findIndex((f) => f.key === key)}.new_value`]} />
+                                                        <InputError message={(allErrors as Record<string, string>)[`changes.${EDITABLE_FIELDS.findIndex((f) => f.key === key)}.new_value`]} />
                                                     </div>
                                                 </div>
                                             )}
@@ -130,8 +148,12 @@ export default function ProposeChanges({ idea }: Props) {
                                             rows={3}
                                             placeholder="Explain why these changes are needed..."
                                         />
-                                        <InputError message={errors.notes} />
+                                        <InputError message={allErrors.notes} />
                                     </div>
+
+                                    {allErrors.fields && (
+                                        <p className="text-sm text-red-500">{allErrors.fields}</p>
+                                    )}
 
                                     <div className="flex gap-4">
                                         <Button type="submit" disabled={processing || changedFields.size === 0}>
@@ -142,7 +164,8 @@ export default function ProposeChanges({ idea }: Props) {
                                         </Button>
                                     </div>
                                 </>
-                            )}
+                                );
+                            }}
                         </Form>
                     </CardContent>
                 </Card>

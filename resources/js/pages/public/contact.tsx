@@ -1,4 +1,5 @@
 import { Head, Form } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,25 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function Contact() {
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
+
+    function validate(form: HTMLFormElement): boolean {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+        const name = fd.get('name') as string;
+        const email = fd.get('email') as string;
+        const subject = fd.get('subject') as string;
+        const message = fd.get('message') as string;
+        if (!name?.trim()) errs.name = 'Name is required.';
+        if (!email?.trim()) errs.email = 'Email is required.';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Invalid email format.';
+        if (!subject?.trim()) errs.subject = 'Subject is required.';
+        if (!message?.trim()) errs.message = 'Message is required.';
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
+
     return (
         <>
             <Head title="Contact" />
@@ -51,32 +71,39 @@ export default function Contact() {
                                 </p>
 
                                 <Form
+                                    ref={formRef}
                                     method="post"
                                     action="/contact"
                                     className="mt-6 space-y-5"
                                     resetOnSuccess={true}
+                                    onSubmit={(e) => {
+                                        setClientErrors({});
+                                        if (!validate(e.currentTarget)) e.preventDefault();
+                                    }}
                                 >
-                                    {({ processing, errors }) => (
+                                    {({ processing, errors }) => {
+                                        const allErrors = { ...clientErrors, ...errors };
+                                        return (
                                         <>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="name">Name</Label>
-                                                <Input id="name" name="name" required placeholder="Your name" />
-                                                <InputError message={errors.name} />
+                                                <Input id="name" name="name" placeholder="Your name" />
+                                                <InputError message={allErrors.name} />
                                             </div>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="email">Email</Label>
-                                                <Input id="email" name="email" type="email" required placeholder="you@example.com" />
-                                                <InputError message={errors.email} />
+                                                <Input id="email" name="email" type="email" placeholder="you@example.com" />
+                                                <InputError message={allErrors.email} />
                                             </div>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="subject">Subject</Label>
-                                                <Input id="subject" name="subject" required placeholder="What is this about?" />
-                                                <InputError message={errors.subject} />
+                                                <Input id="subject" name="subject" placeholder="What is this about?" />
+                                                <InputError message={allErrors.subject} />
                                             </div>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="message">Message</Label>
-                                                <Textarea id="message" name="message" rows={5} required placeholder="Your message..." />
-                                                <InputError message={errors.message} />
+                                                <Textarea id="message" name="message" rows={5} placeholder="Your message..." />
+                                                <InputError message={allErrors.message} />
                                             </div>
                                             <Button type="submit" className="w-full rounded-full" disabled={processing}>
                                                 <span className="inline-flex items-center gap-2">
@@ -93,7 +120,8 @@ export default function Contact() {
                                                 </span>
                                             </Button>
                                         </>
-                                    )}
+                                        );
+                                    }}
                                 </Form>
                             </div>
                         </div>

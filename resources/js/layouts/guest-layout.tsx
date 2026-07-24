@@ -38,9 +38,9 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
 
             <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                    <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight">
-                        <span className="text-black dark:text-yellow">KeNHA</span>
-                        <span className="text-foreground">VATE</span>
+                    <Link href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight">
+                        <img src="/img/logo-icon.webp" alt="KeNHA logo" className="h-9 w-9" />
+                        <span className="text-foreground">KeNHAVATE</span>
                     </Link>
 
                     <nav className="hidden items-center gap-1 md:flex">
@@ -112,9 +112,9 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
                 >
                     {/* Drawer header */}
                     <div className="flex h-16 items-center justify-between border-b border-border/50 px-5">
-                        <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight">
-                            <span className="text-black dark:text-yellow">KeNHA</span>
-                            <span className="text-foreground">VATE</span>
+                        <Link href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight">
+                            <img src="/img/logo-icon.webp" alt="KeNHA logo" className="h-9 w-9" />
+                            <span className="text-foreground">KeNHAVATE</span>
                         </Link>
                         <button
                             onClick={() => setMobileOpen(false)}
@@ -185,7 +185,10 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
                 <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
-                            <h3 className="mb-3 text-sm font-semibold tracking-tight">KeNHAVATE</h3>
+                            <div className="mb-3 flex items-center gap-2">
+                                <img src="/img/logo-icon.webp" alt="KeNHA logo" className="h-7 w-7" />
+                                <h3 className="text-sm font-semibold tracking-tight">KeNHAVATE</h3>
+                            </div>
                             <p className="text-sm text-muted-foreground">
                                 Kenya National Highways Authority Innovation Portal. Submit, collaborate, and implement ideas that improve our road infrastructure.
                             </p>

@@ -174,8 +174,13 @@ export default function ChangeRequestIndex({ idea, changeRequests, canProposeCha
             return;
         }
 
-        setDeleting(true);
+        if (!deletePassword) {
+            setDeleteError('Password is required.');
+            return;
+        }
         setDeleteError('');
+
+        setDeleting(true);
 
         router.delete(ideas.changes.destroy([idea.slug, deletingCr.id]), {
             data: { password: deletePassword },
