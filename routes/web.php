@@ -23,6 +23,7 @@ use App\Http\Controllers\Points\TransactionController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\Roles\RoleController;
 use App\Http\Controllers\Users\UserController;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -62,9 +63,27 @@ Route::post('invitations/accept', [InvitationController::class, 'acceptFromLogin
 
 Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::inertia('settings/profile', 'settings/profile')->name('profile.edit');
-    Route::inertia('settings/security', 'settings/security')->name('security.edit');
-    Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+    Route::get('settings/profile', function (Request $request) {
+        return inertia('settings/index', [
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'status' => $request->session()->get('status'),
+            'activeTab' => 'profile',
+        ]);
+    })->name('profile.edit');
+    Route::get('settings/security', function (Request $request) {
+        return inertia('settings/index', [
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'status' => $request->session()->get('status'),
+            'activeTab' => 'security',
+        ]);
+    })->name('security.edit');
+    Route::get('settings/appearance', function (Request $request) {
+        return inertia('settings/index', [
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'status' => $request->session()->get('status'),
+            'activeTab' => 'appearance',
+        ]);
+    })->name('appearance.edit');
 
     Route::delete('settings/profile', function (Request $request) {
         $request->validate([

@@ -14,12 +14,14 @@ test('profile page is displayed', function () {
 
 test('profile information can be updated', function () {
     $user = User::factory()->onboarded()->create();
+    $originalEmail = $user->email;
 
     $response = $this
         ->actingAs($user)
         ->put(route('user-profile-information.update'), [
             'name' => 'Test User',
-            'email' => 'test@example.com',
+            'mobile_number' => '0712345678',
+            'gender' => 'Male',
         ]);
 
     $response
@@ -29,25 +31,29 @@ test('profile information can be updated', function () {
     $user->refresh();
 
     expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
-    expect($user->email_verified_at)->toBeNull();
+    expect($user->email)->toBe($originalEmail);
+    expect($user->mobile_number)->toBe('0712345678');
+    expect($user->gender)->toBe('Male');
+    expect($user->email_verified_at)->not->toBeNull();
 });
 
-test('email verification status is unchanged when the email address is unchanged', function () {
+test('profile information can be updated with email unchanged', function () {
     $user = User::factory()->onboarded()->create();
+    $originalEmail = $user->email;
 
     $response = $this
         ->actingAs($user)
         ->put(route('user-profile-information.update'), [
-            'name' => 'Test User',
-            'email' => $user->email,
+            'name' => 'Updated Name',
         ]);
 
     $response
         ->assertSessionHasNoErrors()
         ->assertRedirect('/');
 
-    expect($user->refresh()->email_verified_at)->not->toBeNull();
+    expect($user->fresh()->name)->toBe('Updated Name');
+    expect($user->fresh()->email)->toBe($originalEmail);
+    expect($user->fresh()->email_verified_at)->not->toBeNull();
 });
 
 test('user can delete their account', function () {

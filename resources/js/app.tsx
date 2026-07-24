@@ -5,7 +5,7 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import GuestLayout from '@/layouts/guest-layout';
 import RootLayout from '@/layouts/root-layout';
-import SettingsLayout from '@/layouts/settings/layout';
+
 
 router.on('navigate', () => {
     document.body.style.removeProperty('pointer-events');
@@ -24,7 +24,7 @@ createInertiaApp({
             case name.startsWith('auth/'):
                 return [RootLayout, AuthLayout];
             case name.startsWith('settings/'):
-                return [RootLayout, AppLayout, SettingsLayout];
+                return [RootLayout, AppLayout];
             default:
                 return [RootLayout, AppLayout];
         }
