@@ -350,7 +350,7 @@ class IdeaService
 
     protected function storeIpDocument(IdeaIpRight $ipRight, UploadedFile $file): IdeaIpDocument
     {
-        $path = $file->store('ip-documents/'.$ipRight->idea_id, 'local');
+        $path = $file->store('ideas/'.$ipRight->idea_id.'/ip-documents', 'local');
 
         return IdeaIpDocument::create([
             'idea_ip_right_id' => $ipRight->id,
