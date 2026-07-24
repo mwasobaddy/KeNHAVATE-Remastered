@@ -9,7 +9,20 @@ import { Label } from '@/components/ui/label';
 
 export default function DeleteUser() {
     const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
     const passwordInput = useRef<HTMLInputElement>(null);
+
+    const validate = (form: HTMLFormElement): boolean => {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+
+        const password = (fd.get('password') as string);
+        if (!password) errs.password = 'Password is required.';
+
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
 
     return (
         <div className="space-y-6">
@@ -56,13 +69,20 @@ passwordInput.current?.focus();
                         <Form
                             method="delete"
                             action="/settings/profile"
+                            ref={formRef}
                             onSuccess={() =>
                                 setConfirmingUserDeletion(false)
                             }
                             onError={() => passwordInput.current?.focus()}
                             className="space-y-4"
+                            onSubmit={(e) => {
+                                setClientErrors({});
+                                if (!validate(e.currentTarget)) e.preventDefault();
+                            }}
                         >
-                            {({ errors, processing }) => (
+                            {({ errors, processing }) => {
+                                const allErrors = { ...clientErrors, ...errors };
+                                return (
                                 <>
                                     <div className="grid gap-2">
                                         <Label
@@ -80,7 +100,7 @@ passwordInput.current?.focus();
                                             autoFocus
                                         />
                                         <InputError
-                                            message={errors.password}
+                                            message={allErrors.password}
                                         />
                                     </div>
 
@@ -103,7 +123,8 @@ passwordInput.current?.focus();
                                         </Button>
                                     </DialogFooter>
                                 </>
-                            )}
+                            );
+                            }}
                         </Form>
                     </DialogContent>
                 </Dialog>

@@ -1,4 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,20 @@ import { Textarea } from '@/components/ui/textarea';
 import points from '@/routes/points';
 
 export default function PointCreate() {
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
+
+    function validate(form: HTMLFormElement): boolean {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+        if (!(fd.get('name') as string)?.trim()) errs.name = 'Name is required.';
+        const pointsVal = fd.get('points') as string;
+        if (!pointsVal) errs.points = 'Points is required.';
+        else if (parseInt(pointsVal) < 1) errs.points = 'Points must be at least 1.';
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
+
     return (
         <>
             <Head title="Create Point Action" />
@@ -28,57 +43,62 @@ export default function PointCreate() {
                             method="post"
                             action="/points"
                             className="space-y-6"
+                            ref={formRef}
+                            onSubmit={(e) => {
+                                setClientErrors({});
+                                if (!validate(e.currentTarget)) e.preventDefault();
+                            }}
                         >
-                            {({ processing, errors }) => (
-                                <>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="name">Name</Label>
-                                        <Input
-                                            id="name"
-                                            name="name"
-                                            required
-                                            placeholder="e.g., Submit Idea"
-                                        />
-                                        <InputError message={errors.name} />
-                                    </div>
+                            {({ processing, errors }) => {
+                                const allErrors = { ...clientErrors, ...errors };
+                                return (
+                                    <>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="name">Name</Label>
+                                            <Input
+                                                id="name"
+                                                name="name"
+                                                placeholder="e.g., Submit Idea"
+                                            />
+                                            <InputError message={allErrors.name} />
+                                        </div>
 
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="description">
-                                            Description
-                                        </Label>
-                                        <Textarea
-                                            id="description"
-                                            name="description"
-                                            placeholder="Optional description of this action"
-                                        />
-                                        <InputError message={errors.description} />
-                                    </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="description">
+                                                Description
+                                            </Label>
+                                            <Textarea
+                                                id="description"
+                                                name="description"
+                                                placeholder="Optional description of this action"
+                                            />
+                                            <InputError message={allErrors.description} />
+                                        </div>
 
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="points">
-                                            Points to Award
-                                        </Label>
-                                        <Input
-                                            id="points"
-                                            name="points"
-                                            type="number"
-                                            min={1}
-                                            required
-                                            placeholder="e.g., 50"
-                                        />
-                                        <InputError message={errors.points} />
-                                    </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="points">
+                                                Points to Award
+                                            </Label>
+                                            <Input
+                                                id="points"
+                                                name="points"
+                                                type="number"
+                                                placeholder="e.g., 50"
+                                            />
+                                            <InputError message={allErrors.points} />
+                                        </div>
 
-                                    <div className="flex items-center gap-4">
-                                        <Button type="submit" disabled={processing}>
-                                            {processing ? 'Creating...' : 'Create Point Action'}
-                                        </Button>
-                                        <Button variant="outline" asChild>
-                                            <Link href={points.index()}>Cancel</Link>
-                                        </Button>
-                                    </div>
-                                </>
-                            )}
+                                        <div className="flex items-center gap-4">
+                                            <Button type="submit" disabled={processing}>
+                                                {processing ? 'Creating...' : 'Create Point Action'}
+                                            </Button>
+                                            <Button variant="outline" asChild>
+                                                <Link href={points.index()}>Cancel</Link>
+                                            </Button>
+                                        </div>
+                                    </>
+                                );
+                            }}
                         </Form>
                     </CardContent>
                 </Card>

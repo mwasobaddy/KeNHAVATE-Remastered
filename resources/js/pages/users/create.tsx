@@ -1,7 +1,9 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
+import PhoneInput from '@/components/phone-input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,11 +18,46 @@ export default function UserCreate({ roles, regions, contractTypes }: {
     contractTypes: { id: number; name: string }[];
 }) {
     const [isStaff, setIsStaff] = useState(false);
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
     const [selectedRegion, setSelectedRegion] = useState<string>('');
     const [selectedDirectorate, setSelectedDirectorate] = useState<string>('');
 
     const currentRegion = regions.find((r) => r.id.toString() === selectedRegion);
     const currentDirectorate = currentRegion?.directorates.find((d) => d.id.toString() === selectedDirectorate);
+
+    const validate = (form: HTMLFormElement): boolean => {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+
+        const name = (fd.get('name') as string)?.trim();
+        if (!name) errs.name = 'Name is required.';
+
+        const email = (fd.get('email') as string)?.trim();
+        if (!email) errs.email = 'Email is required.';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Enter a valid email address.';
+
+        const password = (fd.get('password') as string);
+        if (password && password.length < 8) errs.password = 'Password must be at least 8 characters.';
+
+        const mobile = (fd.get('mobile_number') as string)?.trim();
+        if (mobile && !/^\+254\d{9}$/.test(mobile)) errs.mobile_number = 'Enter a valid 9-digit phone number.';
+
+        const role = (fd.get('role') as string);
+        if (!role) errs.role = 'Role is required.';
+
+        const isStaffValue = fd.get('is_staff') === '1';
+        if (isStaffValue) {
+            if (!fd.get('region_id')) errs.region_id = 'Region is required.';
+            if (!fd.get('directorate_id')) errs.directorate_id = 'Directorate is required.';
+            if (!fd.get('department_id')) errs.department_id = 'Department is required.';
+            if (!fd.get('contract_type_id')) errs.contract_type_id = 'Contract type is required.';
+            if (!(fd.get('designation') as string)?.trim()) errs.designation = 'Designation is required.';
+        }
+
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
 
     return (
         <>
@@ -40,33 +77,40 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                         <Form
                             method="post"
                             action="/users"
+                            ref={formRef}
                             className="space-y-6"
+                            onSubmit={(e) => {
+                                setClientErrors({});
+                                if (!validate(e.currentTarget)) e.preventDefault();
+                            }}
                         >
-                            {({ processing, errors }) => (
+                            {({ processing, errors }) => {
+                                const allErrors = { ...clientErrors, ...errors };
+                                return (
                                 <>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
                                             <Label htmlFor="name">Full Name</Label>
-                                            <Input id="name" name="name" required placeholder="John Doe" />
-                                            <InputError message={errors.name} />
+                                            <Input id="name" name="name" placeholder="John Doe" />
+                                            <InputError message={allErrors.name} />
                                         </div>
 
                                         <div className="grid gap-2">
                                             <Label htmlFor="email">Email</Label>
-                                            <Input id="email" name="email" type="email" required placeholder="john@example.com" />
-                                            <InputError message={errors.email} />
+                                            <Input id="email" name="email" type="email" placeholder="john@example.com" />
+                                            <InputError message={allErrors.email} />
                                         </div>
 
                                         <div className="grid gap-2">
                                             <Label htmlFor="password">Password <span className="text-xs text-muted-foreground">(leave blank to auto-generate)</span></Label>
-                                            <Input id="password" name="password" type="password" placeholder="Min. 8 characters" />
-                                            <InputError message={errors.password} />
+                                            <PasswordInput id="password" name="password" placeholder="Min. 8 characters" />
+                                            <InputError message={allErrors.password} />
                                         </div>
 
                                         <div className="grid gap-2">
                                             <Label htmlFor="mobile_number">Mobile Number</Label>
-                                            <Input id="mobile_number" name="mobile_number" placeholder="+254 7XX XXX XXX" />
-                                            <InputError message={errors.mobile_number} />
+                                            <PhoneInput name="mobile_number" placeholder="712345678" />
+                                            <InputError message={allErrors.mobile_number} />
                                         </div>
 
                                         <div className="grid gap-2">
@@ -80,7 +124,7 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                                                     <SelectItem value="Female">Female</SelectItem>
                                                 </SelectContent>
                                             </Select>
-                                            <InputError message={errors.gender} />
+                                            <InputError message={allErrors.gender} />
                                         </div>
 
                                         <div className="grid gap-2">
@@ -97,7 +141,7 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            <InputError message={errors.role} />
+                                            <InputError message={allErrors.role} />
                                         </div>
                                     </div>
 
@@ -134,7 +178,7 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
-                                                <InputError message={errors.region_id} />
+                                                <InputError message={allErrors.region_id} />
                                             </div>
 
                                             <div className="grid gap-2">
@@ -156,7 +200,7 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
-                                                <InputError message={errors.directorate_id} />
+                                                <InputError message={allErrors.directorate_id} />
                                             </div>
 
                                             <div className="grid gap-2">
@@ -173,7 +217,7 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
-                                                <InputError message={errors.department_id} />
+                                                <InputError message={allErrors.department_id} />
                                             </div>
 
                                             <div className="grid gap-2">
@@ -190,13 +234,13 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
-                                                <InputError message={errors.contract_type_id} />
+                                                <InputError message={allErrors.contract_type_id} />
                                             </div>
 
                                             <div className="grid gap-2 col-span-2">
                                                 <Label htmlFor="designation">Designation</Label>
                                                 <Input id="designation" name="designation" placeholder="e.g., Senior Engineer" />
-                                                <InputError message={errors.designation} />
+                                                <InputError message={allErrors.designation} />
                                             </div>
                                         </div>
                                     )}
@@ -210,7 +254,8 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                                         </Button>
                                     </div>
                                 </>
-                            )}
+                            );
+                            }}
                         </Form>
                     </CardContent>
                 </Card>

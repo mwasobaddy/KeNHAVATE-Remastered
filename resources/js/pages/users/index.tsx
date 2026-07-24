@@ -126,8 +126,13 @@ export default function UserIndex({ users, filters: initialFilters, search: init
             return;
         }
 
-        setDeleting(true);
+        if (!deletePassword) {
+            setDeleteError('Password is required.');
+            return;
+        }
         setDeleteError('');
+
+        setDeleting(true);
 
         router.delete(`/users/${deletingUser.id}`, {
             data: { password: deletePassword },

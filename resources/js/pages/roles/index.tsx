@@ -126,8 +126,12 @@ export default function RoleIndex({ roles, filters: initialFilters, search: init
             return;
         }
 
-        setDeleting(true);
+        const errs: Record<string, string> = {};
+        if (!deletePassword) errs.password = 'Password is required.';
+        if (Object.keys(errs).length > 0) { setDeleteError(errs.password); return; }
         setDeleteError('');
+
+        setDeleting(true);
 
         router.delete(`/roles/${deletingRole.id}`, {
             data: { password: deletePassword },

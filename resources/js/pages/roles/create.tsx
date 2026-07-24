@@ -1,5 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { Info } from 'lucide-react';
+import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,9 @@ import routes from '@/routes/roles';
 type Permission = { id: number; name: string; description: string | null };
 
 export default function RoleCreate({ permissions }: { permissions: Permission[] }) {
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
+
     const createPermission = permissions.find((p) => p.name === 'idea.create');
     const selectablePermissions = permissions.filter((p) => p.name !== 'idea.create');
 
@@ -27,6 +31,14 @@ acc[group] = [];
 
         return acc;
     }, {});
+
+    function validate(form: HTMLFormElement): boolean {
+        const fd = new FormData(form);
+        const errs: Record<string, string> = {};
+        if (!(fd.get('name') as string)?.trim()) errs.name = 'Role name is required.';
+        setClientErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
 
     return (
         <>
@@ -47,19 +59,25 @@ acc[group] = [];
                             method="post"
                             action="/roles"
                             className="space-y-6"
+                            ref={formRef}
+                            onSubmit={(e) => {
+                                setClientErrors({});
+                                if (!validate(e.currentTarget)) e.preventDefault();
+                            }}
                         >
-                            {({ processing, errors }) => (
-                                <>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="name">Role Name</Label>
-                                        <Input
-                                            id="name"
-                                            name="name"
-                                            required
-                                            placeholder="e.g., moderator"
-                                        />
-                                        <InputError message={errors.name} />
-                                    </div>
+                            {({ processing, errors }) => {
+                                const allErrors = { ...clientErrors, ...errors };
+                                return (
+                                    <>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="name">Role Name</Label>
+                                            <Input
+                                                id="name"
+                                                name="name"
+                                                placeholder="e.g., moderator"
+                                            />
+                                            <InputError message={allErrors.name} />
+                                        </div>
 
                                     <div className="space-y-4">
                                         <Label className="text-base font-medium">Permissions</Label>
@@ -136,7 +154,8 @@ acc[group] = [];
                                         </Button>
                                     </div>
                                 </>
-                            )}
+                            );
+                        }}
                         </Form>
                     </CardContent>
                 </Card>
