@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 
@@ -40,6 +42,8 @@ class GoogleAuthService
             $this->auditService->log($user, 'account_created', "Account created via Google for {$googleUser->getEmail()}");
         }
 
+        $this->saveGoogleAvatar($user, $googleUser);
+
         // nullify the terms_accepted column
         if ($user) {
             $user->forceFill(['terms_accepted' => false])->save();
@@ -48,5 +52,32 @@ class GoogleAuthService
         $this->auditService->log($user, 'login', "Logged in via Google ({$googleUser->getEmail()})");
 
         return $user;
+    }
+
+    private function saveGoogleAvatar(User $user, SocialiteUser $googleUser): void
+    {
+        $avatarUrl = $googleUser->getAvatar();
+
+        if (! $avatarUrl) {
+            return;
+        }
+
+        try {
+            $response = Http::timeout(5)->get($avatarUrl);
+
+            if ($response->successful()) {
+                $extension = 'jpg';
+                $path = 'avatars/google-'.$user->id.'-'.Str::random(8).'.'.$extension;
+
+                if ($user->avatar) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
+
+                Storage::disk('public')->put($path, $response->body());
+                $user->forceFill(['avatar' => $path])->save();
+            }
+        } catch (\Exception) {
+            // Silently fail — avatar is not critical
+        }
     }
 }

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -36,6 +37,7 @@ class UserService
                 'email' => $user->email ?? $user->work_email,
                 'role' => $user->roles->first()?->name,
                 'is_staff' => $user->staff !== null,
+                'avatar_url' => $user->avatar ? Storage::disk('public')->url($user->avatar) : null,
                 'created_at' => $user->created_at->toDateString(),
             ]);
     }

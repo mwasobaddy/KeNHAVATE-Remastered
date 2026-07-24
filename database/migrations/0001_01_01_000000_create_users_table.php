@@ -20,6 +20,7 @@ return new class extends Migration
             $table->timestamp('work_email_verified_at')->nullable();
             $table->string('mobile_number')->unique()->nullable();
             $table->enum('gender', ['Male', 'Female'])->nullable();
+            $table->string('avatar')->nullable();
             $table->index(['email', 'work_email'], 'users_email_work_email_index');
             $table->string('password');
             $table->timestamp('onboarding_completed_at')->nullable();

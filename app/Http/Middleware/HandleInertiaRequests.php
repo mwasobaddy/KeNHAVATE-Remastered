@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 use Laravel\Fortify\Features;
 
@@ -60,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                     'work_email' => $user->work_email,
                     'mobile_number' => $user->mobile_number,
                     'gender' => $user->gender,
+                    'avatar_url' => $user->avatar ? Storage::disk('public')->url($user->avatar) : null,
                     'roles' => $user->roles->pluck('name'),
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                     'points_balance' => $user->points_balance,

@@ -3,6 +3,8 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -19,6 +21,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'name' => ['required', 'string', 'max:255'],
             'mobile_number' => ['nullable', 'string', 'max:20'],
             'gender' => ['nullable', 'string', 'in:Male,Female'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
 
         if ($user->relationLoaded('staff') && $user->staff) {
@@ -32,6 +35,14 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'mobile_number' => $input['mobile_number'] ?? null,
             'gender' => $input['gender'] ?? null,
         ];
+
+        if (isset($input['avatar']) && $input['avatar'] instanceof UploadedFile) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $data['avatar'] = $input['avatar']->store('avatars', 'public');
+        }
 
         if (($user->relationLoaded('staff') && $user->staff) && isset($input['work_email'])) {
             $data['work_email'] = $input['work_email'];
