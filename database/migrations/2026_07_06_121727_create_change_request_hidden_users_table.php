@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('change_request_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->softDeletes();
             $table->timestamps();
 
             $table->unique(['change_request_id', 'user_id']);

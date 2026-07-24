@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, approved, rejected
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('feedback')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

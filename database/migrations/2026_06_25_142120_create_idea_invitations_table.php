@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('role')->default('collaborator');
             $table->string('status')->default('pending');
             $table->foreignId('invited_by')->constrained('users')->cascadeOnDelete();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('action');
             $table->text('notes')->nullable();
             $table->string('document_path')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

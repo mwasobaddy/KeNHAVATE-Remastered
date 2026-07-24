@@ -16,6 +16,7 @@ return new class extends Migration
             $table->boolean('consent_given')->default(false);
             $table->timestamp('consent_given_at')->nullable();
             $table->string('status')->default('pending');
+            $table->softDeletes();
             $table->timestamps();
         });
 
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->string('original_name');
             $table->integer('file_size')->nullable();
             $table->string('mime_type')->nullable();
+            $table->softDeletes();
             $table->timestamp('created_at')->useCurrent();
         });
     }

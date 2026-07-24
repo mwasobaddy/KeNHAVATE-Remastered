@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('original_name');
             $table->integer('file_size')->nullable();
             $table->string('mime_type')->nullable();
+            $table->softDeletes();
             $table->timestamp('created_at')->useCurrent();
 
             $table->index(['idea_id', 'type']);

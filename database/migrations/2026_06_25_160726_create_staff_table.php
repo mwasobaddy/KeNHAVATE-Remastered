@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('department_id')->nullable()->constrained()->nullOnDelete();
             $table->string('designation')->nullable();
             $table->foreignId('contract_type_id')->nullable()->constrained()->nullOnDelete();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
