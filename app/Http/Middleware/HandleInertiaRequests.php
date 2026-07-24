@@ -65,9 +65,13 @@ class HandleInertiaRequests extends Middleware
                     'points_balance' => $user->points_balance,
                     'staff' => $user->relationLoaded('staff') ? ($user->staff ? [
                         'region' => $user->staff->region?->name,
+                        'region_id' => $user->staff->region_id,
                         'directorate' => $user->staff->directorate?->name,
+                        'directorate_id' => $user->staff->directorate_id,
                         'department' => $user->staff->department?->name,
+                        'department_id' => $user->staff->department_id,
                         'contract_type' => $user->staff->contractType?->name,
+                        'contract_type_id' => $user->staff->contract_type_id,
                         'designation' => $user->staff->designation,
                     ] : null) : null,
                 ] : null,

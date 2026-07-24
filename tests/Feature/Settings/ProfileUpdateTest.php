@@ -58,6 +58,7 @@ test('profile information can be updated with email unchanged', function () {
 
 test('user can delete their account', function () {
     $user = User::factory()->onboarded()->create();
+    $originalEmail = $user->email;
 
     $response = $this
         ->actingAs($user)
@@ -70,7 +71,16 @@ test('user can delete their account', function () {
         ->assertRedirect(route('home'));
 
     $this->assertGuest();
-    expect($user->fresh())->toBeNull();
+
+    $user->refresh();
+
+    expect($user->deleted_at)->not->toBeNull();
+    expect($user->name)->toBe('Deleted User');
+    expect($user->email)->toBe($originalEmail);
+    expect($user->work_email)->toBeNull();
+    expect($user->mobile_number)->toBeNull();
+    expect($user->gender)->toBeNull();
+    expect($user->google_id)->toBeNull();
 });
 
 test('correct password must be provided to delete account', function () {

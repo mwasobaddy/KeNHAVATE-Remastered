@@ -1,4 +1,5 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -10,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import routes from '@/routes/users';
 
 export default function UserCreate({ roles, regions, contractTypes }: {
@@ -19,9 +21,18 @@ export default function UserCreate({ roles, regions, contractTypes }: {
 }) {
     const [isStaff, setIsStaff] = useState(false);
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const [tipBack, setTipBack] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
     const [selectedRegion, setSelectedRegion] = useState<string>('');
     const [selectedDirectorate, setSelectedDirectorate] = useState<string>('');
+
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit('/dashboard');
+        }
+    };
 
     const currentRegion = regions.find((r) => r.id.toString() === selectedRegion);
     const currentDirectorate = currentRegion?.directorates.find((d) => d.id.toString() === selectedDirectorate);
@@ -31,31 +42,63 @@ export default function UserCreate({ roles, regions, contractTypes }: {
         const errs: Record<string, string> = {};
 
         const name = (fd.get('name') as string)?.trim();
-        if (!name) errs.name = 'Name is required.';
+
+        if (!name) {
+errs.name = 'Name is required.';
+}
 
         const email = (fd.get('email') as string)?.trim();
-        if (!email) errs.email = 'Email is required.';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Enter a valid email address.';
+
+        if (!email) {
+errs.email = 'Email is required.';
+} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+errs.email = 'Enter a valid email address.';
+}
 
         const password = (fd.get('password') as string);
-        if (password && password.length < 8) errs.password = 'Password must be at least 8 characters.';
+
+        if (password && password.length < 8) {
+errs.password = 'Password must be at least 8 characters.';
+}
 
         const mobile = (fd.get('mobile_number') as string)?.trim();
-        if (mobile && !/^\+254\d{9}$/.test(mobile)) errs.mobile_number = 'Enter a valid 9-digit phone number.';
+
+        if (mobile && !/^\+254\d{9}$/.test(mobile)) {
+errs.mobile_number = 'Enter a valid 9-digit phone number.';
+}
 
         const role = (fd.get('role') as string);
-        if (!role) errs.role = 'Role is required.';
+
+        if (!role) {
+errs.role = 'Role is required.';
+}
 
         const isStaffValue = fd.get('is_staff') === '1';
+
         if (isStaffValue) {
-            if (!fd.get('region_id')) errs.region_id = 'Region is required.';
-            if (!fd.get('directorate_id')) errs.directorate_id = 'Directorate is required.';
-            if (!fd.get('department_id')) errs.department_id = 'Department is required.';
-            if (!fd.get('contract_type_id')) errs.contract_type_id = 'Contract type is required.';
-            if (!(fd.get('designation') as string)?.trim()) errs.designation = 'Designation is required.';
+            if (!fd.get('region_id')) {
+errs.region_id = 'Region is required.';
+}
+
+            if (!fd.get('directorate_id')) {
+errs.directorate_id = 'Directorate is required.';
+}
+
+            if (!fd.get('department_id')) {
+errs.department_id = 'Department is required.';
+}
+
+            if (!fd.get('contract_type_id')) {
+errs.contract_type_id = 'Contract type is required.';
+}
+
+            if (!(fd.get('designation') as string)?.trim()) {
+errs.designation = 'Designation is required.';
+}
         }
 
         setClientErrors(errs);
+
         return Object.keys(errs).length === 0;
     };
 
@@ -64,10 +107,25 @@ export default function UserCreate({ roles, regions, contractTypes }: {
             <Head title="Create User" />
 
             <div className="space-y-6">
-                <Heading
-                    title="Create User"
-                    description="Add a new user with role and staff information"
-                />
+                <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-1">
+                        <Tooltip open={tipBack} onOpenChange={setTipBack}>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="warning" onClick={() => {
+ setTipBack(true); goBack(); 
+}}>
+                                    <ArrowLeft className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Back</TooltipContent>
+                        </Tooltip>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+                    <Heading
+                        title="Create User"
+                        description="Add a new user with role and staff information"
+                    />
+                </div>
 
                 <Card>
                     <CardHeader>
@@ -81,11 +139,15 @@ export default function UserCreate({ roles, regions, contractTypes }: {
                             className="space-y-6"
                             onSubmit={(e) => {
                                 setClientErrors({});
-                                if (!validate(e.currentTarget)) e.preventDefault();
+
+                                if (!validate(e.currentTarget)) {
+e.preventDefault();
+}
                             }}
                         >
                             {({ processing, errors }) => {
                                 const allErrors = { ...clientErrors, ...errors };
+
                                 return (
                                 <>
                                     <div className="grid grid-cols-2 gap-4">

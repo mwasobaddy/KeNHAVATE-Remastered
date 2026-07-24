@@ -23,9 +23,17 @@ use App\Http\Controllers\Points\TransactionController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\Roles\RoleController;
 use App\Http\Controllers\Users\UserController;
+use App\Models\ContractType;
+use App\Models\Region;
+use App\Models\User;
+use App\Notifications\SendOtp;
+use App\Services\OtpService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 Route::get('/', [PublicController::class, 'home'])->name('home');
 Route::get('how-it-works', fn () => inertia('public/how-it-works'))->name('how-it-works');
@@ -42,6 +50,71 @@ Route::middleware('guest')->group(function () {
     Route::get('auth/otp', [OtpVerificationController::class, 'create'])->name('auth.otp');
     Route::post('auth/otp/verify', [OtpVerificationController::class, 'store'])->name('auth.otp.verify');
     Route::post('auth/otp/resend', [OtpVerificationController::class, 'resend'])->name('auth.otp.resend');
+
+    Route::inertia('auth/account-deleted', 'auth/account-deleted')->name('auth.account-deleted');
+
+    Route::post('auth/account-deleted/start-fresh', function (Request $request) {
+        $email = session('account_deleted_email');
+
+        if (! $email) {
+            return redirect()->route('login');
+        }
+
+        $flow = session('account_deleted_flow', 'otp');
+        $googleName = session('account_deleted_google_name');
+        $googleId = session('account_deleted_google_id');
+
+        $oldUser = User::withTrashed()
+            ->where(fn ($q) => $q->where('email', $email)->orWhere('work_email', $email))
+            ->whereNotNull('deleted_at')
+            ->first();
+
+        if ($oldUser) {
+            $oldUser->timestamps = false;
+            $updates = ['email' => 'deleted-'.$oldUser->id.'@kenha.co.ke'];
+
+            if ($oldUser->work_email === $email) {
+                $updates['work_email'] = null;
+            }
+
+            $oldUser->update($updates);
+        }
+
+        session()->forget(['account_deleted_email', 'account_deleted_flow', 'account_deleted_google_name', 'account_deleted_google_id']);
+
+        if ($flow === 'google') {
+            $user = User::create([
+                'name' => $googleName ?? Str::before($email, '@'),
+                'email' => $email,
+                'google_id' => $googleId,
+                'email_verified_at' => now(),
+                'password' => Hash::make(Str::random(32)),
+            ]);
+
+            auth()->login($user);
+
+            return redirect()->intended(route('onboarding'))
+                ->with('success', 'Welcome! Please complete your profile.');
+        }
+
+        $isKenha = str_ends_with($email, '@kenha.co.ke');
+
+        $user = User::create([
+            'name' => Str::before($email, '@'),
+            'email' => $isKenha ? null : $email,
+            'work_email' => $isKenha ? $email : null,
+            'password' => Hash::make(Str::random(32)),
+        ]);
+
+        $otp = app(OtpService::class)->generate($email, $user);
+        $user->notify(new SendOtp($otp));
+
+        app(OtpService::class)->markCooldown($email);
+        session(['otp_email' => $email]);
+
+        return redirect()->route('auth.otp')
+            ->with('success', 'OTP sent to your email.');
+    })->name('auth.account-deleted.start-fresh');
 });
 
 Route::inertia('terms', 'public/terms', ['title' => 'Terms & Conditions'])->name('public.terms');
@@ -68,6 +141,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             'activeTab' => 'profile',
+            'regions' => Region::with('directorates.departments')->orderBy('name')->get(),
+            'contractTypes' => ContractType::orderBy('name')->get(['id', 'name']),
         ]);
     })->name('profile.edit');
     Route::get('settings/security', function (Request $request) {
@@ -75,6 +150,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             'activeTab' => 'security',
+            'regions' => Region::with('directorates.departments')->orderBy('name')->get(),
+            'contractTypes' => ContractType::orderBy('name')->get(['id', 'name']),
         ]);
     })->name('security.edit');
     Route::get('settings/appearance', function (Request $request) {
@@ -82,8 +159,33 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             'activeTab' => 'appearance',
+            'regions' => Region::with('directorates.departments')->orderBy('name')->get(),
+            'contractTypes' => ContractType::orderBy('name')->get(['id', 'name']),
         ]);
     })->name('appearance.edit');
+    Route::put('settings/profile/staff', function (Request $request) {
+        $validated = $request->validate([
+            'work_email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($request->user()->id)],
+            'region_id' => ['nullable', 'exists:regions,id'],
+            'directorate_id' => ['nullable', 'exists:directorates,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'contract_type_id' => ['nullable', 'exists:contract_types,id'],
+            'designation' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+
+        if (isset($validated['work_email'])) {
+            $user->update(['work_email' => $validated['work_email']]);
+        }
+
+        $user->staff()->updateOrCreate(
+            ['user_id' => $user->id],
+            collect($validated)->except('work_email')->toArray(),
+        );
+
+        return redirect()->back()->with('success', 'Staff information updated successfully.');
+    })->name('staff.update');
 
     Route::delete('settings/profile', function (Request $request) {
         $request->validate([
@@ -93,6 +195,14 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         $user = $request->user();
 
         auth()->logout();
+
+        $user->timestamps = false;
+        $user->update([
+            'name' => 'Deleted User',
+            'mobile_number' => null,
+            'gender' => null,
+            'google_id' => null,
+        ]);
 
         $user->delete();
 

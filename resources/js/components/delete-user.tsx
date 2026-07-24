@@ -2,6 +2,7 @@ import { Form } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -91,10 +92,9 @@ passwordInput.current?.focus();
                                         >
                                             Password
                                         </Label>
-                                        <Input
+                                        <PasswordInput
                                             id="delete-password"
                                             ref={passwordInput}
-                                            type="password"
                                             name="password"
                                             placeholder="Password"
                                             autoFocus

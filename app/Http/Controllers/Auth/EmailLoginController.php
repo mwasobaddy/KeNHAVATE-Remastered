@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\SendOtpRequest;
+use App\Models\User;
 use App\Services\AuthService;
 use App\Services\OtpService;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,21 @@ class EmailLoginController extends Controller
     public function __invoke(SendOtpRequest $request): RedirectResponse
     {
         $email = $request->input('email');
+
+        $deletedUser = User::withTrashed()
+            ->where(fn ($q) => $q->where('email', $email)->orWhere('work_email', $email))
+            ->whereNotNull('deleted_at')
+            ->first();
+
+        if ($deletedUser) {
+            session([
+                'account_deleted_email' => $email,
+                'account_deleted_flow' => 'otp',
+            ]);
+
+            return redirect()->route('auth.account-deleted')
+                ->with('error', 'This account was deleted. You can start fresh or contact support to restore it.');
+        }
 
         if ($this->otpService->isCooldownActive($email)) {
             throw ValidationException::withMessages([
