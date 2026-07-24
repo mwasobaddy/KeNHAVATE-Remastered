@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,7 +29,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
-        $this->shareAuthData();
         $this->registerEventListeners();
     }
 
@@ -61,30 +59,5 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Login::class, AwardDailyLoginPoints::class);
 
         User::observe(UserObserver::class);
-    }
-
-    protected function shareAuthData(): void
-    {
-        Inertia::share('auth', function () {
-            $user = auth()->user();
-
-            if (! $user) {
-                return null;
-            }
-
-            return [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'first_name' => $user->first_name,
-                    'other_names' => $user->other_names,
-                    'roles' => $user->getRoleNames()->toArray(),
-                    'points_balance' => $user->points_balance,
-                ],
-                'roles' => $user->getRoleNames()->toArray(),
-                'unread_notifications' => $user->unreadNotifications()->count(),
-            ];
-        });
     }
 }

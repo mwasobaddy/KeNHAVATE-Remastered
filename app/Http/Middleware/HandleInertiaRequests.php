@@ -38,6 +38,10 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
+        if ($user) {
+            $user->load('staff.region', 'staff.directorate', 'staff.department', 'staff.contractType');
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -51,8 +55,21 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'first_name' => $user->first_name,
+                    'other_names' => $user->other_names,
+                    'work_email' => $user->work_email,
+                    'mobile_number' => $user->mobile_number,
+                    'gender' => $user->gender,
                     'roles' => $user->roles->pluck('name'),
                     'permissions' => $user->getAllPermissions()->pluck('name'),
+                    'points_balance' => $user->points_balance,
+                    'staff' => $user->relationLoaded('staff') ? ($user->staff ? [
+                        'region' => $user->staff->region?->name,
+                        'directorate' => $user->staff->directorate?->name,
+                        'department' => $user->staff->department?->name,
+                        'contract_type' => $user->staff->contractType?->name,
+                        'designation' => $user->staff->designation,
+                    ] : null) : null,
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
