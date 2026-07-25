@@ -22,7 +22,7 @@ class IdeaDemoSeeder extends Seeder
 
     private User $officer;
 
-    private User $dg;
+    private User $secondOfficer;
 
     private User $peter;
 
@@ -66,20 +66,23 @@ class IdeaDemoSeeder extends Seeder
         $this->officer->givePermissionTo([
             'idea.assign_officer',
             'idea.classify',
+            'idea.record_decision',
             'idea.review',
             'idea.receive_new_submission_notifications',
             'idea.view',
             'points.view',
         ]);
 
-        $this->dg = User::firstOrCreate(
+        $this->secondOfficer = User::firstOrCreate(
             ['email' => 'david.kamau@kenha.co.ke'],
             $this->userDefaults(['name' => 'David Kamau', 'mobile_number' => '+254722222222']),
         );
-        $this->dg->assignRole('user');
-        $this->dg->givePermissionTo([
+        $this->secondOfficer->assignRole('user');
+        $this->secondOfficer->givePermissionTo([
+            'idea.classify',
             'idea.record_decision',
             'idea.review',
+            'idea.receive_new_submission_notifications',
             'idea.view',
             'points.view',
         ]);
@@ -158,11 +161,11 @@ class IdeaDemoSeeder extends Seeder
         $classificationService->classify($idea, $this->officer, $innovation, [
             'notes' => 'Innovation idea within KeNHA mandate for road infrastructure technology.',
         ]);
-        $decisionService->decide($idea, $this->dg, 'approved', 'Approved for implementation. Excellent solution with clear ROI.');
-        $decisionService->progress($idea, $this->dg, 'Phase 1: sensor deployment on Thika Road.');
-        $decisionService->progress($idea, $this->dg, 'All sensors installed and AI system operational. Pilot completed.');
-        $decisionService->progress($idea, $this->dg, 'System fully integrated with KeNHA traffic management center.');
-        $decisionService->progress($idea, $this->dg, 'Project closed after successful implementation and handover.');
+        $decisionService->decide($idea, $this->officer, 'approved', 'Approved for implementation. Excellent solution with clear ROI.');
+        $decisionService->progress($idea, $this->officer, 'Phase 1: sensor deployment on Thika Road.');
+        $decisionService->progress($idea, $this->officer, 'All sensors installed and AI system operational. Pilot completed.');
+        $decisionService->progress($idea, $this->officer, 'System fully integrated with KeNHA traffic management center.');
+        $decisionService->progress($idea, $this->officer, 'Project closed after successful implementation and handover.');
 
         /* ──────────────────────────────────────────────────
            Idea 2 — Recycled Plastic Road Binders
@@ -184,7 +187,7 @@ class IdeaDemoSeeder extends Seeder
         $classificationService->classify($idea2, $this->officer, $research, [
             'notes' => 'Research idea requiring laboratory testing and field trials.',
         ]);
-        $decisionService->decide($idea2, $this->dg, 'budget_logged', 'Research proposal approved. Budget allocated for laboratory testing.');
+        $decisionService->decide($idea2, $this->officer, 'budget_logged', 'Research proposal approved. Budget allocated for laboratory testing.');
 
         /* ──────────────────────────────────────────────────
            Idea 3 — Solar-Powered Highway Lighting
@@ -206,8 +209,8 @@ class IdeaDemoSeeder extends Seeder
         $classificationService->classify($idea3, $this->officer, $innovation, [
             'notes' => 'Innovation in sustainable road infrastructure.',
         ]);
-        $decisionService->decide($idea3, $this->dg, 'approved', 'Approved. Implement on pilot basis on Nairobi-Nakuru highway section.');
-        $decisionService->progress($idea3, $this->dg, 'Pilot installation underway on 5km section of Nairobi-Nakuru highway.');
+        $decisionService->decide($idea3, $this->officer, 'approved', 'Approved. Implement on pilot basis on Nairobi-Nakuru highway section.');
+        $decisionService->progress($idea3, $this->officer, 'Pilot installation underway on 5km section of Nairobi-Nakuru highway.');
 
         /* ──────────────────────────────────────────────────
            Idea 4 — AI-Based Pavement Defect Detection
@@ -322,7 +325,7 @@ class IdeaDemoSeeder extends Seeder
         $classificationService->classify($idea9, $this->officer, $outsideMandate, [
             'notes' => 'This does not fall within KeNHA statutory mandate on road infrastructure.',
         ]);
-        $decisionService->decide($idea9, $this->dg, 'closed', 'This idea does not fall within KeNHA statutory functions. Referred to relevant government agencies.');
+        $decisionService->decide($idea9, $this->officer, 'closed', 'This idea does not fall within KeNHA statutory functions. Referred to relevant government agencies.');
 
         /* ──────────────────────────────────────────────────
            Idea 10 — PPP Model for Road Maintenance
@@ -343,7 +346,7 @@ class IdeaDemoSeeder extends Seeder
         $classificationService->classify($idea10, $this->officer, $project, [
             'notes' => 'Capital-intensive project requiring Board approval and legal framework development.',
         ]);
-        $decisionService->decide($idea10, $this->dg, 'deferred', 'Deferred pending legal review of PPP framework and board guidance.');
+        $decisionService->decide($idea10, $this->officer, 'deferred', 'Deferred pending legal review of PPP framework and board guidance.');
 
         /* ──────────────────────────────────────────────────
            Idea 11 — Green Highway Corridors
@@ -364,9 +367,9 @@ class IdeaDemoSeeder extends Seeder
         $classificationService->classify($idea11, $this->officer, $innovation, [
             'notes' => 'Innovation in climate-resilient infrastructure landscaping.',
         ]);
-        $decisionService->decide($idea11, $this->dg, 'approved', 'Approved. Cost-effective and environmentally beneficial.');
-        $decisionService->progress($idea11, $this->dg, 'Implementation started on Nairobi-Mombasa highway corridor.');
-        $decisionService->progress($idea11, $this->dg, 'Planting completed on 50km section. Monitoring phase underway.');
+        $decisionService->decide($idea11, $this->officer, 'approved', 'Approved. Cost-effective and environmentally beneficial.');
+        $decisionService->progress($idea11, $this->officer, 'Implementation started on Nairobi-Mombasa highway corridor.');
+        $decisionService->progress($idea11, $this->officer, 'Planting completed on 50km section. Monitoring phase underway.');
 
         /* ──────────────────────────────────────────────────
            Idea 12 — Real-Time Traffic Data Dashboard
@@ -387,7 +390,7 @@ class IdeaDemoSeeder extends Seeder
         $classificationService->classify($idea12, $this->officer, $innovation, [
             'notes' => 'Innovation in customer service delivery.',
         ]);
-        $decisionService->decide($idea12, $this->dg, 'declined', 'Duplicate of ongoing Kenya Roads Board initiative. Not approved.');
+        $decisionService->decide($idea12, $this->officer, 'declined', 'Duplicate of ongoing Kenya Roads Board initiative. Not approved.');
 
         /* ────────────────────────────
            Collaboration Requests
