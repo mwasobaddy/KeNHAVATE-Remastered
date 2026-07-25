@@ -27,6 +27,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'idea.classify', 'description' => 'Allows classifying ideas into IP types and categories.'],
             ['name' => 'idea.record_decision', 'description' => 'Allows recording a DG decision outcome (approved, deferred, declined, etc.) and advancing an idea through execution statuses.'],
             ['name' => 'idea.review', 'description' => 'Allows reviewing and scoring ideas.'],
+            ['name' => 'dashboard.view_admin', 'description' => 'Allows viewing the admin tab on the dashboard with system stats and management links.'],
             ['name' => 'points.create', 'description' => 'Allows creating point allocations for users.'],
             ['name' => 'points.edit', 'description' => 'Allows editing existing point allocations.'],
             ['name' => 'points.delete', 'description' => 'Allows deleting point allocations.'],

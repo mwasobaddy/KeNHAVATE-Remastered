@@ -41,9 +41,16 @@ class PointAwardService
     public function getRecentTransactions(User $user, int $limit = 5): Collection
     {
         return $user->pointTransactions()
-            ->with('point')
+            ->with('point:id,name')
             ->latest('created_at')
             ->limit($limit)
+            ->get();
+    }
+
+    public function getAllTransactions(): Collection
+    {
+        return PointTransaction::with(['point:id,name', 'user:id,name'])
+            ->latest('created_at')
             ->get();
     }
 
