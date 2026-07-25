@@ -19,7 +19,7 @@ Laravel 13 + PHP 8.5   (Backend API + Inertia server)
 The application follows a **service-oriented architecture**:
 
 - **Controllers** — Thin HTTP handlers that delegate to services
-- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService, PointService, PointAwardService, IdeaService, IdeaCategoryService, AssignmentService, ClassificationService, ChangeRequestService, InvitationService, AuditService)
+- **Services** — Business logic layer (AuthService, OtpService, OnboardingService, GoogleAuthService, AccountDeletedService, PointService, PointAwardService, IdeaService, IdeaCategoryService, AssignmentService, ClassificationService, ChangeRequestService, InvitationService, AuditService)
 - **Form Requests** — Validation logic extracted from controllers
 - **Models** — Eloquent models with relationships and Spatie permission traits
 - **Shared frontend/backend** — Same backend serves both web (Inertia SPA) and mobile (Sanctum API)
@@ -44,6 +44,46 @@ Two authentication methods:
 
 Both flows end at the same post-login pipeline: onboarding → terms → dashboard.
 
+### Soft-Delete & Account Deletion
+
+When a user deletes their account, the account is **soft-deleted** (`deleted_at` set) rather than hard-deleted:
+
+| Field | After Delete |
+|-------|-------------|
+| `name` | `Deleted User` |
+| `email` | **Preserved** — kept to detect soft-deleted users on re-login |
+| `mobile_number` | `null` |
+| `gender` | `null` |
+| `google_id` | `null` |
+| `work_email` | `null` (only if it matches the login `email`) |
+
+**Why preserve `email`?** — The email is the key used for login lookup (both OTP and Google auth). By keeping it intact, both flows can detect that the user was soft-deleted and redirect them to the account-deleted page instead of silently creating a new account or logging them in.
+
+#### Re-Login Flow for Soft-Deleted Users
+
+Both `EmailLoginController` and `GoogleAuthController` check for soft-deleted users:
+
+```
+[User with soft-deleted account tries to log in]
+    → OTP or Google auth looks up user with withTrashed()
+    → Found + deleted_at is set?
+    → Redirect to /auth/account-deleted
+    → Session stores: email, flow type (otp/google), user ID, google_id (for Google flow)
+```
+
+#### Account Deleted Page
+
+The `auth/account-deleted` page (`resources/js/pages/auth/account-deleted.tsx`) presents two options:
+
+1. **Start a fresh account** — POST `/auth/account-deleted/start-fresh`:
+   - Renames the soft-deleted user's `email` to `deleted-{id}@kenha.co.ke` to free the original email
+   - If the login email was their `work_email`, also frees `work_email` on the old record
+   - Creates a **brand new user** record with the original email
+   - For Google flow: links the new user's `google_id` to the original Google account
+   - Logs the new user in and redirects to onboarding
+
+2. **Request restore — Contact support** — Links to `/contact` for users who want their account restored by an admin
+
 ### OTP Flow
 
 ```
@@ -65,6 +105,7 @@ Google users skip OTP entirely. The callback:
 2. If found, links `google_id` to the existing account
 3. If not found, creates a new user with `email_verified_at = now()`
 4. Kenha email detection (`@kenha.co.ke`) applies the same as OTP flow
+5. If the found user is soft-deleted (`deleted_at` is set), redirects to `/auth/account-deleted` with session data preserving the detected email and flow type
 
 ### Key Components
 
@@ -92,6 +133,8 @@ Google users skip OTP entirely. The callback:
 **`GoogleAuthService`** — `app/Services/GoogleAuthService.php`
 - `findOrCreateUser(SocialiteUser)` — Shared logic for both web and API controllers
 - Finds user by google_id → email → work_email, then links or creates
+- Also checks for soft-deleted users — if found with `deleted_at`, returns early to redirect to account-deleted page
+- `saveGoogleAvatar(User $user, SocialiteUser $socialiteUser)` — Downloads Google profile picture via HTTP and stores on the `public` disk as the user's avatar
 
 ### Kenha Email Detection
 
@@ -105,12 +148,14 @@ Emails ending in `@kenha.co.ke` are automatically detected:
 
 **Guest routes (web):**
 ```
-GET    /auth/google           → GoogleAuthController@redirect
-GET    /auth/google/callback  → GoogleAuthController@callback
-POST   /auth/email            → EmailLoginController
-GET    /auth/otp              → OtpVerificationController@create
-POST   /auth/otp/verify       → OtpVerificationController@store
-POST   /auth/otp/resend       → OtpVerificationController@resend
+GET    /auth/google                           → GoogleAuthController@redirect
+GET    /auth/google/callback                  → GoogleAuthController@callback
+POST   /auth/email                            → EmailLoginController
+GET    /auth/otp                              → OtpVerificationController@create
+POST   /auth/otp/verify                       → OtpVerificationController@store
+POST   /auth/otp/resend                       → OtpVerificationController@resend
+GET    /auth/account-deleted                  → Inertia page (auth/account-deleted)
+POST   /auth/account-deleted/start-fresh      → Closure (frees old email, creates new user, logs in)
 ```
 
 **Auth routes (web):**
@@ -124,10 +169,11 @@ POST   /onboarding            → OnboardingController@store
 **Protected routes (web)** `[auth, verified, onboarding.complete, terms]`:
 ```
 GET    /dashboard
-GET    /settings/profile
-GET    /settings/security
-GET    /settings/appearance
-DELETE /settings/profile
+GET    /settings/profile       → Fortify-based profile edit (frontend: settings/index.tsx profile tab)
+GET    /settings/security      → 2FA management (frontend: security tab)
+GET    /settings/appearance    → Theme toggle (frontend: appearance tab)
+PUT    /settings/profile/staff → Staff info update
+DELETE /settings/profile       → Delete account (password confirmation via DeleteUser dialog)
 GET    /leaderboard            → LeaderboardController@index
 GET    /audit                  → AuditController@index       (permission: audit.view)
 ```
@@ -460,7 +506,7 @@ Categories are seeded via `IdeaCategorySeeder` with 8 categories (Technology & S
 | classification_id | FK→idea_classifications (nullable) | Innovation, Research, Project, or Outside Mandate |
 | classified_at | timestamp (nullable) | When classification was recorded |
 | collaboration_enabled | boolean | Whether others can request to collaborate (default true) |
-| status | string | draft, submitted, assigned, revision_requested, resubmitted, classified, dg_review, approved, declined, deferred, planned, closed, in_progress, completed, implemented |
+| status | string | draft, submitted, assigned, revision_requested, resubmitted, classified, approved, declined, deferred, planned, closed, in_progress, completed, implemented |
 | deleted_at | timestamp (nullable) | Soft delete support |
 
 On creation, `Idea::booted()` calls `createTeamRoles()` to generate per-idea roles (author, contributor, collaborator).
@@ -523,7 +569,7 @@ The `documents()` HasMany relationship provides access to patent document files.
 | Field | Type | Description |
 |-------|------|-------------|
 | idea_ip_right_id | FK→idea_ip_rights | Parent IP right |
-| file_path | string | Storage path (private/ip-documents/) |
+| file_path | string | Storage path (private/ideas/{idea_id}/ip-documents/) |
 | original_name | string | Original filename |
 | file_size | integer | File size in bytes |
 | mime_type | string | e.g. application/pdf |
@@ -551,7 +597,7 @@ Append-only (no `updated_at`). Downloaded via `IdeaController::downloadIpDocumen
 - `getMyContributions(user)` — Paginated ideas where user is an invited/accepted contributor
 - `getPendingAssignment()` — Paginated submitted ideas with no officer assigned (for DD)
 - `getMyAssignments(user)` — Paginated ideas where user is assigned as officer (status: assigned, resubmitted)
-- `getPendingDecisions()` — Paginated ideas in dg_review status awaiting DG decision
+- `getPendingDecisions()` — Paginated classified Innovation ideas awaiting DG decision recording
 - `handleIpData(idea, ipData, ipDocuments)` — Creates/updates `IdeaIpRight` record, records consent timestamp, stores/deletes IP documents based on has_ip_protection toggle
 - `notifyReviewers(idea)` — Queries users with `idea.receive_new_submission_notifications` permission and emails them a `NewIdeaSubmittedMail` with idea details and link
 - Team emails accepted as comma-separated string, split and validated server-side
@@ -661,7 +707,7 @@ Each idea has an optional one-to-one IP rights record collected during creation/
         → Validation: `required|accepted` (must be checked)
 ```
 
-**Storage**: Patent documents stored on `local` disk at `storage/app/private/ip-documents/{idea_id}/`. The `idea_ip_documents` table is append-only (no `updated_at`). Switching from "Yes" to "No" removes existing IP documents.
+**Storage**: Patent documents stored on `local` disk at `storage/app/private/ideas/{idea_id}/ip-documents/`. The `idea_ip_documents` table is append-only (no `updated_at`). Switching from "Yes" to "No" removes existing IP documents.
 
 **Show page**: Displays IP card with status badges (IP Protected / Not Protected), registration status, patent number, document download links, and consent date.
 
@@ -682,17 +728,21 @@ The idea review process follows the KeNHA RI&KM policy (section 2.3.1):
     ↓
 [Officer classifies idea] → status: classified, classification_id set
     ↓
-[DD action based on type]
-    ├── Innovation → DD memo to DG → status: dg_review (appears in "Pending Decisions")
-    │   ├── DG approves → status: approved
-    │   ├── DG defers → status: deferred
-    │   └── DG declines → status: declined
+[Based on classification type]
+    ├── Innovation → memo sent externally to DG for feedback
+    │   ↓ (appears in "Pending Decisions" on review dashboard)
+    │   [Officer records DG decision from memo feedback]
+    │   ├── approved → status: approved
+    │   ├── deferred → status: deferred
+    │   └── declined → status: declined
     ├── Research/Project → status: planned (logged for annual planning)
     │   └── Deferred (max 2 cycles) → status: deferred → closed
     └── Outside Mandate → status: closed
     ↓
 [After approval] → status: in_progress → completed → implemented
 ```
+
+**Key point**: There is no DG user in the system. DG decisions happen externally — a memo is sent to the DG and feedback is returned. The RI&KM Officer records the decision outcome from that memo feedback. The same officer who classifies the idea also records the decision.
 
 Each review action (assignment, classification, revision request, decision) creates an `IdeaReview` record with the stage, action, reviewer, notes, and optional uploaded document. The full trail is visible to the idea author.
 
@@ -704,9 +754,9 @@ A dedicated review dashboard (`/ideas/review`) surfaces ideas at each stage of t
 |---------|-------|------------|
 | **Pending Assignment** | Submitted ideas with no officer assigned | `idea.assign_officer` |
 | **My Queue** | Ideas assigned to the current officer (status: assigned, resubmitted) | `idea.classify` |
-| **Pending Decisions** | Ideas in dg_review status awaiting DG decision | `idea.dg_decision` |
+| **Pending Decisions** | Classified Innovation ideas awaiting DG decision recording | `idea.record_decision` |
 
-Ideas **move between views** as they progress through the workflow — a submitted idea appears in Pending Assignment, then moves to My Queue once assigned, then to Pending Decisions once classified as Innovation. Each section shows the ideas status, author, category, submission date, and assigned officer with a direct link to the idea detail page.
+Ideas **move between views** as they progress through the workflow — a submitted idea appears in Pending Assignment, then moves to My Queue once assigned, then to Pending Decisions once classified as Innovation. The same officer who classifies the idea also records the DG decision from external memo feedback. Each section shows the ideas status, author, category, submission date, and assigned officer with a direct link to the idea detail page.
 
 The sidebar has individual navigation links under the **Review** group for each section, each gated by its respective permission. A "Back to Review Dashboard" button appears on the idea show page when the user has any review permission.
 
@@ -724,8 +774,8 @@ Seeded via `IdeaClassificationSeeder` with the 4 types defined in the RI&KM poli
 |-------|------|-------------|
 | idea_id | FK→ideas | Parent idea |
 | reviewer_id | FK→users | Who performed the review action |
-| stage | string | Which step in the workflow (assignment, classification, revision, dg_decision, planning, execution, close) |
-| action | string | Specific action taken (assigned, classified, revision_requested, resubmitted, memo_to_dg, approved, declined, etc.) |
+| stage | string | Which step in the workflow (assignment, classification, revision, decision, planning, execution, close) |
+| action | string | Specific action taken (assigned, classified, revision_requested, resubmitted, decision_recorded, approved, declined, etc.) |
 | notes | text (nullable) | Internal notes or feedback for author |
 | document_path | string (nullable) | Uploaded memo, decision letter, or report |
 
@@ -737,8 +787,8 @@ Permissions are assigned directly to users rather than tied to specific global r
 |-----------|---------|---------------|
 | `idea.assign_officer` | Assign an RI&KM Officer to an idea | DD (RI&KM) |
 | `idea.classify` | Classify ideas into Innovation/Research/Project/Outside Mandate | RI&KM Officer |
-| `idea.dg_decision` | Record approval/deferral/decline decisions | DG |
-| `idea.review` | View review dashboard and pending reviews | DD, Officer, DG |
+| `idea.record_decision` | Record DG decision outcome from external memo feedback (approved/deferred/declined) and progress ideas through execution statuses | RI&KM Officer |
+| `idea.review` | View review dashboard and pending reviews | DD, Officer |
 
 ---
 
@@ -794,7 +844,7 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 
 | Table | Purpose |
 |-------|---------|
-| `users` | User accounts with dual email support (email + work_email) + google_id |
+| `users` | User accounts with dual email support (email + work_email) + google_id + avatar (public disk) + deleted_at (soft deletes) |
 | `password_reset_tokens` | Laravel default |
 | `sessions` | Session storage |
 | `cache` + `cache_locks` | Cache storage |
@@ -824,11 +874,12 @@ All authenticated endpoints require `Authorization: Bearer <token>` header.
 | `staff` | Staff information linked to users |
 | `points` | Point/action definitions (name, description, point value, is_active, soft deletes) |
 | `point_transactions` | Audit log of point awards (user, point, points, timestamp) |
+| `failed_jobs` | Queue failed jobs |
 
 ### Key Indexes
 
 - `users`: composite index on `(email, work_email)` for login lookup
-- `users`: unique indexes on `email`, `work_email`, `mobile_number`, `google_id`
+- `users`: unique indexes on `email`, `work_email`, `mobile_number`, `google_id` (unique enforced only when not null — soft-deleted records null out these fields to avoid constraint violations)
 - `regions/directorates/departments`: unique indexes on `code`
 - `model_has_roles`: composite primary key `(team_id, role_id, model_id, model_type)`
 
@@ -891,9 +942,59 @@ Collaboration                 ← gray group label
   📥 Request Inbox
   📤 Request Outbox
 ────────────────────────────────
-👤 User Name                  ← bordered footer area
+👤 User Name (avatar or initials) ← bordered footer area with NavUser → UserInfo
    email@kenha.co.ke
 ```
+
+## Avatar System
+
+### Overview
+
+Users have an optional profile photo stored on the `public` disk (`storage/app/public/avatars/`). The system supports manual upload via settings, automatic sync from Google profile pictures, and graceful fallback to user initials.
+
+### Backend
+
+| File | Responsibility |
+|------|---------------|
+| `users.avatar` column | VARCHAR, nullable — stores the filename (e.g. `abc123.jpg`) |
+| `UpdateUserProfileInformation` | Accepts `avatar` (image, max 2MB, jpg/png/webp), deletes old file, stores new one |
+| `GoogleAuthService::saveGoogleAvatar()` | Downloads Google profile picture via HTTP and stores as avatar on first login |
+| `HandleInertiaRequests` | Shares `avatar_url` — full URL via `Storage::disk('public')->url()` — as `auth.user.avatar_url` |
+| `UserService::getAll()` | Returns `avatar_url` for each user in the users index |
+
+### Frontend
+
+| Component | Avatar Usage |
+|-----------|-------------|
+| `components/user-info.tsx` | Reads `auth.user.avatar_url` (key is `avatar_url`, not `avatar`), renders `<Avatar>` with image or initials fallback via `useInitials()` |
+| `components/nav-user.tsx` | Renders `UserInfo` in sidebar footer area |
+| `pages/settings/index.tsx` | Avatar uploader with `<input type="file">`, `FileReader` live preview, hover overlay with camera icon |
+| `pages/users/index.tsx` | `<Avatar>` component with image or initials (two-initial code for names with spaces) |
+| `components/avatar.tsx` | Shadcn UI Avatar component (image + fallback) |
+
+### Flow
+
+```
+[User uploads avatar in settings]
+    → UpdateUserProfileInformation validates (image, 2MB, jpg/png/webp)
+    → Deletes old avatar file if exists
+    → Stores new file on public disk at avatars/{filename}
+    → Saves filename to users.avatar
+    → HandleInertiaRequests shares avatar_url on next request
+
+[User logs in with Google]
+    → GoogleAuthService::findOrCreateUser()
+    → saveGoogleAvatar() downloads Google profile picture
+    → Stores as avatar on public disk
+    → Saves filename to users.avatar
+```
+
+### Initials Fallback
+
+When no avatar is set, `useInitials()` generates initials from the user's name:
+- `"John Doe"` → `"JD"`
+- `"Alice"` → `"A"`
+- `"John Michael Doe"` → `"JM"`
 
 ## Frontend Structure
 
@@ -902,17 +1003,16 @@ Collaboration                 ← gray group label
 ```
 resources/js/pages/
 ├── auth/
-│   ├── login.tsx          → Google OAuth + email input, POST to /auth/email
-│   ├── otp.tsx            → 6-digit OTP input with countdown timer
-│   ├── onboarding.tsx     → Personal info + staff hierarchy form
-│   └── terms.tsx          → Scrollable terms text + accept button
-├── dashboard.tsx          → Points balance, stats, recent transactions, leaderboard link
+│   ├── login.tsx              → Google OAuth + email input, POST to /auth/email
+│   ├── otp.tsx                → 6-digit OTP input with countdown timer
+│   ├── onboarding.tsx         → Personal info + staff hierarchy form
+│   ├── terms.tsx              → Scrollable terms text + accept button
+│   └── account-deleted.tsx    → Shown when a soft-deleted user tries to log in. Two options: "Start a fresh account" (POST /auth/account-deleted/start-fresh) or "Request restore" (links to /contact)
+├── dashboard.tsx          → Three permission-gated tabs: Personal (points/ideas/transactions/invitations), Review (pending assignment/my queue/pending decisions/reviewed counts + quick links), Admin (system stats + management links to points/users/roles/audit)
 ├── leaderboard.tsx        → Ranked user leaderboard with avatar + stats sidebar
 ├── welcome.tsx
 ├── settings/
-│   ├── profile.tsx
-│   ├── security.tsx       → 2FA management
-│   └── appearance.tsx
+│   ├── index.tsx          → Tabbed layout (profile/security/appearance). Profile tab: full-width cards with `sm:grid-cols-2` input grids, avatar uploader with FileReader preview and camera overlay icon. Uses `PUT /settings/profile` (Fortify) + `DELETE /settings/profile` (delete account)
 ├── points/
 │   ├── index.tsx          → Table of point actions with colored icon buttons (SquarePen green, Power amber, Trash2 red)
 │   ├── create.tsx         → Form to define a new point action
@@ -920,7 +1020,7 @@ resources/js/pages/
 │   └── transactions.tsx   → Paginated audit log of all point awards
 ├── ideas/
 │   ├── index.tsx          → Paginated table with 3 tabs (My Ideas / Open for Collaboration / My Contributions). Colored action icons with matching borders (Eye blue, SquarePen green, RotateCcw amber, Trash2 red, UserPlus teal, FileEdit purple). Tab state via ?tab= query param (default: my-ideas).
-│   ├── review.tsx         → Review dashboard with tabbed sections (Pending Assignment, My Queue, Pending Decisions). Each tab gated by permission (idea.assign_officer, idea.classify, idea.dg_decision). UserPlus teal + Eye blue icon buttons.
+│   ├── review.tsx         → Review dashboard with tabbed sections (Pending Assignment, My Queue, Pending Decisions). Each tab gated by permission (idea.assign_officer, idea.classify, idea.record_decision). UserPlus teal + Eye blue icon buttons.
 │   ├── create.tsx         → Full form with file uploads, category select, team emails input, IP section (radio + conditional fields + required consent checkbox)
 │   ├── edit.tsx           → Pre-populated form with existing IP data, document management, consent checkbox
 │   ├── show.tsx           → Detail view with grouped documents, IP card (status badges, patent docs, consent info), Collaborations link, Change Requests link, collaboration request dialog. Author-only buttons (SquarePen, RotateCcw) show disabled with contextual tooltip when status condition not met; permission-based buttons (Tags, Gavel, ArrowRight, etc.) hidden without permission
@@ -975,7 +1075,9 @@ resources/js/pages/
 
 ### Components
 
-- `components/user-info.tsx` — User avatar + name/email display (uses `useInitials()` for avatar fallback)
+- `components/user-info.tsx` — User avatar + name/email display. Reads `auth.user.avatar_url` and renders `<Avatar>` with image or initials fallback via `useInitials()`
+- `components/password-input.tsx` — Reusable input with eye toggle for show/hide password. Used in DeleteUser dialog, onboarding, and auth forms |
+- `components/delete-user.tsx` — Delete account dialog with password confirmation (uses `PasswordInput` for the confirmation field). Submits `DELETE /settings/profile` |
 - `components/ui/` — Shadcn UI component library
 
 ### Body Pointer-Events Cleanup
@@ -1066,11 +1168,13 @@ The `users` table has a `points_balance` column (integer, default 0) shared glob
 
 ### Dashboard Integration
 
-The dashboard has three permission tiers for progressive disclosure:
+The dashboard has three permission-gated tabs for progressive disclosure:
 
-1. **Normal user** — Own `points_balance`, recent 5 transactions
-2. **Has `points.view`** — Also sees system-wide stats (total awarded, active actions, users with points) and leaderboard link
-3. **Has `points.create`/`edit`/`delete`** — Also sees management quick-links to point actions and transaction log
+| Tab | Visibility | Content |
+|-----|-----------|---------|
+| **Personal** | All authenticated users | Points balance, recent transactions, idea stats (total/drafts/under review/approved), pending invitations |
+| **Review** | Any review permission (`idea.assign_officer`, `idea.classify`, `idea.record_decision`, `idea.review`, `idea.receive_new_submission_notifications`) | Pending assignment count, my queue count, pending decisions count, total reviewed count, link to review dashboard |
+| **Admin** | `dashboard.view_admin` | System-wide stats (total awarded, active actions, users with points, total transactions), management quick-links (points, users, roles, audit log) gated by their respective permissions |
 
 ### Points Seeded Actions
 
@@ -1105,7 +1209,7 @@ The sidebar uses `<Sidebar collapsible="icon" variant="inset">` with `defaultOpe
 **Review group** items:
 - **Pending Assignment** — `idea.assign_officer` permission (DD)
 - **My Queue** — `idea.classify` permission (Officer)
-- **Pending Decisions** — `idea.dg_decision` permission (DG)
+- **Pending Decisions** — `idea.record_decision` permission (RI&KM Officer)
 - **Points** — `points.view` permission
 - **Role Management** — `role.manage` permission
 - **User Management** — `user.manage` permission
@@ -1286,7 +1390,7 @@ Audit/
 | `idea_classified` | Idea classified (Innovation/Research/Project/Outside Mandate) |
 | `revision_requested` | Officer requested author revision |
 | `idea_resubmitted` | Author resubmitted after revision |
-| `dg_decision_made` | DG decision recorded (approved/deferred/declined) |
+| `dg_decision_made` | DG decision recorded from external memo feedback (approved/deferred/declined) |
 | `idea_closed` | Idea closed (outside mandate, expired, or completed) |
 | `point_awarded` | Point award |
 | `team_member_added` | Invitation auto-accepted via onboarding |
@@ -1372,11 +1476,12 @@ Audit/
 - Single source of truth: `point_transactions` records everything
 - Query: `where('user_id', $user->id)->where('point_id', $point->id)->whereDate('created_at', today())->exists()`
 
-### Why Dashboard Has Three Permission Tiers?
+### Why Dashboard Has Three Tabs Instead of a Flat View?
 
-- Progressive disclosure: normal users see their own data, authorized users see system stats, managers see admin links
-- Avoids an empty dashboard for users without gamification permissions
-- Uses a single controller with conditional prop passing instead of separate endpoints
+- **Progressive disclosure**: Personal tab for all users, Review tab for reviewers, Admin tab for managers — each user sees only what's relevant
+- **Permission-gated tabs**: Personal is always visible, Review lights up when the user has any review permission, Admin requires `dashboard.view_admin`
+- **Single controller**: All three tabs are served by `DashboardController` with conditional prop passing — no separate endpoints needed
+- **Review tab consolidates counts**: Pending assignment, my queue, pending decisions — all in one place for the officer instead of spread across the review dashboard
 
 ### Why Features Are in Subfolders Instead of Flat?
 
@@ -1449,7 +1554,7 @@ This keeps each feature self-contained, avoids the `admin` word, and mirrors the
 
 - One-to-one IP right record keeps IP metadata separate from the idea itself
 - Documents are append-only (no `updated_at`) following the same pattern as `idea_documents`
-- Files stored under `private/ip-documents/{idea_id}/` on the `local` disk
+- Files stored under `private/ideas/{idea_id}/ip-documents/` on the `local` disk
 - Switching from IP protected to unprotected deletes existing patent documents
 - The `status` field (pending → in_review → registered/rejected) enables a future IP review workflow
 
@@ -1464,8 +1569,8 @@ This keeps each feature self-contained, avoids the `admin` word, and mirrors the
 
 ### Why Dedicated Review Dashboard Instead of an Index Tab?
 
-- **Permission-based structure** — Each review section maps to a specific permission (`idea.assign_officer`, `idea.classify`, `idea.dg_decision`). Users with multiple permissions see all relevant sections in one place without mixing unrelated content
-- **Ideas flow between views** — A submitted idea appears in "Pending Assignment", moves to "My Queue" when the DD assigns an officer, then to "Pending Decisions" when sent to DG. This natural pipeline prevents duplication
+- **Permission-based structure** — Each review section maps to a specific permission (`idea.assign_officer`, `idea.classify`, `idea.record_decision`). Users with multiple permissions see all relevant sections in one place without mixing unrelated content
+- **Ideas flow between views** — A submitted idea appears in "Pending Assignment", moves to "My Queue" when the DD assigns an officer, then to "Pending Decisions" once classified as Innovation (awaiting external DG memo feedback to be recorded by the officer). This natural pipeline prevents duplication
 - **Sidebar shortcut per section** — Each section gets its own sidebar nav item with a `?tab=` query param for direct access, while the dashboard page keeps all sections discoverable
 - **Gated by `idea.review`** — The sidebar items and dashboard respect individual permissions so each user only sees what they can act on
 
@@ -1475,6 +1580,35 @@ This keeps each feature self-contained, avoids the `admin` word, and mirrors the
 - Collaboration request management is a distinct workflow — reviewing incoming requests and tracking sent ones
 - The inbox/outbox model is familiar (email-like) and works better as standalone pages with their own pagination and filtering
 - Keeps the ideas index clean and focused on its core purpose
+
+### Why Email Is Preserved on Soft Delete Instead of Anonymized?
+
+- The `email` field is the primary login lookup key for both OTP and Google auth flows
+- Anonymizing the email would make it impossible to detect the user was previously deleted
+- Without detection, the login flow would silently create a new account — loss of the deletion intent
+- The account-deleted page gives users a clear choice: start fresh or request restore
+- All other PII (`name`, `mobile_number`, `gender`, `google_id`) is nulled out for privacy compliance
+
+### Why Avatars Are Stored on the Public Disk?
+
+- Avatar images are intentionally user-visible content (profile photos in sidebar, leaderboard, users list)
+- No sensitive data is contained in an avatar file
+- Using the `public` disk avoids signed URL generation for every page load
+- `Storage::disk('public')->url()` produces clean, cacheable URLs without token parameters
+- Resizing/reprocessing is straightforward since files are directly accessible via the web server
+
+### Why Google Auth Syncs the Profile Picture?
+
+- First impressions: a new user sees their Google avatar immediately, avoiding an empty initial
+- One less thing for the user to configure after login
+- The user can always override it via the settings avatar uploader
+- `saveGoogleAvatar()` is a best-effort HTTP download — failure to fetch the Google image does not block login
+
+### Why Separate `AccountDeletedController` Instead of Inline Handling?
+
+- The start-fresh logic involves creating a new user, freeing the old email, and logging in — a self-contained workflow
+- Separating it keeps the OTP and Google controllers focused on their primary authentication concerns
+- The controller is route-model-free (operates on session data, not URL parameters), so it doesn't fit neatly into the existing controller patterns
 
 ### Why Action Buttons Use Colored Icons + Matching Borders?
 
@@ -1488,7 +1622,7 @@ All action icon buttons follow a consistent visual convention across the app:
 - **Power (amber)** — toggle actions (activate/deactivate point action)
 - **FileEdit (purple)** — propose changes (change requests)
 - **UserPlus / UserCheck (teal)** — collaboration actions (request/manage collaboration)
-- **Gavel (amber)** — DG decision actions (record decision)
+- **Gavel (amber)** — Record DG decision from external memo feedback
 - **ArrowRight (sky)** — advance status actions (progress idea through pipeline)
 - **Disabled buttons** — rendered with same icon color + border but dimmed via `opacity-50`; wrapped in `<span tabIndex={0}>` with a Tooltip explaining why the action is unavailable
 - **Permission-based buttons** — remain completely hidden when the user lacks the permission
