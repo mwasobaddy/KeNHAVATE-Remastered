@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Bug, ClipboardCheck, ClipboardList, Inbox, LayoutGrid, Lightbulb, ScrollText, Send, Shield, Trophy, User, Zap } from 'lucide-react';
+import { Bug, Building, Building2, ClipboardCheck, ClipboardList, FileText, FolderTree, Inbox, LayoutGrid, Lightbulb, MapPin, ScrollText, Send, Shield, Tags, Trophy, User, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -20,6 +20,12 @@ import points from '@/routes/points';
 import roles from '@/routes/roles';
 import users from '@/routes/users';
 import bugReports from '@/routes/bug-reports';
+import regions from '@/routes/regions';
+import directorates from '@/routes/directorates';
+import departments from '@/routes/departments';
+import contractTypes from '@/routes/contract-types';
+import ideaCategories from '@/routes/idea-categories';
+import ideaClassifications from '@/routes/idea-classifications';
 import type { NavItem } from '@/types';
 
 const footerNavItems: NavItem[] = [
@@ -118,14 +124,68 @@ export function AppSidebar() {
         });
     }
 
-    const engagementItems: NavItem[] = [];
+    const configurationItems: NavItem[] = [];
 
     if (hasPointsAccess) {
-        engagementItems.push({
+        configurationItems.push({
             title: 'Points',
             href: points.index(),
             icon: Zap as LucideIcon,
-            group: 'Engagement',
+            group: 'Configuration',
+        });
+    }
+
+    if (permissions.includes('region.manage')) {
+        configurationItems.push({
+            title: 'Regions',
+            href: regions.index(),
+            icon: MapPin as LucideIcon,
+            group: 'Configuration',
+        });
+    }
+
+    if (permissions.includes('directorate.manage')) {
+        configurationItems.push({
+            title: 'Directorates',
+            href: directorates.index(),
+            icon: Building2 as LucideIcon,
+            group: 'Configuration',
+        });
+    }
+
+    if (permissions.includes('department.manage')) {
+        configurationItems.push({
+            title: 'Departments',
+            href: departments.index(),
+            icon: Building as LucideIcon,
+            group: 'Configuration',
+        });
+    }
+
+    if (permissions.includes('contract_type.manage')) {
+        configurationItems.push({
+            title: 'Contract Types',
+            href: contractTypes.index(),
+            icon: FileText as LucideIcon,
+            group: 'Configuration',
+        });
+    }
+
+    if (permissions.includes('idea_category.manage')) {
+        configurationItems.push({
+            title: 'Idea Categories',
+            href: ideaCategories.index(),
+            icon: FolderTree as LucideIcon,
+            group: 'Configuration',
+        });
+    }
+
+    if (permissions.includes('idea_classification.manage')) {
+        configurationItems.push({
+            title: 'Idea Classifications',
+            href: ideaClassifications.index(),
+            icon: Tags as LucideIcon,
+            group: 'Configuration',
         });
     }
 
@@ -182,7 +242,7 @@ export function AppSidebar() {
         ...collaborationItems,
         ...changesItems,
         ...reviewItems,
-        ...engagementItems,
+        ...configurationItems,
         ...iamItems,
         ...supportItems,
     ];
