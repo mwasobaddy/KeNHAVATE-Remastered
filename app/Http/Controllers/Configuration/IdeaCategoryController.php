@@ -20,7 +20,7 @@ class IdeaCategoryController extends Controller
     public function index(Request $request): Response
     {
         return inertia('configuration/idea-categories/index', [
-            'ideaCategories' => $this->ideaCategoryService->list(
+            'idea_categories' => $this->ideaCategoryService->list(
                 $request->get('search', ''),
                 $request->only(['search']),
             ),

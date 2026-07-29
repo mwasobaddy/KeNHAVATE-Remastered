@@ -20,7 +20,7 @@ class IdeaClassificationController extends Controller
     public function index(Request $request): Response
     {
         return inertia('configuration/idea-classifications/index', [
-            'ideaClassifications' => $this->ideaClassificationService->list(
+            'idea_classifications' => $this->ideaClassificationService->list(
                 $request->get('search', ''),
                 $request->only(['search']),
             ),

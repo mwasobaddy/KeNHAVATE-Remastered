@@ -20,7 +20,7 @@ class ContractTypeController extends Controller
     public function index(Request $request): Response
     {
         return inertia('configuration/contract-types/index', [
-            'contractTypes' => $this->contractTypeService->list(
+            'contract_types' => $this->contractTypeService->list(
                 $request->get('search', ''),
                 $request->only(['search']),
             ),
