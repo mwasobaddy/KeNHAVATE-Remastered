@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Http\Requests\Configuration;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreRegionRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()->can('region.create');
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50', 'unique:regions,code'],
+            'description' => ['nullable', 'string'],
+            'is_active' => ['boolean'],
+        ];
+    }
+}

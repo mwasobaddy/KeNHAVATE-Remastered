@@ -14,7 +14,7 @@ class TransactionController extends Controller
             ->latest('created_at')
             ->paginate(30);
 
-        return inertia('points/transactions', [
+        return inertia('configuration/points/transactions', [
             'transactions' => $transactions,
         ]);
     }

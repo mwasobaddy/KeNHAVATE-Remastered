@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Points;
+namespace App\Http\Controllers\Configuration;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Points\StorePointRequest;
@@ -19,7 +19,7 @@ class PointController extends Controller
 
     public function index(Request $request): Response
     {
-        return inertia('points/index', [
+        return inertia('configuration/points/index', [
             'points' => $this->pointService->list(
                 $request->get('search', ''),
                 $request->only(['search', 'status', 'date_from', 'date_to']),
@@ -31,7 +31,7 @@ class PointController extends Controller
 
     public function create(): Response
     {
-        return inertia('points/create');
+        return inertia('configuration/points/create');
     }
 
     public function store(StorePointRequest $request): RedirectResponse
@@ -44,7 +44,7 @@ class PointController extends Controller
 
     public function edit(Point $point): Response
     {
-        return inertia('points/edit', [
+        return inertia('configuration/points/edit', [
             'point' => $point,
         ]);
     }

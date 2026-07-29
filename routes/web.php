@@ -6,6 +6,13 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\TermsController;
+use App\Http\Controllers\Configuration\ContractTypeController;
+use App\Http\Controllers\Configuration\DepartmentController;
+use App\Http\Controllers\Configuration\DirectorateController;
+use App\Http\Controllers\Configuration\IdeaCategoryController;
+use App\Http\Controllers\Configuration\IdeaClassificationController;
+use App\Http\Controllers\Configuration\PointController;
+use App\Http\Controllers\Configuration\RegionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Ideas\AssignmentController;
 use App\Http\Controllers\Ideas\ChangeRequestController;
@@ -18,7 +25,6 @@ use App\Http\Controllers\Ideas\IdeaController;
 use App\Http\Controllers\Ideas\InvitationController;
 use App\Http\Controllers\Ideas\ReviewController;
 use App\Http\Controllers\Points\LeaderboardController;
-use App\Http\Controllers\Points\PointController;
 use App\Http\Controllers\Points\TransactionController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\Roles\RoleController;
@@ -246,6 +252,162 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::get('/transactions', [TransactionController::class, 'index'])
             ->name('transactions')
             ->middleware('permission:points.view');
+    });
+
+    Route::prefix('regions')->name('regions.')->group(function () {
+        Route::get('/', [RegionController::class, 'index'])
+            ->name('index')
+            ->middleware('permission:region.manage|region.create|region.edit|region.delete');
+
+        Route::get('/create', [RegionController::class, 'create'])
+            ->name('create')
+            ->middleware('permission:region.create');
+
+        Route::post('/', [RegionController::class, 'store'])
+            ->name('store')
+            ->middleware('permission:region.create');
+
+        Route::get('/{region}/edit', [RegionController::class, 'edit'])
+            ->name('edit')
+            ->middleware('permission:region.edit');
+
+        Route::put('/{region}', [RegionController::class, 'update'])
+            ->name('update')
+            ->middleware('permission:region.edit');
+
+        Route::delete('/{region}', [RegionController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('permission:region.delete');
+    });
+
+    Route::prefix('directorates')->name('directorates.')->group(function () {
+        Route::get('/', [DirectorateController::class, 'index'])
+            ->name('index')
+            ->middleware('permission:directorate.manage|directorate.create|directorate.edit|directorate.delete');
+
+        Route::get('/create', [DirectorateController::class, 'create'])
+            ->name('create')
+            ->middleware('permission:directorate.create');
+
+        Route::post('/', [DirectorateController::class, 'store'])
+            ->name('store')
+            ->middleware('permission:directorate.create');
+
+        Route::get('/{directorate}/edit', [DirectorateController::class, 'edit'])
+            ->name('edit')
+            ->middleware('permission:directorate.edit');
+
+        Route::put('/{directorate}', [DirectorateController::class, 'update'])
+            ->name('update')
+            ->middleware('permission:directorate.edit');
+
+        Route::delete('/{directorate}', [DirectorateController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('permission:directorate.delete');
+    });
+
+    Route::prefix('departments')->name('departments.')->group(function () {
+        Route::get('/', [DepartmentController::class, 'index'])
+            ->name('index')
+            ->middleware('permission:department.manage|department.create|department.edit|department.delete');
+
+        Route::get('/create', [DepartmentController::class, 'create'])
+            ->name('create')
+            ->middleware('permission:department.create');
+
+        Route::post('/', [DepartmentController::class, 'store'])
+            ->name('store')
+            ->middleware('permission:department.create');
+
+        Route::get('/{department}/edit', [DepartmentController::class, 'edit'])
+            ->name('edit')
+            ->middleware('permission:department.edit');
+
+        Route::put('/{department}', [DepartmentController::class, 'update'])
+            ->name('update')
+            ->middleware('permission:department.edit');
+
+        Route::delete('/{department}', [DepartmentController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('permission:department.delete');
+    });
+
+    Route::prefix('contract-types')->name('contract-types.')->group(function () {
+        Route::get('/', [ContractTypeController::class, 'index'])
+            ->name('index')
+            ->middleware('permission:contract_type.manage|contract_type.create|contract_type.edit|contract_type.delete');
+
+        Route::get('/create', [ContractTypeController::class, 'create'])
+            ->name('create')
+            ->middleware('permission:contract_type.create');
+
+        Route::post('/', [ContractTypeController::class, 'store'])
+            ->name('store')
+            ->middleware('permission:contract_type.create');
+
+        Route::get('/{contractType}/edit', [ContractTypeController::class, 'edit'])
+            ->name('edit')
+            ->middleware('permission:contract_type.edit');
+
+        Route::put('/{contractType}', [ContractTypeController::class, 'update'])
+            ->name('update')
+            ->middleware('permission:contract_type.edit');
+
+        Route::delete('/{contractType}', [ContractTypeController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('permission:contract_type.delete');
+    });
+
+    Route::prefix('idea-categories')->name('idea-categories.')->group(function () {
+        Route::get('/', [IdeaCategoryController::class, 'index'])
+            ->name('index')
+            ->middleware('permission:idea_category.manage|idea_category.create|idea_category.edit|idea_category.delete');
+
+        Route::get('/create', [IdeaCategoryController::class, 'create'])
+            ->name('create')
+            ->middleware('permission:idea_category.create');
+
+        Route::post('/', [IdeaCategoryController::class, 'store'])
+            ->name('store')
+            ->middleware('permission:idea_category.create');
+
+        Route::get('/{ideaCategory}/edit', [IdeaCategoryController::class, 'edit'])
+            ->name('edit')
+            ->middleware('permission:idea_category.edit');
+
+        Route::put('/{ideaCategory}', [IdeaCategoryController::class, 'update'])
+            ->name('update')
+            ->middleware('permission:idea_category.edit');
+
+        Route::delete('/{ideaCategory}', [IdeaCategoryController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('permission:idea_category.delete');
+    });
+
+    Route::prefix('idea-classifications')->name('idea-classifications.')->group(function () {
+        Route::get('/', [IdeaClassificationController::class, 'index'])
+            ->name('index')
+            ->middleware('permission:idea_classification.manage|idea_classification.create|idea_classification.edit|idea_classification.delete');
+
+        Route::get('/create', [IdeaClassificationController::class, 'create'])
+            ->name('create')
+            ->middleware('permission:idea_classification.create');
+
+        Route::post('/', [IdeaClassificationController::class, 'store'])
+            ->name('store')
+            ->middleware('permission:idea_classification.create');
+
+        Route::get('/{ideaClassification}/edit', [IdeaClassificationController::class, 'edit'])
+            ->name('edit')
+            ->middleware('permission:idea_classification.edit');
+
+        Route::put('/{ideaClassification}', [IdeaClassificationController::class, 'update'])
+            ->name('update')
+            ->middleware('permission:idea_classification.edit');
+
+        Route::delete('/{ideaClassification}', [IdeaClassificationController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('permission:idea_classification.delete');
     });
 
     Route::get('leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard');
