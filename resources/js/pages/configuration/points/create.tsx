@@ -40,10 +40,23 @@ export default function PointCreate() {
             <Head title="Create Point Action" />
 
             <div className="space-y-6">
-                <Heading
-                    title="Create Point Action"
-                    description="Define a new action that awards points to users"
-                />
+                <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-1">
+                        <Tooltip open={tipBack} onOpenChange={setTipBack}>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="warning" onClick={() => { setTipBack(true); goBack(); }}>
+                                    <ArrowLeft className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Back</TooltipContent>
+                        </Tooltip>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+                    <Heading
+                        title="Create Point Action"
+                        description="Define a new action that awards points to users"
+                    />
+                </div>
 
                 <Card>
                     <CardHeader>

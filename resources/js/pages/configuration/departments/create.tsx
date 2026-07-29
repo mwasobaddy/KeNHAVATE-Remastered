@@ -114,18 +114,18 @@ export default function DepartmentCreate({ directorates }: Props) {
 
                                         <div className="grid gap-2">
                                             <Label htmlFor="directorate_id">Directorate</Label>
-                                            <select
-                                                id="directorate_id"
-                                                name="directorate_id"
-                                                className="rounded-md border border-input bg-background px-3 py-2"
-                                            >
-                                                <option value="">Select a directorate</option>
-                                                {directorates.map((directorate) => (
-                                                    <option key={directorate.id} value={directorate.id}>
-                                                        {directorate.name} ({directorate.code}){directorate.region ? ` - ${directorate.region.name}` : ''}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <Select name="directorate_id">
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a directorate" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {directorates.map((directorate) => (
+                                                        <SelectItem key={directorate.id} value={directorate.id.toString()}>
+                                                            {directorate.name} ({directorate.code}){directorate.region ? ` - ${directorate.region.name}` : ''}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <InputError message={allErrors.directorate_id} />
                                         </div>
 

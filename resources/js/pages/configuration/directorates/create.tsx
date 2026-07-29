@@ -114,18 +114,18 @@ export default function DirectorateCreate({ regions }: Props) {
 
                                         <div className="grid gap-2">
                                             <Label htmlFor="region_id">Region</Label>
-                                            <select
-                                                id="region_id"
-                                                name="region_id"
-                                                className="rounded-md border border-input bg-background px-3 py-2"
-                                            >
-                                                <option value="">Select a region</option>
-                                                {regions.map((region) => (
-                                                    <option key={region.id} value={region.id}>
-                                                        {region.name} ({region.code})
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <Select name="region_id">
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a region" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {regions.map((region) => (
+                                                        <SelectItem key={region.id} value={region.id.toString()}>
+                                                            {region.name} ({region.code})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <InputError message={allErrors.region_id} />
                                         </div>
 
