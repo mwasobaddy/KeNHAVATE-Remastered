@@ -134,7 +134,7 @@ export default function ContractTypeIndex({ contract_types, filters: initialFilt
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
 
-                    {permissions.includes('contract-type.create') && (
+                    {permissions.includes('contract_type.create') && (
                         <div className="flex flex-col items-center gap-1">
                             <Tooltip open={tipNew} onOpenChange={setTipNew}>
                                 <TooltipTrigger asChild>
@@ -205,7 +205,7 @@ export default function ContractTypeIndex({ contract_types, filters: initialFilt
                                                 </td>
                                                 <td className="py-3 pr-4">
                                                     <div className="flex items-start gap-2">
-                                                        {permissions.includes('contract-type.edit') && (
+                                                        {permissions.includes('contract_type.edit') && (
                                                             <div className="flex flex-col items-center gap-1">
                                                                 <Tooltip open={activeTips[`${contractType.id}-edit`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${contractType.id}-edit`]: o }))}>
                                                                     <TooltipTrigger asChild>
@@ -220,7 +220,7 @@ export default function ContractTypeIndex({ contract_types, filters: initialFilt
                                                                 <span className="text-[10px] leading-tight text-muted-foreground text-center">Edit</span>
                                                             </div>
                                                         )}
-                                                        {permissions.includes('contract-type.delete') && (
+                                                        {permissions.includes('contract_type.delete') && (
                                                             <div className="flex flex-col items-center gap-1">
                                                                 <Tooltip open={activeTips[`${contractType.id}-delete`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${contractType.id}-delete`]: o }))}>
                                                                     <TooltipTrigger asChild>

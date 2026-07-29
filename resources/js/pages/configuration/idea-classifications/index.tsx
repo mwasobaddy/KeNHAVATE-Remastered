@@ -135,7 +135,7 @@ export default function IdeaClassificationIndex({ idea_classifications, filters:
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
 
-                    {permissions.includes('idea-classification.create') && (
+                    {permissions.includes('idea_classification.create') && (
                         <div className="flex flex-col items-center gap-1">
                             <Tooltip open={tipNew} onOpenChange={setTipNew}>
                                 <TooltipTrigger asChild>
@@ -210,7 +210,7 @@ export default function IdeaClassificationIndex({ idea_classifications, filters:
                                                 </td>
                                                 <td className="py-3 pr-4">
                                                     <div className="flex items-start gap-2">
-                                                        {permissions.includes('idea-classification.edit') && (
+                                                        {permissions.includes('idea_classification.edit') && (
                                                             <div className="flex flex-col items-center gap-1">
                                                                 <Tooltip open={activeTips[`${classification.id}-edit`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${classification.id}-edit`]: o }))}>
                                                                     <TooltipTrigger asChild>
@@ -225,7 +225,7 @@ export default function IdeaClassificationIndex({ idea_classifications, filters:
                                                                 <span className="text-[10px] leading-tight text-muted-foreground text-center">Edit</span>
                                                             </div>
                                                         )}
-                                                        {permissions.includes('idea-classification.delete') && (
+                                                        {permissions.includes('idea_classification.delete') && (
                                                             <div className="flex flex-col items-center gap-1">
                                                                 <Tooltip open={activeTips[`${classification.id}-delete`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${classification.id}-delete`]: o }))}>
                                                                     <TooltipTrigger asChild>

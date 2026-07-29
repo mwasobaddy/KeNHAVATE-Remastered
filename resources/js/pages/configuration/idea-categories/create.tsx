@@ -1,4 +1,5 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -7,11 +8,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ideaCategories from '@/routes/idea-categories';
 
 export default function IdeaCategoryCreate() {
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const [tipBack, setTipBack] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
+
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit('/dashboard');
+        }
+    };
 
     function validate(form: HTMLFormElement): boolean {
         const fd = new FormData(form);
@@ -26,10 +37,23 @@ export default function IdeaCategoryCreate() {
             <Head title="Create Idea Category" />
 
             <div className="space-y-6">
-                <Heading
-                    title="Create Idea Category"
-                    description="Add a new idea category to the system"
-                />
+                <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-1">
+                        <Tooltip open={tipBack} onOpenChange={setTipBack}>
+                            <TooltipTrigger asChild>
+                                <Button size="icon" variant="warning" onClick={() => { setTipBack(true); goBack(); }}>
+                                    <ArrowLeft className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Back</TooltipContent>
+                        </Tooltip>
+                        <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
+                    </div>
+                    <Heading
+                        title="Create Idea Category"
+                        description="Add a new idea category to the system"
+                    />
+                </div>
 
                 <Card>
                     <CardHeader>

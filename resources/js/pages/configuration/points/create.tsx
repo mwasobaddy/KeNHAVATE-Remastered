@@ -1,4 +1,5 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 import { useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -7,11 +8,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import points from '@/routes/points';
 
 export default function PointCreate() {
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const [tipBack, setTipBack] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
+
+    const goBack = () => {
+        if (window.history.length > 2) {
+            window.history.back();
+        } else {
+            router.visit('/dashboard');
+        }
+    };
 
     function validate(form: HTMLFormElement): boolean {
         const fd = new FormData(form);

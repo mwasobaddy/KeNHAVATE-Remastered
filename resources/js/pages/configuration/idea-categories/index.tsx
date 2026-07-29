@@ -137,7 +137,7 @@ export default function IdeaCategoryIndex({ idea_categories, filters: initialFil
                         <span className="text-[10px] leading-tight text-muted-foreground text-center">Back</span>
                     </div>
 
-                    {permissions.includes('idea-category.create') && (
+                    {permissions.includes('idea_category.create') && (
                         <div className="flex flex-col items-center gap-1">
                             <Tooltip open={tipNew} onOpenChange={setTipNew}>
                                 <TooltipTrigger asChild>
@@ -221,7 +221,7 @@ export default function IdeaCategoryIndex({ idea_categories, filters: initialFil
                                                 </td>
                                                 <td className="py-3 pr-4">
                                                     <div className="flex items-start gap-2">
-                                                        {permissions.includes('idea-category.edit') && (
+                                                        {permissions.includes('idea_category.edit') && (
                                                             <div className="flex flex-col items-center gap-1">
                                                                 <Tooltip open={activeTips[`${category.id}-edit`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${category.id}-edit`]: o }))}>
                                                                     <TooltipTrigger asChild>
@@ -236,7 +236,7 @@ export default function IdeaCategoryIndex({ idea_categories, filters: initialFil
                                                                 <span className="text-[10px] leading-tight text-muted-foreground text-center">Edit</span>
                                                             </div>
                                                         )}
-                                                        {permissions.includes('idea-category.delete') && (
+                                                        {permissions.includes('idea_category.delete') && (
                                                             <div className="flex flex-col items-center gap-1">
                                                                 <Tooltip open={activeTips[`${category.id}-delete`] ?? false} onOpenChange={(o) => setActiveTips((p) => ({ ...p, [`${category.id}-delete`]: o }))}>
                                                                     <TooltipTrigger asChild>
