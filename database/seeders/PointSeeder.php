@@ -9,31 +9,38 @@ class PointSeeder extends Seeder
 {
     public function run(): void
     {
-        Point::firstOrCreate(
-            ['name' => 'New Account'],
+        $pointsData = [
             [
+                'name' => 'New Account',
                 'description' => 'Points awarded for creating a new account and completing onboarding.',
                 'points' => 100,
                 'is_active' => true,
             ],
-        );
-
-        Point::firstOrCreate(
-            ['name' => 'Daily Login'],
             [
+                'name' => 'Daily Login',
                 'description' => 'Points awarded for logging in each day.',
                 'points' => 10,
                 'is_active' => true,
             ],
-        );
-
-        Point::firstOrCreate(
-            ['name' => 'Idea Submission'],
             [
+                'name' => 'Idea Submission',
                 'description' => 'Points awarded to each contributor for submitting a new idea.',
                 'points' => 50,
                 'is_active' => true,
             ],
-        );
+            [
+                'name' => 'Bug Bounty',
+                'description' => 'Points awarded when a submitted bug report is accepted as valid.',
+                'points' => 20,
+                'is_active' => true,
+            ],
+        ];
+
+        foreach ($pointsData as $point) {
+            Point::firstOrCreate(
+                ['name' => $point['name']],
+                array_merge($point, ['created_by' => 1]),
+            );
+        }
     }
 }

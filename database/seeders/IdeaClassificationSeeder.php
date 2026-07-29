@@ -35,7 +35,7 @@ class IdeaClassificationSeeder extends Seeder
         foreach ($classifications as $classification) {
             IdeaClassification::firstOrCreate(
                 ['slug' => $classification['slug']],
-                $classification,
+                array_merge($classification, ['created_by' => 1]),
             );
         }
     }

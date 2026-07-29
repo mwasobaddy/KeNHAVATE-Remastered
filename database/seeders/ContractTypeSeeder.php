@@ -18,7 +18,7 @@ class ContractTypeSeeder extends Seeder
         ];
 
         foreach ($contractTypes as $type) {
-            ContractType::create($type);
+            ContractType::create(array_merge($type, ['created_by' => 1]));
         }
 
         $this->command->info('Created '.count($contractTypes).' contract types successfully.');

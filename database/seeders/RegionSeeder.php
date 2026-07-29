@@ -46,7 +46,7 @@ class RegionSeeder extends Seeder
         ];
 
         foreach ($regions as $region) {
-            Region::create($region);
+            Region::create(array_merge($region, ['created_by' => 1]));
         }
 
         $this->command->info('Created '.count($regions).' regions successfully.');

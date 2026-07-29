@@ -38,6 +38,7 @@ class DirectorateSeeder extends Seeder
                 'code' => $directorate['code'],
                 'description' => $directorate['description'],
                 'region_id' => $regions[$directorate['region_code']],
+                'created_by' => 1,
             ]);
         }
 

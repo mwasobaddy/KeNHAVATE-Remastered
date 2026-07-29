@@ -54,6 +54,7 @@ class DepartmentSeeder extends Seeder
                 'code' => $department['code'],
                 'description' => $department['description'],
                 'directorate_id' => $directorates[$department['directorate_code']],
+                'created_by' => 1,
             ]);
         }
 

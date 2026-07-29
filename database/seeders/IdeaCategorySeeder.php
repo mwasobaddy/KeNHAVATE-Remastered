@@ -55,7 +55,7 @@ class IdeaCategorySeeder extends Seeder
         foreach ($categories as $category) {
             IdeaCategory::firstOrCreate(
                 ['slug' => $category['slug']],
-                $category,
+                array_merge($category, ['created_by' => 1]),
             );
         }
     }
