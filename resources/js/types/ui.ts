@@ -6,6 +6,7 @@ export type NavItem = {
     icon: LucideIcon | null;
     badge?: number;
     group?: string;
+    exactMatch?: boolean;
 };
 
 export type AppVariant = 'sidebar' | 'header';

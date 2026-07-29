@@ -22,6 +22,8 @@ use App\Http\Controllers\Points\PointController;
 use App\Http\Controllers\Points\TransactionController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\Roles\RoleController;
+use App\Http\Controllers\Support\BugReportController;
+use App\Http\Controllers\Support\BugReportManagementController;
 use App\Http\Controllers\Users\UserController;
 use App\Models\ContractType;
 use App\Models\Region;
@@ -345,6 +347,19 @@ Route::middleware(['auth', 'verified', 'onboarding.complete', 'terms'])->group(f
         Route::post('/{slug}/progress', [DecisionController::class, 'progress'])->name('progress');
         Route::post('/{slug}/request-revision', [RevisionController::class, 'requestRevision'])->name('request-revision');
         Route::post('/{slug}/resubmit', [RevisionController::class, 'resubmit'])->name('resubmit');
+    });
+
+    Route::prefix('bug-reports')->name('bug-reports.')->group(function () {
+        Route::get('/', [BugReportController::class, 'index'])->name('index');
+        Route::get('/create', [BugReportController::class, 'create'])->name('create');
+        Route::post('/', [BugReportController::class, 'store'])->name('store');
+
+        Route::middleware('permission:report.manage')->group(function () {
+            Route::get('/manage', [BugReportManagementController::class, 'index'])->name('manage');
+            Route::post('/{bugReport}/review', [BugReportManagementController::class, 'review'])
+                ->name('review')
+                ->middleware('permission:report.accept|report.reject');
+        });
     });
 
 });

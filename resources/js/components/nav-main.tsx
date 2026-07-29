@@ -10,7 +10,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
-    const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
     const groupedItems = items.reduce<Record<string, NavItem[]>>((acc, item) => {
         const group = item.group || 'General';
@@ -57,7 +57,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton
                                     asChild
-                                    isActive={isCurrentOrParentUrl(typeof item.href === 'string' ? item.href : (item.href?.url ?? ''))}
+                                    isActive={item.exactMatch ? isCurrentUrl(typeof item.href === 'string' ? item.href : (item.href?.url ?? '')) : isCurrentOrParentUrl(typeof item.href === 'string' ? item.href : (item.href?.url ?? ''))}
                                     tooltip={{ children: item.title }}
                                 >
                                     <Link href={item.href || '#'} prefetch>

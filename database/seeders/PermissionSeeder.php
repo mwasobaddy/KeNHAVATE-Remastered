@@ -41,6 +41,10 @@ class PermissionSeeder extends Seeder
             ['name' => 'user.create', 'description' => 'Allows creating new user accounts.'],
             ['name' => 'user.edit', 'description' => 'Allows editing user details and assigned roles.'],
             ['name' => 'user.delete', 'description' => 'Allows deleting user accounts.'],
+            ['name' => 'report.manage', 'description' => 'Allows viewing all bug reports submitted by users.'],
+            ['name' => 'report.accept', 'description' => 'Allows accepting a bug report as valid.'],
+            ['name' => 'report.reject', 'description' => 'Allows rejecting a bug report with a reason.'],
+            ['name' => 'report.receive_report_notification', 'description' => 'Receives notifications when a new bug report is submitted.'],
         ];
 
         foreach ($permissions as $permission) {

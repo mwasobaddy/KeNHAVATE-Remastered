@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ClipboardCheck, ClipboardList, Inbox, LayoutGrid, Lightbulb, ScrollText, Send, Shield, Trophy, User, Zap } from 'lucide-react';
+import { Bug, ClipboardCheck, ClipboardList, Inbox, LayoutGrid, Lightbulb, ScrollText, Send, Shield, Trophy, User, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -19,6 +19,7 @@ import ideas from '@/routes/ideas';
 import points from '@/routes/points';
 import roles from '@/routes/roles';
 import users from '@/routes/users';
+import bugReports from '@/routes/bug-reports';
 import type { NavItem } from '@/types';
 
 const footerNavItems: NavItem[] = [
@@ -45,6 +46,7 @@ export function AppSidebar() {
     const hasClassifyPermission = permissions.includes('idea.classify');
     const hasRoleManage = permissions.includes('role.manage');
     const hasUserManage = permissions.includes('user.manage');
+    const hasReportManage = permissions.includes('report.manage');
     const generalItems: NavItem[] = [
         {
             title: 'Dashboard',
@@ -156,7 +158,24 @@ export function AppSidebar() {
         });
     }
 
-    const othersItems: NavItem[] = [];
+    const supportItems: NavItem[] = [
+        {
+            title: 'Report Bug',
+            href: bugReports.index(),
+            icon: Bug as LucideIcon,
+            group: 'Support',
+            exactMatch: true,
+        },
+    ];
+
+    if (hasReportManage) {
+        supportItems.push({
+            title: 'Review Reports',
+            href: bugReports.manage(),
+            icon: ClipboardCheck as LucideIcon,
+            group: 'Support',
+        });
+    }
 
     const mainNavItems = [
         ...generalItems,
@@ -165,7 +184,7 @@ export function AppSidebar() {
         ...reviewItems,
         ...engagementItems,
         ...iamItems,
-        ...othersItems,
+        ...supportItems,
     ];
 
     return (
