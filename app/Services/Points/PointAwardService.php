@@ -6,6 +6,7 @@ use App\Models\Point;
 use App\Models\PointTransaction;
 use App\Models\User;
 use App\Services\AuditService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class PointAwardService
@@ -47,11 +48,11 @@ class PointAwardService
             ->get();
     }
 
-    public function getAllTransactions(): Collection
+    public function getAllTransactions(int $perPage = 30): LengthAwarePaginator
     {
         return PointTransaction::with(['point:id,name', 'user:id,name'])
             ->latest('created_at')
-            ->get();
+            ->paginate($perPage);
     }
 
     public function hasBeenAwardedToday(User $user, Point $point): bool
@@ -62,12 +63,11 @@ class PointAwardService
             ->exists();
     }
 
-    public function getLeaderboard(int $limit = 20): Collection
+    public function getLeaderboard(int $perPage = 20): LengthAwarePaginator
     {
         return User::where('points_balance', '>', 0)
             ->orderBy('points_balance', 'desc')
-            ->limit($limit)
-            ->get(['id', 'name', 'points_balance']);
+            ->paginate($perPage, ['id', 'name', 'points_balance']);
     }
 
     public function getSystemStats(): array

@@ -141,7 +141,7 @@ class ChangeRequestService
         return $query->latest()->paginate($perPage);
     }
 
-    public function getForReviewAll(User $user, string $search = '', bool $showAll = false, array $filters = []): array
+    public function getForReviewAll(User $user, string $search = '', bool $showAll = false, array $filters = []): LengthAwarePaginator
     {
         $hiddenSub = DB::table('change_request_hidden_users')
             ->whereColumn('change_request_id', 'change_requests.id')
@@ -155,9 +155,7 @@ class ChangeRequestService
 
         if (! $showAll) {
             $query->where('status', 'pending');
-        }
-
-        if (($filters['status'] ?? null) && ! $showAll) {
+        } elseif ($filters['status'] ?? null) {
             $query->whereIn('status', explode(',', $filters['status']));
         }
 
@@ -169,19 +167,12 @@ class ChangeRequestService
             });
         }
 
-        $all = $query->addSelect(['hidden_by_user' => clone $hiddenSub])
+        return $query->addSelect(['hidden_by_user' => clone $hiddenSub])
             ->latest()
-            ->get();
-
-        $pending = $all->where('status', 'pending')->values();
-
-        return [
-            'pending' => $pending,
-            'all' => $all,
-        ];
+            ->paginate(20);
     }
 
-    public function getForUser(User $user, string $search = '', array $filters = []): array
+    public function getForUser(User $user, string $search = '', array $filters = []): LengthAwarePaginator
     {
         $hiddenSub = DB::table('change_request_hidden_users')
             ->whereColumn('change_request_id', 'change_requests.id')
@@ -189,7 +180,7 @@ class ChangeRequestService
             ->selectRaw('1')
             ->limit(1);
 
-        $proposed = ChangeRequest::with(['idea', 'proposer', 'reviewer'])
+        return ChangeRequest::with(['idea', 'proposer', 'reviewer'])
             ->where('user_id', $user->id)
             ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
                 $q->whereHas('idea', fn ($q) => $q->where('title', 'like', "%{$search}%"))
@@ -200,24 +191,6 @@ class ChangeRequestService
             )
             ->addSelect(['hidden_by_user' => clone $hiddenSub])
             ->latest()
-            ->get();
-
-        $forReview = ChangeRequest::with(['idea', 'proposer', 'reviewer'])
-            ->where('status', 'pending')
-            ->where('user_id', '!=', $user->id)
-            ->whereHas('idea', fn ($q) => $q->where('author_id', $user->id))
-            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
-                $q->whereHas('idea', fn ($q) => $q->where('title', 'like', "%{$search}%"))
-                    ->orWhereHas('proposer', fn ($q) => $q->where('name', 'like', "%{$search}%"))
-                    ->orWhere('status', 'like', "%{$search}%");
-            }))
-            ->addSelect(['hidden_by_user' => clone $hiddenSub])
-            ->latest()
-            ->get();
-
-        return [
-            'proposed' => $proposed,
-            'for_review' => $forReview,
-        ];
+            ->paginate(20);
     }
 }

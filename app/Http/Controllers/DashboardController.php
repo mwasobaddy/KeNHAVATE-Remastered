@@ -98,7 +98,7 @@ class DashboardController extends Controller
 
         if ($user->can('dashboard.view_admin')) {
             $data['canViewAdmin'] = true;
-            $data['allTransactions'] = $this->pointAwardService->getAllTransactions();
+            $data['allTransactions'] = $this->pointAwardService->getAllTransactions(20);
             $data['systemStats'] = $this->pointAwardService->getSystemStats();
 
             if ($user->can('points.create') || $user->can('points.edit') || $user->can('points.delete')) {

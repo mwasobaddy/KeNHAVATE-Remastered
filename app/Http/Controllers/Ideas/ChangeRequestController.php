@@ -43,7 +43,7 @@ class ChangeRequestController extends Controller
                 $request->user(),
                 $request->get('search', ''),
                 $request->only(['search', 'status', 'date_from', 'date_to']),
-            )['proposed'],
+            ),
             'filters' => $request->only(['search', 'status', 'date_from', 'date_to']),
             'search' => $request->get('search', ''),
         ]);
@@ -51,17 +51,17 @@ class ChangeRequestController extends Controller
 
     public function pending(Request $request): Response
     {
-        return inertia('ideas/changes/pending',
-            $this->changeRequestService->getForReviewAll(
+        return inertia('ideas/changes/pending', [
+            'requests' => $this->changeRequestService->getForReviewAll(
                 $request->user(),
                 $request->get('search', ''),
                 $request->boolean('show_all', false),
                 $request->only(['search', 'status', 'date_from', 'date_to']),
-            ) + [
-                'filters' => $request->only(['search', 'status', 'date_from', 'date_to']),
-                'search' => $request->get('search', ''),
-            ],
-        );
+            ),
+            'showAll' => $request->boolean('show_all', false),
+            'filters' => $request->only(['search', 'status', 'date_from', 'date_to']),
+            'search' => $request->get('search', ''),
+        ]);
     }
 
     public function create(string $slug): Response
