@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { decodeHtmlEntities } from '@/lib/utils';
 import ideas from '@/routes/ideas';
 
 type User = { id: number; name: string };
@@ -26,9 +27,20 @@ type ChangeRequest = {
     hidden_by_user: boolean;
 };
 
+type PaginatedData<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: { url: string | null; label: string; active: boolean }[];
+};
+
 type Props = {
-    pending: ChangeRequest[];
-    all: ChangeRequest[];
+    requests: PaginatedData<ChangeRequest>;
+    showAll: boolean;
     search: string | null;
     filters: Record<string, string>;
 };
@@ -143,13 +155,12 @@ function ChangeRequestCard({ cr }: { cr: ChangeRequest }) {
     );
 }
 
-export default function Pending({ pending, all, filters: initialFilters, search: initialSearch }: Props) {
-    const [showAll, setShowAll] = useState(() => new URLSearchParams(window.location.search).get('show_all') === 'true');
+export default function Pending({ requests, showAll, filters: initialFilters, search: initialSearch }: Props) {
     const [searchValue, setSearchValue] = useState(initialSearch ?? '');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>(initialFilters);
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>) => {
+    const navigateWithFilters = (searchVal: string, filterOverrides?: Record<string, string>, showAllOverride?: boolean) => {
         const params = new URLSearchParams();
         const filters = filterOverrides ?? activeFilters;
 
@@ -157,7 +168,9 @@ export default function Pending({ pending, all, filters: initialFilters, search:
             params.set('search', searchVal);
         }
 
-        if (showAll) {
+        const showAllVal = showAllOverride ?? showAll;
+
+        if (showAllVal) {
             params.set('show_all', 'true');
         }
 
@@ -211,26 +224,7 @@ export default function Pending({ pending, all, filters: initialFilters, search:
     }, []);
 
     const handleToggleShowAll = () => {
-        const newShowAll = !showAll;
-        setShowAll(newShowAll);
-        const params = new URLSearchParams();
-
-        if (newShowAll) {
-            params.set('show_all', 'true');
-        }
-
-        if (searchValue) {
-            params.set('search', searchValue);
-        }
-
-        for (const [key, value] of Object.entries(activeFilters)) {
-            if (value) {
-                params.set(key, value);
-            }
-        }
-
-        const qs = params.toString();
-        router.get(window.location.pathname + (qs ? `?${qs}` : ''), {}, { preserveState: true, preserveScroll: true });
+        navigateWithFilters(searchValue, activeFilters, !showAll);
     };
 
     const goBack = () => {
@@ -241,13 +235,13 @@ export default function Pending({ pending, all, filters: initialFilters, search:
         }
     };
 
-    const items = showAll ? all : pending;
+    const items = requests.data;
 
     return (
         <>
             <Head title="Change Requests Inbox" />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 {/* Top bar */}
                 <div className="flex items-start justify-between">
                     <div className="flex flex-col items-center gap-1">
@@ -335,6 +329,33 @@ export default function Pending({ pending, all, filters: initialFilters, search:
                         {items.map((cr) => (
                             <ChangeRequestCard key={cr.id} cr={cr} />
                         ))}
+
+                        {requests.last_page > 1 && (
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-muted-foreground">
+                                    Showing {requests.from} to {requests.to} of {requests.total} entries
+                                </p>
+                                <div className="flex gap-2">
+                                    {requests.links.map((link, i) => {
+                                        if (!link.url || link.label === '...') {
+                                            return (
+                                                <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
+                                                    {decodeHtmlEntities(link.label)}
+                                                </span>
+                                            );
+                                        }
+
+                                        return (
+                                            <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
+                                                <Link href={link.url} preserveState preserveScroll>
+                                                    {decodeHtmlEntities(link.label)}
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

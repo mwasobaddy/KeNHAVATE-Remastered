@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { decodeHtmlEntities } from '@/lib/utils';
 import routes from '@/routes/points';
 
 type Point = {
@@ -125,7 +126,7 @@ export default function PointIndex({ points, filters: initialFilters, search: in
         <>
             <Head title="Point Actions" />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 {/* Top bar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
@@ -318,7 +319,7 @@ export default function PointIndex({ points, filters: initialFilters, search: in
                                             if (!link.url || link.label === '...') {
                                                 return (
                                                     <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
-                                                        {link.label}
+                                                        {decodeHtmlEntities(link.label)}
                                                     </span>
                                                 );
                                             }
@@ -326,7 +327,7 @@ export default function PointIndex({ points, filters: initialFilters, search: in
                                             return (
                                                 <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
                                                     <Link href={link.url} preserveState preserveScroll>
-                                                        {link.label}
+                                                        {decodeHtmlEntities(link.label)}
                                                     </Link>
                                                 </Button>
                                             );

@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { decodeHtmlEntities } from '@/lib/utils';
 import ideas from '@/routes/ideas';
 
 type Idea = {
@@ -235,7 +236,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
         <>
             <Head title="Ideas" />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
 
                     {/* Top bar */}
                     <div className="flex items-center justify-between gap-2">
@@ -575,7 +576,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                             if (!link.url || link.label === '...') {
                                                 return (
                                                     <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
-                                                        {link.label}
+                                                        {decodeHtmlEntities(link.label)}
                                                     </span>
                                                 );
                                             }
@@ -583,7 +584,7 @@ export default function IdeaIndex({ ideas: ideasData, currentTab, categories, fi
                                             return (
                                                 <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
                                                     <Link href={link.url} preserveState preserveScroll>
-                                                        {link.label}
+                                                        {decodeHtmlEntities(link.label)}
                                                     </Link>
                                                 </Button>
                                             );

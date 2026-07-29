@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { decodeHtmlEntities } from '@/lib/utils';
 import ideas from '@/routes/ideas';
 
 type Officer = {
@@ -286,7 +287,7 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myQueue, re
         <>
             <Head title="Review Dashboard" />
 
-                <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+                <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
 
                     {/* Top bar */}
                     <div className="flex items-center justify-between gap-2">
@@ -517,7 +518,7 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myQueue, re
                                             if (!link.url || link.label === '...') {
                                                 return (
                                                     <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
-                                                        {link.label}
+                                                        {decodeHtmlEntities(link.label)}
                                                     </span>
     );
 }
@@ -525,7 +526,7 @@ export default function ReviewIndex({ currentTab, pendingAssignment, myQueue, re
                                             return (
                                                 <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
                                                     <Link href={link.url} preserveState preserveScroll>
-                                                        {link.label}
+                                                        {decodeHtmlEntities(link.label)}
                                                     </Link>
                                                 </Button>
                                             );

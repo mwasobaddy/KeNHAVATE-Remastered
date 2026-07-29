@@ -6,6 +6,7 @@ import Heading from '@/components/heading';
 import SearchInput from '@/components/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { decodeHtmlEntities } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type AuditLog = {
@@ -182,7 +183,7 @@ params.delete(k);
         <>
             <Head title="Audit Log" />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 {/* Top bar */}
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-col items-center gap-1">
@@ -276,7 +277,7 @@ params.delete(k);
                                         if (!link.url || link.label === '...') {
                                             return (
                                                 <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
-                                                    {link.label}
+                                                    {decodeHtmlEntities(link.label)}
                                                 </span>
                                             );
                                         }
@@ -293,7 +294,7 @@ params.delete(k);
                                                     preserveState
                                                     preserveScroll
                                                 >
-                                                    {link.label}
+                                                    {decodeHtmlEntities(link.label)}
                                                 </Link>
                                             </Button>
                                         );

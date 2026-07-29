@@ -200,7 +200,7 @@ payload.ip_document = ipDocument;
         <>
             <Head title="Submit Idea" />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <Heading
                     title="Submit a New Idea"
                     description="Share your innovation with KeNHA"

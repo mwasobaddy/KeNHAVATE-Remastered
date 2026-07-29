@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 
 import { Button } from '@/components/ui/button';
+import { decodeHtmlEntities } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface Idea {
@@ -149,7 +150,7 @@ export default function Explore({ ideas }: Props) {
                                         if (!link.url) {
                                             return (
                                                 <span key={i} className="px-3 py-1.5 text-sm text-muted-foreground">
-                                                    {link.label}
+                                                    {decodeHtmlEntities(link.label)}
                                                 </span>
                                             );
                                         }
@@ -164,7 +165,7 @@ export default function Explore({ ideas }: Props) {
                                                         : 'text-muted-foreground hover:bg-accent'
                                                 }`}
                                             >
-                                                {link.label}
+                                                {decodeHtmlEntities(link.label)}
                                             </Link>
                                         );
                                     })}

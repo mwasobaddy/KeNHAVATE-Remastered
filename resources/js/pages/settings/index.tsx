@@ -140,7 +140,7 @@ export default function Settings({
     };
 
     return (
-        <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+        <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
             <Head title="Settings" />
 
             <div className="flex flex-col items-start gap-1">

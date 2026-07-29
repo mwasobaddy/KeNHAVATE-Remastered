@@ -18,7 +18,7 @@ import {
     UserPlus,
     Users,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, decodeHtmlEntities } from '@/lib/utils';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,6 +83,17 @@ type PendingInvitation = {
     status: string;
 };
 
+type PaginatedData<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: { url: string | null; label: string; active: boolean }[];
+};
+
 type Props = {
     pointsBalance: number;
     recentTransactions: Transaction[];
@@ -97,7 +108,7 @@ type Props = {
     canViewAdmin?: boolean;
     reviewStats?: ReviewStats;
     assignStats?: AssignStats;
-    allTransactions?: Transaction[];
+    allTransactions?: PaginatedData<Transaction>;
     activeTab?: string;
 };
 
@@ -138,7 +149,7 @@ export default function Dashboard({
         <>
             <Head title="Dashboard" />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <Heading
                         title="Dashboard"
@@ -238,7 +249,7 @@ function PersonalTab({
     userIdeaStats: UserIdeaStats;
     recentTransactions: Transaction[];
     pendingInvitations: PendingInvitation[];
-    allTransactions?: Transaction[];
+    allTransactions?: PaginatedData<Transaction>;
     isAdmin?: boolean;
 }) {
     return (
@@ -279,61 +290,6 @@ function PersonalTab({
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
-                <Card className={cn('lg:col-span-2', isAdmin && 'lg:col-span-3')}>
-                    <CardHeader>
-                        <CardTitle>
-                            {isAdmin ? 'All Transactions' : 'Recent Transactions'}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className={cn(isAdmin && 'max-h-80 overflow-y-auto')}>
-                            <table className="w-full text-sm">
-                                <thead className={cn(isAdmin && 'sticky top-0 bg-card')}>
-                                    <tr className="border-b text-left text-muted-foreground">
-                                        {isAdmin && <th className="pb-2 pr-4 font-medium">User</th>}
-                                        <th className="pb-2 pr-4 font-medium">Action</th>
-                                        <th className="pb-2 pr-4 font-medium text-right">Points</th>
-                                        <th className="pb-2 font-medium text-right">Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {(isAdmin ? allTransactions! : recentTransactions).length > 0 ? (
-                                        (isAdmin ? allTransactions! : recentTransactions).map((tx) => (
-                                            <tr key={tx.id} className="border-b last:border-0">
-                                                {isAdmin && (
-                                                    <td className="py-2 pr-4 font-medium">
-                                                        {tx.user?.name ?? 'Unknown'}
-                                                    </td>
-                                                )}
-                                                <td className="py-2 pr-4 text-muted-foreground">
-                                                    {tx.point?.name ?? 'Deleted Action'}
-                                                </td>
-                                                <td className="py-2 pr-4 text-right">
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                                                    >
-                                                        +{tx.points}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-2 text-right text-xs text-muted-foreground">
-                                                    {formatDate(tx.created_at)}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-muted-foreground">
-                                                {isAdmin ? 'No transactions yet.' : 'Complete onboarding to earn your first points!'}
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Pending Invitations</CardTitle>
@@ -375,6 +331,86 @@ function PersonalTab({
                                 <p className="text-xs text-muted-foreground/70">
                                     You'll see collaboration invites here
                                 </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className={cn('lg:col-span-2', isAdmin && 'lg:col-span-2')}>
+                    <CardHeader>
+                        <CardTitle>
+                            {isAdmin ? 'All Transactions' : 'Recent Transactions'}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b text-left text-muted-foreground">
+                                    {isAdmin && <th className="pb-2 pr-4 font-medium">User</th>}
+                                    <th className="pb-2 pr-4 font-medium">Action</th>
+                                    <th className="pb-2 pr-4 font-medium text-right">Points</th>
+                                    <th className="pb-2 font-medium text-right">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(isAdmin ? allTransactions!.data : recentTransactions).length > 0 ? (
+                                    (isAdmin ? allTransactions!.data : recentTransactions).map((tx) => (
+                                        <tr key={tx.id} className="border-b last:border-0">
+                                            {isAdmin && (
+                                                <td className="py-2 pr-4 font-medium">
+                                                    {tx.user?.name ?? 'Unknown'}
+                                                </td>
+                                            )}
+                                            <td className="py-2 pr-4 text-muted-foreground">
+                                                {tx.point?.name ?? 'Deleted Action'}
+                                            </td>
+                                            <td className="py-2 pr-4 text-right">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                                >
+                                                    +{tx.points}
+                                                </Badge>
+                                            </td>
+                                            <td className="py-2 text-right text-xs text-muted-foreground">
+                                                {formatDate(tx.created_at)}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-muted-foreground">
+                                            {isAdmin ? 'No transactions yet.' : 'Complete onboarding to earn your first points!'}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+
+                        {isAdmin && allTransactions && allTransactions.last_page > 1 && (
+                            <div className="mt-4 flex items-center justify-between">
+                                <p className="text-sm text-muted-foreground">
+                                    Showing {allTransactions.from} to {allTransactions.to} of {allTransactions.total} entries
+                                </p>
+                                <div className="flex gap-2">
+                                    {allTransactions.links.map((link, i) => {
+                                        if (!link.url || link.label === '...') {
+                                            return (
+                                                <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
+                                                    {decodeHtmlEntities(link.label)}
+                                                </span>
+                                            );
+                                        }
+
+                                        return (
+                                            <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
+                                                <Link href={link.url} preserveState preserveScroll>
+                                                    {decodeHtmlEntities(link.label)}
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                     </CardContent>

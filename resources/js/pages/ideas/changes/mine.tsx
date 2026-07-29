@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { decodeHtmlEntities } from '@/lib/utils';
 import ideas from '@/routes/ideas';
 
 type User = { id: number; name: string };
@@ -26,8 +27,19 @@ type ChangeRequest = {
     hidden_by_user: boolean;
 };
 
+type PaginatedData<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: { url: string | null; label: string; active: boolean }[];
+};
+
 type Props = {
-    changeRequests: ChangeRequest[];
+    changeRequests: PaginatedData<ChangeRequest>;
     search: string | null;
     filters: Record<string, string>;
 };
@@ -211,11 +223,13 @@ export default function Mine({ changeRequests, filters: initialFilters, search: 
         }
     };
 
+    const items = changeRequests.data;
+
     return (
         <>
             <Head title="Change Requests Outbox" />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 {/* Top bar */}
                 <div className="flex items-start justify-between">
                     <div className="flex flex-col items-center gap-1">
@@ -261,7 +275,7 @@ export default function Mine({ changeRequests, filters: initialFilters, search: 
                     />
                 </div>
 
-                {changeRequests.length === 0 ? (
+                {items.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-12">
                             {searchValue || hasActiveFilters ? (
@@ -283,9 +297,36 @@ export default function Mine({ changeRequests, filters: initialFilters, search: 
                     </Card>
                 ) : (
                     <div className="space-y-4">
-                        {changeRequests.map((cr) => (
+                        {items.map((cr) => (
                             <ChangeRequestCard key={cr.id} cr={cr} />
                         ))}
+
+                        {changeRequests.last_page > 1 && (
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-muted-foreground">
+                                    Showing {changeRequests.from} to {changeRequests.to} of {changeRequests.total} entries
+                                </p>
+                                <div className="flex gap-2">
+                                    {changeRequests.links.map((link, i) => {
+                                        if (!link.url || link.label === '...') {
+                                            return (
+                                                <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
+                                                    {decodeHtmlEntities(link.label)}
+                                                </span>
+                                            );
+                                        }
+
+                                        return (
+                                            <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
+                                                <Link href={link.url} preserveState preserveScroll>
+                                                    {decodeHtmlEntities(link.label)}
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

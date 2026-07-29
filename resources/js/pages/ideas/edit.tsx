@@ -75,7 +75,7 @@ export default function EditIdea({ idea, categories }: Props) {
         <>
             <Head title={isResubmit ? `Resubmit - ${idea.title}` : `Edit - ${idea.title}`} />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <Heading
                     title={isResubmit ? 'Resubmit Idea' : 'Edit Idea'}
                     description={idea.title}

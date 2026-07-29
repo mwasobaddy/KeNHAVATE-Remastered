@@ -1,6 +1,6 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Activity, ArrowLeft, Award, Crown, Hash, Star, Trophy, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
 import SearchInput from '@/components/search-input';
 import StatsCards from '@/components/stats-cards';
@@ -9,12 +9,24 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { decodeHtmlEntities } from '@/lib/utils';
 import { leaderboard } from '@/routes';
 
 type User = {
     id: number;
     name: string;
     points_balance: number;
+};
+
+type PaginatedData<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: { url: string | null; label: string; active: boolean }[];
 };
 
 type SystemStats = {
@@ -25,7 +37,7 @@ type SystemStats = {
 };
 
 type Props = {
-    users: User[];
+    users: PaginatedData<User>;
     currentUserRank: number | null;
     currentUserPoints: number;
     systemStats: SystemStats;
@@ -47,24 +59,14 @@ export default function Leaderboard({ users, currentUserRank, currentUserPoints,
         const params = new URLSearchParams(window.location.search);
 
         if (value) {
-params.set('search', value);
-} else {
-params.delete('search');
-}
+            params.set('search', value);
+        } else {
+            params.delete('search');
+        }
 
         const qs = params.toString();
         window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
     };
-
-    const filteredUsers = useMemo(() => {
-        if (!search.trim()) {
-            return users;
-        }
-
-        const q = search.toLowerCase();
-
-        return users.filter((user) => user.name.toLowerCase().includes(q));
-    }, [users, search]);
 
     const getInitials = (name: string) => {
         return name
@@ -79,7 +81,7 @@ params.delete('search');
         <>
             <Head title="Leaderboard" />
 
-            <div className="flex h-full 2xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full 3xl:m-auto flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 <div className="flex flex-col items-center gap-1 self-start">
                     <Button size="icon" variant="warning" onClick={goBack}>
                         <ArrowLeft className="h-5 w-5" />
@@ -130,7 +132,7 @@ params.delete('search');
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredUsers.length === 0 ? (
+                                        {users.data.length === 0 ? (
                                             <tr>
                                                 <td colSpan={3} className="py-8 text-center text-muted-foreground">
                                                     {search
@@ -139,8 +141,9 @@ params.delete('search');
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredUsers.map((user) => {
-                                                const actualRank = users.indexOf(user) + 1;
+                                            users.data.map((user, index) => {
+                                                const rankOffset = (users.current_page - 1) * users.per_page;
+                                                const actualRank = rankOffset + index + 1;
                                                 const isCurrentUser = currentUserRank === actualRank;
 
                                                 return (
@@ -198,6 +201,33 @@ params.delete('search');
                                     </tbody>
                                 </table>
                             </div>
+
+                            {users.last_page > 1 && (
+                                <div className="mt-4 flex items-center justify-between">
+                                    <p className="text-sm text-muted-foreground">
+                                        Showing {users.from} to {users.to} of {users.total} entries
+                                    </p>
+                                    <div className="flex gap-2">
+                                        {users.links.map((link, i) => {
+                                            if (!link.url || link.label === '...') {
+                                                return (
+                                                    <span key={i} className="px-2 py-1 text-sm text-muted-foreground">
+                                                        {decodeHtmlEntities(link.label)}
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <Button key={i} variant={link.active ? 'default' : 'outline'} size="sm" asChild>
+                                                    <Link href={link.url} preserveState preserveScroll>
+                                                        {decodeHtmlEntities(link.label)}
+                                                    </Link>
+                                                </Button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 

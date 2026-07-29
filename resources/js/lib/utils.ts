@@ -10,3 +10,11 @@ export function cn(...inputs: ClassValue[]) {
 export function toUrl(url: NonNullable<InertiaLinkProps['href']>): string {
     return typeof url === 'string' ? url : url.url;
 }
+
+export function decodeHtmlEntities(text: string): string {
+    const el = document.createElement('span');
+
+    el.innerHTML = text;
+
+    return el.textContent ?? el.innerText ?? '';
+}
