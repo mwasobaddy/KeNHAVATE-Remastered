@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 const features = [
     {
         title: 'Crowdsourced Innovation',
-        description: 'Every employee, regardless of role, can contribute ideas that make a difference.',
+        description: 'Anyone can contribute ideas that make a difference.',
         icon: '💡',
     },
     {
@@ -13,7 +13,7 @@ const features = [
     },
     {
         title: 'Collaboration',
-        description: 'Work with colleagues to refine and improve ideas before submission.',
+        description: 'Work with others to refine and improve ideas before submission.',
         icon: '🤝',
     },
     {
@@ -34,7 +34,7 @@ const faqs = [
     },
     {
         q: 'Can I collaborate with others on my idea?',
-        a: 'Yes. You can enable collaboration on your idea to allow colleagues to contribute, propose changes, and help refine it before or during the review process.',
+        a: 'Yes. You can enable collaboration on your idea to allow others to contribute, propose changes, and help refine it before or during the review process.',
     },
     {
         q: 'What about intellectual property?',
@@ -70,7 +70,7 @@ export default function About() {
                     <div className="mx-auto mt-12 max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-sm sm:p-10">
                         <h2 className="text-xl font-bold text-white sm:text-2xl">Our Mission</h2>
                         <p className="mt-4 leading-relaxed text-white/50">
-                            To harness the collective creativity of KeNHA employees and stakeholders by providing
+                            To harness the collective creativity of the public, partners, and stakeholders by providing
                             a structured platform for submitting, reviewing, and implementing innovative ideas
                             that improve Kenya's road infrastructure and services.
                         </p>
@@ -128,8 +128,8 @@ export default function About() {
                             Who Can <span className="text-yellow">Participate?</span>
                         </h2>
                         <p className="mt-4 text-base leading-relaxed text-white/50">
-                            All KeNHA employees, contractors, and partners with a valid email address can
-                            submit ideas, collaborate with colleagues, and participate in the innovation process.
+                            Anyone with a valid email address can
+                            submit ideas, collaborate with others, and participate in the innovation process.
                         </p>
                     </div>
                 </div>

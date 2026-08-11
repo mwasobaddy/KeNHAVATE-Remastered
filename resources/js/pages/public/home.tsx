@@ -175,7 +175,7 @@ export default function Home({ stats }: Props) {
 
                             <p className="reveal in reveal-delay-2 mt-5 max-w-lg text-base leading-relaxed text-white/50 sm:text-lg">
                                 Have an idea to improve Kenya's road infrastructure? Submit it here,
-                                collaborate with colleagues, and see it come to life.
+                                collaborate with others, and see it come to life.
                             </p>
 
                             <div className="reveal in reveal-delay-3 mt-8 flex flex-wrap items-center gap-4">
@@ -379,7 +379,7 @@ export default function Home({ stats }: Props) {
                     </h2>
 
                     <p className="reveal in reveal-delay-2 mx-auto mt-4 max-w-lg text-base text-white/40">
-                        Join your colleagues in shaping the future of Kenya's road infrastructure. Every idea counts.
+                        Join the community in shaping the future of Kenya's road infrastructure. Every idea counts.
                     </p>
 
                     <div className="reveal in reveal-delay-3 mt-8">
