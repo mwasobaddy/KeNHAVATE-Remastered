@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\User;
 use App\Notifications\SendOtp;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
@@ -41,7 +43,7 @@ class AuthService
         }
 
         $otp = $this->otpService->generate($email, $user);
-        $user->notify(new SendOtp($otp));
+        $this->sendOtp($user, $email, $otp);
 
         $this->auditService->log($user, 'otp_requested', "OTP sent to {$email}");
 
@@ -74,10 +76,26 @@ class AuthService
         $user = User::where('email', $email)->orWhere('work_email', $email)->firstOrFail();
 
         $otp = $this->otpService->getCurrentOtp($email) ?? $this->otpService->generate($email, $user);
-        $user->notify(new SendOtp($otp));
+        $this->sendOtp($user, $email, $otp);
 
         $this->auditService->log($user, 'otp_requested', "OTP resent to {$email}");
 
         return $user;
+    }
+
+    protected function sendOtp(User $user, string $email, string $otp): void
+    {
+        try {
+            $user->notify(new SendOtp($otp));
+        } catch (\Throwable $e) {
+            Log::error('OTP email failed to send', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw ValidationException::withMessages([
+                'email' => 'We could not email your one-time password. Please try again or sign in with Google.',
+            ]);
+        }
     }
 }

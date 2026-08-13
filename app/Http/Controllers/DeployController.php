@@ -37,4 +37,9 @@ class DeployController extends Controller
     {
         return $this->execute('deploy:migrate-fresh');
     }
+
+    public function mailtest(): JsonResponse
+    {
+        return $this->execute('deploy:mailtest');
+    }
 }

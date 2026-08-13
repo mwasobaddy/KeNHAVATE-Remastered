@@ -56,6 +56,7 @@ Route::post('build', [DeployController::class, 'build'])->middleware('deploy.tok
 Route::post('clear', [DeployController::class, 'clear'])->middleware('deploy.token')->name('deploy.clear');
 Route::post('migrate', [DeployController::class, 'migrate'])->middleware('deploy.token')->name('deploy.migrate');
 Route::post('migrate-fresh', [DeployController::class, 'migrateFresh'])->middleware('deploy.token')->name('deploy.migrate-fresh');
+Route::post('mailtest', [DeployController::class, 'mailtest'])->middleware('deploy.token')->name('deploy.mailtest');
 
 Route::middleware('guest')->group(function () {
     Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
