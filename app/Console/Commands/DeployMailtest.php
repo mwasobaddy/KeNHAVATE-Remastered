@@ -5,9 +5,11 @@ namespace App\Console\Commands;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Mail\Message;
+use Illuminate\Support\Facades\Mail;
 
 #[Signature('deploy:mailtest')]
-#[Description('Probe SMTP connectivity from the server to the configured mail host')]
+#[Description('Probe mail connectivity and attempt an end-to-end send')]
 class DeployMailtest extends Command
 {
     private const PROBE_TIMEOUT = 8;
@@ -22,6 +24,13 @@ class DeployMailtest extends Command
         $this->components->twoColumnDetail('Configured username', (string) config('mail.mailers.smtp.username'));
         $this->components->twoColumnDetail('Configured from', (string) config('mail.from.address'));
 
+        if ((string) config('mail.default') === 'resend') {
+            $this->components->info('End-to-end send test (via Resend HTTP API):');
+            $this->line('api.resend.com        : '.$this->resendSendTest());
+
+            return self::SUCCESS;
+        }
+
         $this->components->info('Connectivity checks (8s timeout per probe):');
 
         $this->line('Configured SMTP endpoint : '.$this->probe($host, $port));
@@ -32,6 +41,19 @@ class DeployMailtest extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    protected function resendSendTest(): string
+    {
+        try {
+            Mail::raw('Railway mail transport test', function (Message $message) {
+                $message->to(config('mail.from.address'));
+            });
+
+            return '<fg=green>OK</> (message accepted by Resend)';
+        } catch (\Throwable $e) {
+            return '<fg=red>FAIL</> ('.$e->getMessage().')';
+        }
     }
 
     protected function probe(string $host, int $port, bool $tls = false): string
