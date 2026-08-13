@@ -47,6 +47,7 @@ class DeployMailtest extends Command
     {
         try {
             Mail::raw('Railway mail transport test', function (Message $message) {
+                $message->subject('Railway mail transport test');
                 $message->to(config('mail.from.address'));
             });
 
