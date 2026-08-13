@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('description');
-            $table->foreignId('category_id')->constrained('idea_categories');
+            $table->foreignId('category_id');
             $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('assigned_officer_id')
                 ->nullable()
@@ -21,9 +21,7 @@ return new class extends Migration
                 ->nullOnDelete();
             $table->timestamp('assigned_at')->nullable();
             $table->foreignId('classification_id')
-                ->nullable()
-                ->constrained('idea_classifications')
-                ->nullOnDelete();
+                ->nullable();
             $table->timestamp('classified_at')->nullable();
             $table->text('problem_statement');
             $table->text('proposed_solution');

@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('point_transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('point_id')->nullable()->constrained('points')->nullOnDelete();
+            $table->foreignId('point_id')->nullable();
             $table->integer('points');
             $table->timestamp('created_at')->useCurrent();
 
