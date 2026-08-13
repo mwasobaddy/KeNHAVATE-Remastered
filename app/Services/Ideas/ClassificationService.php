@@ -8,10 +8,13 @@ use App\Models\IdeaClassification;
 use App\Models\IdeaReview;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\Support\SendsMailSafely;
 use Illuminate\Support\Facades\Mail;
 
 class ClassificationService
 {
+    use SendsMailSafely;
+
     public function __construct(
         private AuditService $auditService,
     ) {}
@@ -39,7 +42,7 @@ class ClassificationService
             'document_path' => null,
         ]);
 
-        Mail::to($idea->author)->send(new IdeaClassifiedMail($idea, $classification));
+        $this->sendMailSafely('idea_classified', fn () => Mail::to($idea->author)->send(new IdeaClassifiedMail($idea, $classification)));
 
         $this->auditService->log(
             $officer,

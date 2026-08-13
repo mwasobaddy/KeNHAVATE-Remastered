@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Mail;
 
 class BugReportService
 {
+    use SendsMailSafely;
+
     public function __construct(
         private AuditService $auditService,
         private PointAwardService $pointAwardService,
@@ -75,7 +77,7 @@ class BugReportService
                 "Accepted bug report #{$report->id}: {$report->title}",
             );
 
-            Mail::to($report->user)->send(new BugReportAcceptedMail($report, $notes));
+            $this->sendMailSafely('bug_report_accepted', fn () => Mail::to($report->user)->send(new BugReportAcceptedMail($report, $notes)));
         });
     }
 
@@ -95,7 +97,7 @@ class BugReportService
                 "Rejected bug report #{$report->id}: {$report->title} — {$reason}",
             );
 
-            Mail::to($report->user)->send(new BugReportRejectedMail($report, $reason));
+            $this->sendMailSafely('bug_report_rejected', fn () => Mail::to($report->user)->send(new BugReportRejectedMail($report, $reason)));
         });
     }
 
@@ -104,7 +106,7 @@ class BugReportService
         $managers = User::permission('report.receive_report_notification')->get();
 
         foreach ($managers as $manager) {
-            Mail::to($manager)->send(new BugReportSubmittedMail($report, $reporter));
+            $this->sendMailSafely("bug_report_submitted_to_{$manager->email}", fn () => Mail::to($manager)->send(new BugReportSubmittedMail($report, $reporter)));
         }
     }
 }

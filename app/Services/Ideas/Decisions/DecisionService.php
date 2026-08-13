@@ -7,10 +7,13 @@ use App\Models\Idea;
 use App\Models\IdeaReview;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\Support\SendsMailSafely;
 use Illuminate\Support\Facades\Mail;
 
 class DecisionService
 {
+    use SendsMailSafely;
+
     private const DECISIONS_BY_CLASSIFICATION = [
         'innovation' => ['approved', 'deferred', 'declined'],
         'research' => ['budget_logged', 'deferred', 'closed'],
@@ -110,7 +113,7 @@ class DecisionService
             'notes' => $notes,
         ]);
 
-        Mail::to($idea->author)->send(new IdeaStatusUpdated($idea, $nextStatus));
+        $this->sendMailSafely('idea_progressed', fn () => Mail::to($idea->author)->send(new IdeaStatusUpdated($idea, $nextStatus)));
 
         $this->auditService->log(
             $user,
@@ -133,7 +136,7 @@ class DecisionService
             'notes' => $notes,
         ]);
 
-        Mail::to($idea->author)->send(new IdeaStatusUpdated($idea, 'revision_requested', $notes));
+        $this->sendMailSafely('revision_requested', fn () => Mail::to($idea->author)->send(new IdeaStatusUpdated($idea, 'revision_requested', $notes)));
 
         $this->auditService->log(
             $user,
@@ -157,7 +160,7 @@ class DecisionService
         ]);
 
         if ($idea->assignedOfficer) {
-            Mail::to($idea->assignedOfficer)->send(new IdeaStatusUpdated($idea, 'resubmitted', $notes));
+            $this->sendMailSafely('idea_resubmitted', fn () => Mail::to($idea->assignedOfficer)->send(new IdeaStatusUpdated($idea, 'resubmitted', $notes)));
         }
 
         $this->auditService->log(

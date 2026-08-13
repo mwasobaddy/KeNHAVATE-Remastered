@@ -7,10 +7,13 @@ use App\Models\Idea;
 use App\Models\IdeaReview;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\Support\SendsMailSafely;
 use Illuminate\Support\Facades\Mail;
 
 class AssignmentService
 {
+    use SendsMailSafely;
+
     public function __construct(
         private AuditService $auditService,
     ) {}
@@ -31,7 +34,7 @@ class AssignmentService
             'notes' => "Assigned to {$officer->name}",
         ]);
 
-        Mail::to($officer)->send(new IdeaAssignedMail($idea, $assignedBy));
+        $this->sendMailSafely('idea_assigned', fn () => Mail::to($officer)->send(new IdeaAssignedMail($idea, $assignedBy)));
 
         $this->auditService->log(
             $assignedBy,

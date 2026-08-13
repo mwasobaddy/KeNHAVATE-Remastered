@@ -9,12 +9,15 @@ use App\Models\ChangeRequest;
 use App\Models\Idea;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\Support\SendsMailSafely;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class ChangeRequestService
 {
+    use SendsMailSafely;
+
     public function __construct(
         private AuditService $auditService,
     ) {}
@@ -35,7 +38,7 @@ class ChangeRequestService
             "Proposed changes to idea: {$idea->title}",
         );
 
-        Mail::to($idea->author)->send(new ChangeRequestSubmittedMail($changeRequest));
+        $this->sendMailSafely('change_request_submitted', fn () => Mail::to($idea->author)->send(new ChangeRequestSubmittedMail($changeRequest)));
 
         return $changeRequest;
     }
@@ -66,7 +69,7 @@ class ChangeRequestService
             "Approved changes for idea: {$idea->title}",
         );
 
-        Mail::to($changeRequest->proposer)->send(new ChangeRequestApprovedMail($changeRequest));
+        $this->sendMailSafely('change_request_approved', fn () => Mail::to($changeRequest->proposer)->send(new ChangeRequestApprovedMail($changeRequest)));
 
         return $changeRequest->fresh();
     }
@@ -85,7 +88,7 @@ class ChangeRequestService
             "Rejected changes for idea: {$changeRequest->idea->title}: {$feedback}",
         );
 
-        Mail::to($changeRequest->proposer)->send(new ChangeRequestRejectedMail($changeRequest));
+        $this->sendMailSafely('change_request_rejected', fn () => Mail::to($changeRequest->proposer)->send(new ChangeRequestRejectedMail($changeRequest)));
 
         return $changeRequest->fresh();
     }

@@ -40,6 +40,7 @@ use App\Services\OtpService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -122,7 +123,19 @@ Route::middleware('guest')->group(function () {
         ]);
 
         $otp = app(OtpService::class)->generate($email, $user);
-        $user->notify(new SendOtp($otp));
+
+        try {
+            $user->notify(new SendOtp($otp));
+        } catch (Throwable $e) {
+            Log::error('OTP email failed to send', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->withErrors([
+                'email' => 'We could not email your one-time password. Please try again or sign in with Google.',
+            ]);
+        }
 
         app(OtpService::class)->markCooldown($email);
         session(['otp_email' => $email]);

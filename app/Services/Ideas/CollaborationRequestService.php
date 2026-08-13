@@ -9,12 +9,15 @@ use App\Models\CollaborationRequest;
 use App\Models\Idea;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\Support\SendsMailSafely;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Mail;
 
 class CollaborationRequestService
 {
+    use SendsMailSafely;
+
     public function __construct(
         private AuditService $auditService,
     ) {}
@@ -47,7 +50,7 @@ class CollaborationRequestService
             "Requested collaboration on idea: {$idea->title}",
         );
 
-        Mail::to($idea->author)->send(new CollaborationRequestedMail($collaborationRequest));
+        $this->sendMailSafely('collaboration_requested', fn () => Mail::to($idea->author)->send(new CollaborationRequestedMail($collaborationRequest)));
 
         return $collaborationRequest;
     }
@@ -71,7 +74,7 @@ class CollaborationRequestService
             "Approved collaboration request for {$requester->name} on idea: {$idea->title}",
         );
 
-        Mail::to($requester)->send(new CollaborationApprovedMail($collaborationRequest));
+        $this->sendMailSafely('collaboration_approved', fn () => Mail::to($requester)->send(new CollaborationApprovedMail($collaborationRequest)));
 
         return $collaborationRequest->fresh();
     }
@@ -90,7 +93,7 @@ class CollaborationRequestService
             "Rejected collaboration request for {$collaborationRequest->user->name} on idea: {$collaborationRequest->idea->title}",
         );
 
-        Mail::to($collaborationRequest->user)->send(new CollaborationRejectedMail($collaborationRequest));
+        $this->sendMailSafely('collaboration_rejected', fn () => Mail::to($collaborationRequest->user)->send(new CollaborationRejectedMail($collaborationRequest)));
 
         return $collaborationRequest->fresh();
     }

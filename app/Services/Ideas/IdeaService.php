@@ -15,6 +15,7 @@ use App\Models\Point;
 use App\Models\User;
 use App\Services\AuditService;
 use App\Services\Points\PointAwardService;
+use App\Services\Support\SendsMailSafely;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -24,6 +25,8 @@ use Illuminate\Support\Str;
 
 class IdeaService
 {
+    use SendsMailSafely;
+
     public function __construct(
         private AuditService $auditService,
         private PointAwardService $pointAwardService,
@@ -76,7 +79,7 @@ class IdeaService
 
         $this->notifyReviewers($idea);
 
-        Mail::to($user)->send(new IdeaSubmittedConfirmationMail($idea));
+        $this->sendMailSafely('idea_submitted_confirmation', fn () => Mail::to($user)->send(new IdeaSubmittedConfirmationMail($idea)));
 
         return $idea;
     }
@@ -372,7 +375,7 @@ class IdeaService
         $reviewers = User::permission('idea.receive_new_submission_notifications')->get();
 
         foreach ($reviewers as $reviewer) {
-            Mail::to($reviewer)->send(new NewIdeaSubmittedMail($idea));
+            $this->sendMailSafely("new_idea_submitted_to_{$reviewer->email}", fn () => Mail::to($reviewer)->send(new NewIdeaSubmittedMail($idea)));
         }
     }
 
@@ -402,7 +405,7 @@ class IdeaService
                     "Added {$member->name} as contributor on idea: {$idea->title}",
                 );
             } else {
-                Mail::to($email)->send(new IdeaInvitationMail($invitation));
+                $this->sendMailSafely("idea_invitation_to_{$email}", fn () => Mail::to($email)->send(new IdeaInvitationMail($invitation)));
                 $this->auditService->log(
                     $invitedBy,
                     'team_member_invited',
