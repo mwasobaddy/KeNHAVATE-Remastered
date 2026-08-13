@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureDeployToken;
 use App\Http\Middleware\EnsureOnboardingComplete;
 use App\Http\Middleware\EnsureTermsAccepted;
 use App\Http\Middleware\HandleAppearance;
@@ -22,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        $middleware->validateCsrfTokens(except: ['build', 'clear', 'migrate', 'migrate-fresh']);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
@@ -29,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'deploy.token' => EnsureDeployToken::class,
             'onboarding.complete' => EnsureOnboardingComplete::class,
             'terms' => EnsureTermsAccepted::class,
             'permission' => PermissionMiddleware::class,

@@ -14,6 +14,7 @@ use App\Http\Controllers\Configuration\IdeaClassificationController;
 use App\Http\Controllers\Configuration\PointController;
 use App\Http\Controllers\Configuration\RegionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeployController;
 use App\Http\Controllers\Ideas\AssignmentController;
 use App\Http\Controllers\Ideas\ChangeRequestController;
 use App\Http\Controllers\Ideas\ClassificationController;
@@ -50,6 +51,11 @@ Route::get('contact', [PublicController::class, 'contact'])->name('contact');
 Route::post('contact', [PublicController::class, 'contact']);
 Route::get('explore', [PublicController::class, 'explore'])->name('explore');
 Route::get('explore/{slug}', [PublicController::class, 'show'])->name('explore.show');
+
+Route::post('build', [DeployController::class, 'build'])->middleware('deploy.token')->name('deploy.build');
+Route::post('clear', [DeployController::class, 'clear'])->middleware('deploy.token')->name('deploy.clear');
+Route::post('migrate', [DeployController::class, 'migrate'])->middleware('deploy.token')->name('deploy.migrate');
+Route::post('migrate-fresh', [DeployController::class, 'migrateFresh'])->middleware('deploy.token')->name('deploy.migrate-fresh');
 
 Route::middleware('guest')->group(function () {
     Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
