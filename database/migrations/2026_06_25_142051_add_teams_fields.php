@@ -37,7 +37,7 @@ return new class extends Migration
 
         if (! Schema::hasColumn($tableNames['model_has_permissions'], $columnNames['team_foreign_key'])) {
             Schema::table($tableNames['model_has_permissions'], function (Blueprint $table) use ($tableNames, $columnNames, $pivotPermission) {
-                $table->unsignedBigInteger($columnNames['team_foreign_key'])->nullable()->default('1');
+                $table->unsignedBigInteger($columnNames['team_foreign_key'])->default(0);
                 $table->index($columnNames['team_foreign_key'], 'model_has_permissions_team_foreign_key_index');
 
                 if (DB::getDriverName() !== 'sqlite') {
@@ -58,7 +58,7 @@ return new class extends Migration
 
         if (! Schema::hasColumn($tableNames['model_has_roles'], $columnNames['team_foreign_key'])) {
             Schema::table($tableNames['model_has_roles'], function (Blueprint $table) use ($tableNames, $columnNames, $pivotRole) {
-                $table->unsignedBigInteger($columnNames['team_foreign_key'])->nullable()->default('1');
+                $table->unsignedBigInteger($columnNames['team_foreign_key'])->default(0);
                 $table->index($columnNames['team_foreign_key'], 'model_has_roles_team_foreign_key_index');
 
                 if (DB::getDriverName() !== 'sqlite') {

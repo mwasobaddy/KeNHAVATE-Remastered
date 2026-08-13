@@ -1,6 +1,6 @@
 <?php
 
-use Spatie\Permission\DefaultTeamResolver;
+use App\Services\Support\GlobalTeamResolver;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -138,9 +138,17 @@ return [
     'teams' => true,
 
     /*
+     * The team id used for global (non-team-scoped) roles and permissions.
+     * MySQL requires every column in a primary key to be NOT NULL, so the
+     * permission pivot tables store this sentinel (instead of NULL) whenever
+     * the current team is unset. The resolver below falls back to this value.
+     */
+    'global_team_id' => 0,
+
+    /*
      * The class to use to resolve the permissions team id
      */
-    'team_resolver' => DefaultTeamResolver::class,
+    'team_resolver' => GlobalTeamResolver::class,
 
     /*
      * Passport Client Credentials Grant

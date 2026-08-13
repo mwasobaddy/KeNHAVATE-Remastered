@@ -71,7 +71,15 @@ test('deploy:migrate-fresh command drops, migrates and seeds the database', func
         $this->artisan('deploy:migrate-fresh')->assertSuccessful();
 
         $this->assertDatabaseHas('users', ['email' => 'kelvinramsiel@gmail.com']);
+        $this->assertDatabaseHas('model_has_roles', ['team_id' => 0]);
+        $this->assertDatabaseHas('model_has_permissions', ['team_id' => 0]);
+        $this->assertDatabaseMissing('model_has_roles', ['team_id' => null]);
+        $this->assertDatabaseMissing('model_has_permissions', ['team_id' => null]);
     } finally {
+        Config::set('database.default', 'sqlite');
+
+        DB::disconnect('deploytest') && DB::purge('deploytest');
+
         unlink($dbPath);
     }
 });
